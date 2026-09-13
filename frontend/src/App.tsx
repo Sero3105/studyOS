@@ -5,10 +5,7 @@ function App() {
   return (
     <div>
       <Header userName="Matteo" />
-
-      <p>Today's study time: 0h 0m</p>
-
-      <PomodoroTimer />
+      <PomodoroTimer timer={0.5} pause={0.5} />
     </div>
   )
 }

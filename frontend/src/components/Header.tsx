@@ -5,7 +5,7 @@ interface HeaderProps {
 function Header({ userName }: HeaderProps) {
   return (
     <header>
-      <h1>Welcome, {userName}!</h1>
+      <h3>Welcome, {userName}!</h3>
       <p>Focus. Learn. Improve.</p>
     </header>
   )
