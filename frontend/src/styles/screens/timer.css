@@ -1,0 +1,14 @@
+.timer-page {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 100%;
+  place-items: center;
+}
+
+.timer-page .header-note {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}

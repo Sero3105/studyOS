@@ -1,9 +1,11 @@
 import PomodoroTimer from '../components/PomodoroTimer'
+import HeaderNote from '../components/HeaderNote'
 
 function TimerPage() {
   return (
     <section className="timer-page">
-      <PomodoroTimer timer={25} pause={5} />
+        <HeaderNote>Focus. Learn. Improve.</HeaderNote>
+        <PomodoroTimer timer={25} pause={5} />
     </section>
   )
 }

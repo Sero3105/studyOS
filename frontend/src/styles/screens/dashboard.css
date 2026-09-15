@@ -1,8 +1,9 @@
 .content-area {
   display: grid;
   flex: 1;
+  min-height: 0;
   padding: 24px clamp(28px, 6vw, 92px) 80px;
-  place-items: start center;
+  place-items: center;
 }
 
 @media (max-width: 700px) {

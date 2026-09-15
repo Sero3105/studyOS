@@ -1,3 +1,5 @@
+import HeaderNote from './HeaderNote'
+
 interface HeaderProps {
     userName: string;
 }
@@ -9,7 +11,7 @@ function Header({ userName }: HeaderProps) {
         <p className="eyebrow">Today&apos;s focus</p>
         <h1>Welcome back, {userName}</h1>
       </div>
-      <p className="header-note">Focus. Learn. Improve.</p>
+      <HeaderNote>Focus. Learn. Improve.</HeaderNote>
     </header>
   )
 }

@@ -16,6 +16,9 @@ import {
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
 
+  const getNavLinkClassName = ({ isActive }: { isActive: boolean }) =>
+    `nav-item${isActive ? ' active' : ''}`
+
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
   }
@@ -38,39 +41,39 @@ function Sidebar() {
 
         <nav className="sidebar-nav" aria-label="Main navigation">
           <p className="nav-label">Workspace</p>
-          <NavLink to="/" className="nav-item active">
+          <NavLink to="/" end className={getNavLinkClassName}>
             <LayoutDashboard className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Dashboard</span>
           </NavLink>
-          <NavLink to="/planner" className="nav-item">
+          <NavLink to="/planner" className={getNavLinkClassName}>
             <CalendarDays className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Planner</span>
           </NavLink>
-          <NavLink to="/timer" className="nav-item">
+          <NavLink to="/timer" className={getNavLinkClassName}>
             <Timer className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Timer</span>
           </NavLink>
           <p className="nav-label">Library</p>
-          <a className="nav-item" href="#subjects">
+          <NavLink to="/subjects" className={getNavLinkClassName}>
             <BookOpen className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Subjects</span>
-          </a>
-          <a className="nav-item" href="#exams">
+          </NavLink>
+          <NavLink to="/exams" className={getNavLinkClassName}>
             <GraduationCap className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Exams</span>
-          </a>
-          <a className="nav-item" href="#statistics">
+          </NavLink>
+          <NavLink to="/statistics" className={getNavLinkClassName}>
             <BarChart3 className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Statistics</span>
-          </a>
-          <a className="nav-item" href="#goals">
+          </NavLink>
+          <NavLink to="/goals" className={getNavLinkClassName}>
             <Target className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Goals</span>
-          </a>
-          <a className="nav-item" href="#history">
+          </NavLink>
+          <NavLink to="/history" className={getNavLinkClassName}>
             <History className="nav-icon" aria-hidden="true" />
             <span className="nav-text">History</span>
-          </a>
+          </NavLink>
         </nav>
       </div>
     </aside>
