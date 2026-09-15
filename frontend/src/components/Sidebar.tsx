@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -37,18 +38,18 @@ function Sidebar() {
 
         <nav className="sidebar-nav" aria-label="Main navigation">
           <p className="nav-label">Workspace</p>
-          <a className="nav-item active" href="#dashboard">
+          <NavLink to="/" className="nav-item active">
             <LayoutDashboard className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Dashboard</span>
-          </a>
-          <a className="nav-item" href="#planner">
+          </NavLink>
+          <NavLink to="/planner" className="nav-item">
             <CalendarDays className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Planner</span>
-          </a>
-          <a className="nav-item" href="#timer">
+          </NavLink>
+          <NavLink to="/timer" className="nav-item">
             <Timer className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Timer</span>
-          </a>
+          </NavLink>
           <p className="nav-label">Library</p>
           <a className="nav-item" href="#subjects">
             <BookOpen className="nav-icon" aria-hidden="true" />

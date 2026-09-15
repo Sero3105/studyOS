@@ -1,21 +1,7 @@
-import Header from './components/Header'
-import PomodoroTimer from './components/PomodoroTimer'
-import Sidebar from './components/Sidebar'
+import { Outlet } from 'react-router-dom'
 
 function App() {
-  return (
-    <div className="app-layout">
-      <Sidebar />
-
-      <div className="main-area">
-        <Header userName="Matteo" />
-
-        <main className="content-area">
-          <PomodoroTimer timer={0.5} pause={0.5} />
-        </main>
-      </div>
-    </div>
-  )
+  return <Outlet />
 }
 
 export default App
