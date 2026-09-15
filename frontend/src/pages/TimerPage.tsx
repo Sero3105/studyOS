@@ -5,7 +5,7 @@ function TimerPage() {
   return (
     <section className="timer-page">
         <HeaderNote>Focus. Learn. Improve.</HeaderNote>
-        <PomodoroTimer timer={25} pause={5} />
+        <PomodoroTimer timer={0.25} pause={0.05} />
     </section>
   )
 }
