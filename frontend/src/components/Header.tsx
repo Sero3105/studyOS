@@ -4,9 +4,12 @@ interface HeaderProps {
 
 function Header({ userName }: HeaderProps) {
   return (
-    <header>
-      <h3>Welcome, {userName}!</h3>
-      <p>Focus. Learn. Improve.</p>
+    <header className="page-header">
+      <div>
+        <p className="eyebrow">Today&apos;s focus</p>
+        <h1>Welcome back, {userName}</h1>
+      </div>
+      <p className="header-note">Focus. Learn. Improve.</p>
     </header>
   )
 }

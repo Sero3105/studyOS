@@ -65,32 +65,39 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
   const strokeDashoffset = circumference * (1 - percentage)
 
   return (
-    <section>
-      <h2>Mode: {mode}</h2>
+    <section className="timer-panel" aria-label="Pomodoro timer">
+      <div className="timer-heading">
+        <div>
+          <p className="eyebrow">Deep work session</p>
+          <h2>{mode === 'Work' ? 'Time to focus' : 'Take a breather'}</h2>
+        </div>
+        <span className="mode-badge">{mode}</span>
+      </div>
 
-      <div>
+      <div className="timer-ring">
         <svg
+          className="timer-svg"
           width="240"
           height="240"
           viewBox="0 0 240 240"
+          role="img"
+          aria-label={`${minutes} minutes and ${remainingSeconds} seconds remaining`}
         >
-          {/* Background circle */}
           <circle
+            className="ring-track"
             cx="120"
             cy="120"
             r={radius}
             fill="none"
-            stroke="#27272a"
             strokeWidth="12"
           />
 
-          {/* Progress circle */}
           <circle
+            className="ring-progress"
             cx="120"
             cy="120"
             r={radius}
             fill="none"
-            stroke="#8b5cf6"
             strokeWidth="12"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -98,24 +105,25 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
             transform="rotate(-90 120 120)"
           />
 
-          {/* Timer text */}
           <text
+            className="timer-value"
             x="120"
             y="120"
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="32"
           >
             {minutes}:{remainingSeconds.toString().padStart(2, '0')}
           </text>
         </svg>
       </div>
 
-      <button onClick={() => setIsRunning(!isRunning)}>
+      <div className="timer-actions">
+      <button className="button button-primary" onClick={() => setIsRunning(!isRunning)}>
         {isRunning ? 'Pause' : 'Start'}
       </button>
 
       <button
+        className="button button-secondary"
         onClick={() => {
           setIsRunning(false)
           setSeconds(timer * 60)
@@ -124,6 +132,7 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
       >
         Reset
       </button>
+      </div>
     </section>
   )
 }

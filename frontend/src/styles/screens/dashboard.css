@@ -1,0 +1,12 @@
+.content-area {
+  display: grid;
+  flex: 1;
+  padding: 24px clamp(28px, 6vw, 92px) 80px;
+  place-items: start center;
+}
+
+@media (max-width: 700px) {
+  .content-area {
+    padding: 16px 24px 48px;
+  }
+}

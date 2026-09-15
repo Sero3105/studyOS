@@ -1,0 +1,160 @@
+.sidebar {
+  position: relative;
+  width: 248px;
+  min-height: 100vh;
+  flex: 0 0 248px;
+  padding: 32px 18px;
+  border-right: 1px solid var(--border);
+  background: rgba(13, 17, 23, 0.82);
+  transition: width 180ms ease, flex-basis 180ms ease;
+}
+
+.sidebar.collapsed {
+  width: 76px;
+  flex-basis: 76px;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 24px;
+  right: -14px;
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.sidebar-toggle:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.sidebar-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-content {
+  overflow: hidden;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 12px 52px;
+  white-space: nowrap;
+}
+
+.brand-mark h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.brand-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  color: #0d1117;
+  background: var(--accent);
+  font-weight: 800;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.nav-label {
+  margin: 16px 12px 8px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: currentColor;
+  stroke-width: 2;
+}
+
+.nav-text {
+  white-space: nowrap;
+  transition: opacity 160ms ease;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: var(--text-strong);
+  background: var(--accent-bg);
+}
+
+.nav-item.active {
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.collapsed .brand-mark h2,
+.collapsed .nav-label,
+.collapsed .nav-text {
+  visibility: hidden;
+  width: 0;
+  opacity: 0;
+}
+
+.collapsed .brand-mark,
+.collapsed .nav-item {
+  justify-content: center;
+}
+
+.collapsed .brand-mark {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.collapsed .nav-item {
+  gap: 0;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    width: 68px;
+    flex-basis: 68px;
+    padding: 24px 12px;
+  }
+
+  .sidebar.open {
+    width: 220px;
+    flex-basis: 220px;
+  }
+
+  .brand-mark {
+    margin-left: 8px;
+  }
+}

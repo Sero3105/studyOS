@@ -1,0 +1,103 @@
+.timer-panel {
+  width: min(100%, 620px);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(26, 35, 48, 0.96), rgba(20, 27, 36, 0.94));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.timer-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.timer-heading h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  letter-spacing: -0.04em;
+}
+
+.mode-badge {
+  padding: 7px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: var(--accent-bg);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.timer-ring {
+  display: grid;
+  max-width: 280px;
+  margin: 46px auto 34px;
+  place-items: center;
+}
+
+.timer-svg {
+  display: block;
+  width: min(100%, 240px);
+  height: auto;
+  overflow: visible;
+}
+
+.ring-track {
+  stroke: var(--border);
+}
+
+.ring-progress {
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(97, 212, 194, 0.24));
+}
+
+.timer-value {
+  fill: var(--text-strong);
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.timer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.button {
+  min-width: 104px;
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button-primary {
+  color: #0d1117;
+  background: var(--accent);
+}
+
+.button-primary:hover {
+  background: var(--accent-strong);
+}
+
+.button-secondary {
+  border-color: var(--border);
+  color: var(--text);
+  background: transparent;
+}
+
+.button-secondary:hover {
+  border-color: var(--accent-border);
+  color: var(--text-strong);
+  background: var(--accent-bg);
+}
