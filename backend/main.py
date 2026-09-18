@@ -1,11 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-import database
 
-class User(BaseModel):
-    username: str
-    email: str
-    full_name: str | None = None
-    age: int | None = None
+from routers.userRegister_router import router as user_register_router
+
 
 app = FastAPI()
+
+app.include_router(user_register_router)
