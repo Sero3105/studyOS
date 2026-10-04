@@ -37,6 +37,7 @@ StudyOS/
 ## 3. Stack tecnologico
 
 ### Frontend
+
 - React
 - TypeScript
 - Vite
@@ -44,7 +45,8 @@ StudyOS/
 - lucide-react
 - CSS modularizzato per componenti e layout
 
-### Backend
+### Backend setup
+
 - Python
 - FastAPI
 - SQLAlchemy
@@ -70,6 +72,7 @@ Questa separazione rende più facile capire dove correggere un problema senza le
 ### Regola 2: i router non devono fare “logica sporca”
 
 Il router deve solo:
+
 - ricevere la richiesta,
 - usare le dipendenze,
 - chiamare il service giusto,
@@ -89,6 +92,7 @@ Questo aiuta a evitare dati malformati e a rendere API più pulite e sicure.
 ### Regola 5: mantenere CSS organizzato
 
 Il frontend usa CSS separati per:
+
 - base
 - layout
 - componenti
@@ -108,13 +112,13 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-3. Installa le dipendenze principali:
+1. Installa le dipendenze principali:
 
 ```bash
 pip install fastapi sqlalchemy pydantic python-dotenv pwdlib uvicorn
 ```
 
-4. Avvia il server:
+1. Avvia il server:
 
 ```bash
 cd backend
@@ -127,7 +131,7 @@ Il backend sarà raggiungibile di solito su:
 http://127.0.0.1:8000
 ```
 
-### Frontend
+### Frontend setup
 
 1. Entra nella cartella frontend:
 
@@ -135,13 +139,13 @@ http://127.0.0.1:8000
 cd frontend
 ```
 
-2. Installa le dipendenze:
+1. Installa le dipendenze:
 
 ```bash
 npm install
 ```
 
-3. Avvia il dev server:
+1. Avvia il dev server:
 
 ```bash
 npm run dev
@@ -180,6 +184,7 @@ Quando lavori sul progetto, segui questo schema:
 ## 8. Convenzioni pratiche del codice
 
 ### Python / backend
+
 - usa nomi descrittivi (`create_user`, `get_db`, `UserResponse`)
 - usa moduli separati per logica e API
 - i file di routing devono essere leggibili e semplici
@@ -187,6 +192,7 @@ Quando lavori sul progetto, segui questo schema:
 - usa `ValueError` per eccezioni di business e trasformale in `HTTPException` nei router
 
 ### TypeScript / frontend
+
 - usa componenti separati per ogni area funzionale
 - preferisci props per passare dati tra componenti
 - usa `useState` per stato locale
@@ -230,6 +236,7 @@ Se vuoi aggiungere una nuova pagina o un endpoint:
 StudyOS è un progetto semplice ma ben strutturato: l'idea è mantenere codice ordinato, logico e facilmente estendibile. Se continui a rispettare la separazione tra frontend/backend, modelli/schemi/service e routing, il progetto rimarrà più semplice da capire e da sviluppare nel tempo.
 
 Se vuoi, in un secondo momento posso anche preparare una versione ancora più dettagliata con:
+
 - una mappa completa delle route del backend,
 - una mappa dei componenti React,
 - una checklist per nuove feature,
