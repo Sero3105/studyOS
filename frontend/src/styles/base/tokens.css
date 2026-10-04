@@ -1,3 +1,15 @@
+/**
+ * Design tokens globali.
+ *
+ * Per convenzione, i colori, i font e le variabili progettuali vengono definiti
+ * qui in un unico punto. Questo semplifica molto il refactoring del design,
+ * perché cambiare lo schema cromatico o il tipo di carattere non richiede di
+ * cercare in ogni file CSS.
+ *
+ * Le variabili in `:root` sono accessibili ovunque nel frontend, e i componenti
+ * fanno riferimento a esse tramite `var(--nome-variabile)`.
+ */
+
 :root {
   --text: #aab3c2;
   --text-muted: #707b8d;

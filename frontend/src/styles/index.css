@@ -1,3 +1,17 @@
+/**
+ * Entry point di tutti gli stili dell'applicazione frontend.
+ *
+ * Questo file centralizza l'importazione di tutti i fogli di stile, in modo che il
+ * progetto rimanga organizzato per aree logiche:
+ * - base: reset e variabili globali,
+ * - layout: struttura delle pagine,
+ * - componenti: sidebar, header, timer,
+ * - screen: stili specifici per pagine come dashboard e timer.
+ *
+ * La convenzione di separare i CSS per categoria rende più semplice mantenere e
+ * aggiornare l'interfaccia senza dover leggere un unico file gigante.
+ */
+
 @import './base/tokens.css';
 @import './base/reset.css';
 @import './layout/app-layout.css';

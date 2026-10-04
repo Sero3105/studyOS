@@ -1,3 +1,10 @@
+/**
+ * Stili specifici della pagina del timer.
+ *
+ * La pagina del Pomodoro usa un posizionamento particolare per la nota di testata
+ * e un allineamento centrale del timer stesso.
+ */
+
 .timer-page {
   position: relative;
   display: grid;

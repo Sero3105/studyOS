@@ -1,10 +1,34 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
+/**
+ * Props del timer Pomodoro.
+ *
+ * `timer` rappresenta la durata della sessione di lavoro in minuti.
+ * `pause` rappresenta la durata della pausa in minuti.
+ */
 interface PomodoroTimerProps {
   timer: number
   pause: number
 }
 
+/**
+ * Timer Pomodoro con ciclo Work/Break.
+ *
+ * Questo componente usa React state per gestire:
+ * - il tempo rimanente (`seconds`),
+ * - lo stato di esecuzione (`isRunning`),
+ * - la modalità corrente (`mode`: Work o Break).
+ *
+ * Il comportamento è:
+ * - quando il timer arriva a zero nella modalità `Work`, passa automaticamente a
+ *   `Break` e ricomincia la pausa;
+ * - quando la pausa termina, torna a `Work` e si ferma;
+ * - il pulsante Start/Pause avvia o mette in pausa il countdown;
+ * - Reset ripristina la sessione di lavoro iniziale.
+ *
+ * Per coordinare il cambio di modalità senza problemi di stale closure,
+ * `modeRef` viene usato come riferimento mutabile sincronizzato con lo state.
+ */
 function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
   const [seconds, setSeconds] = useState(timer * 60)
   const [isRunning, setIsRunning] = useState(false)
@@ -12,16 +36,14 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
 
   const modeRef = useRef<'Work' | 'Break'>(mode)
 
-  const totalSeconds = mode === 'Work'
-    ? timer * 60
-    : pause * 60
+  const totalSeconds = mode === 'Work' ? timer * 60 : pause * 60
 
-  // Keep the ref synchronized with the current mode
+  // Mantiene sincronizzato il ref della modalità con lo state attuale.
   useEffect(() => {
     modeRef.current = mode
   }, [mode])
 
-  // Timer
+  // Esegue il countdown ogni secondo quando il timer è attivo.
   useEffect(() => {
     if (!isRunning) {
       return
@@ -35,14 +57,12 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
           if (currentMode === 'Work') {
             setMode('Break')
             setIsRunning(true)
-
             return pause * 60
-          } else {
-            setMode('Work')
-            setIsRunning(false)
-
-            return timer * 60
           }
+
+          setMode('Work')
+          setIsRunning(false)
+          return timer * 60
         }
 
         return previousSeconds - 1
@@ -56,10 +76,9 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
 
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
-
   const percentage = seconds / totalSeconds
 
-  // SVG circle calculations
+  // Calcoli per il cerchio SVG del progresso del timer.
   const radius = 100
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference * (1 - percentage)
@@ -118,20 +137,23 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
       </div>
 
       <div className="timer-actions">
-      <button className="button button-primary" onClick={() => setIsRunning(!isRunning)}>
-        {isRunning ? 'Pause' : 'Start'}
-      </button>
+        <button
+          className="button button-primary"
+          onClick={() => setIsRunning(!isRunning)}
+        >
+          {isRunning ? 'Pause' : 'Start'}
+        </button>
 
-      <button
-        className="button button-secondary"
-        onClick={() => {
-          setIsRunning(false)
-          setSeconds(timer * 60)
-          setMode('Work')
-        }}
-      >
-        Reset
-      </button>
+        <button
+          className="button button-secondary"
+          onClick={() => {
+            setIsRunning(false)
+            setSeconds(timer * 60)
+            setMode('Work')
+          }}
+        >
+          Reset
+        </button>
       </div>
     </section>
   )

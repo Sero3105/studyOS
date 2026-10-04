@@ -1,3 +1,15 @@
+/**
+ * Layout principale dell'applicazione.
+ *
+ * Questa sezione definisce la struttura a due colonne:
+ * - la sidebar a sinistra,
+ * - l'area di contenuto a destra.
+ *
+ * `min-height: 100vh` fa sì che l'intera app occupi sempre l'altezza totale
+ * dello schermo; `flex: 1` permette al contenuto di riempire lo spazio
+ * disponibile in modo responsivo.
+ */
+
 .app-layout {
   display: flex;
   min-height: 100vh;

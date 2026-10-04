@@ -13,6 +13,19 @@ import {
   PanelLeftOpen,
 } from 'lucide-react'
 
+/**
+ * Sidebar di navigazione principale dell'applicazione.
+ *
+ * Questa componente gestisce due concetti importanti:
+ * - la navigazione tra le pagine principali,
+ * - lo stato di apertura/chiusura della sidebar (collapsed / expanded).
+ *
+ * `NavLink` è il componente giusto per collegamenti interni nel router: permette
+ * di applicare automaticamente classi CSS quando il link è attivo.
+ *
+ * Vengono usati anche alcuni iconi di `lucide-react` per rendere la navigazione
+ * più chiara dal punto di vista visivo.
+ */
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
 

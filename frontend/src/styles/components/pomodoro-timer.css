@@ -1,3 +1,11 @@
+/**
+ * Stili del timer Pomodoro.
+ *
+ * Il timer mostra un componente grafico circolare con progresso, testo centrale e
+ * pulsanti di controllo. La combinazione di `SVG` e CSS permette di creare un
+ * ring animato e molto leggibile senza dipendere da librerie esterne.
+ */
+
 .timer-panel {
   width: min(100%, 620px);
   padding: clamp(24px, 5vw, 48px);
