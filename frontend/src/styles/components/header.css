@@ -1,3 +1,11 @@
+/**
+ * Stili dell'header delle pagine.
+ *
+ * Qui si configurano il titolo, il sottotitolo e la nota di contesto visiva che
+ * appare in alto nelle schermate principali. L'uso di `clamp()` rende il testo
+ * responsive senza bisogno di media query complesse per il sizing.
+ */
+
 .page-header {
   display: flex;
   align-items: flex-start;

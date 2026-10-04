@@ -1,3 +1,11 @@
+/**
+ * Stili della sidebar.
+ *
+ * La sidebar è un elemento di navigazione che può essere aperta o compressa.
+ * La classe `.collapsed` modifica dimensioni e visibilità dei testi per creare
+ * un comportamento di minimizzazione elegante e accessibile.
+ */
+
 .sidebar {
   position: relative;
   width: 248px;

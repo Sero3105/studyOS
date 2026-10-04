@@ -1,3 +1,16 @@
+/**
+ * Reset base della UI.
+ *
+ * Qui si definiscono regole generali per normalizzare l'aspetto iniziale del
+ * browser e rendere l'interfaccia più uniforme su diversi sistemi.
+ *
+ * In particolare:
+ * - `box-sizing: border-box` rende i dimensionamenti più prevedibili,
+ * - `body` imposta sfondo e altezza minima,
+ * - i focus visibili dei controlli migliorano l'accessibilità,
+ * - i font ereditano da `:root` in modo coerente.
+ */
+
 :root {
   font-family: var(--sans);
   color: var(--text);

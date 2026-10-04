@@ -1,3 +1,10 @@
+/**
+ * Stili dell'area di contenuto principale.
+ *
+ * Questa classe appartiene alla struttura del layout e non alla singola pagina.
+ * È usata per centrare i contenuti e dare spazio verticale alla sezione attiva.
+ */
+
 .content-area {
   display: grid;
   flex: 1;
