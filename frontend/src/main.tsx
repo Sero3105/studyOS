@@ -1,10 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 
 import App from './App'
 import AppLayout from './layouts/AppLayout'
 import DashboardPage from './pages/DashboardPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import TimerPage from './pages/TimerPage'
 import './styles/index.css'
 
@@ -16,7 +18,7 @@ import './styles/index.css'
  * condiviso da tutte le pagine dentro una root route (`App`).
  *
  * Esempio di flusso:
- * - `/` -> DashboardPage
+ * - `/dashboard` -> DashboardPage
  * - `/timer` -> TimerPage
  *
  * Il layout `AppLayout` è usato per mostrare la sidebar e il contenuto principale,
@@ -27,10 +29,22 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       {
+        path: '/',
+        element: <Navigate to="/login" replace />,
+      },
+      {
+        path: '/login',
+        element: <LoginPage />,
+      },
+      {
+        path: '/register',
+        element: <RegisterPage />,
+      },
+      {
         element: <AppLayout />,
         children: [
           {
-            path: '/',
+            path: '/dashboard',
             element: <DashboardPage />,
           },
           {
