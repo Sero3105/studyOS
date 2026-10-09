@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import TimerPage from './pages/TimerPage'
+import { AuthProvider } from './context/AuthProvider'
 import './styles/index.css'
 
 /**
@@ -60,6 +61,8 @@ const router = createBrowserRouter([
 // Inizializzazione dell'applicazione React nel DOM.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 )

@@ -1,4 +1,5 @@
 import HeaderNote from './HeaderNote'
+import { Plus } from 'lucide-react'
 
 /**
  * Props del componente Header.
@@ -9,6 +10,7 @@ import HeaderNote from './HeaderNote'
  */
 interface HeaderProps {
   userName: string
+  onNewSession: () => void
 }
 
 /**
@@ -18,14 +20,23 @@ interface HeaderProps {
  * business logic. In un'app più grande potrebbe includere dati di calendario,
  * statistiche, o accessi rapidi.
  */
-function Header({ userName }: HeaderProps) {
+function Header({ userName, onNewSession }: HeaderProps) {
   return (
     <header className="page-header">
-      <div>
+      <div className="page-header-copy">
         <p className="eyebrow">Today&apos;s focus</p>
         <h1>Welcome back, {userName}</h1>
+        <p className="page-header-intro">
+          Organizza il tuo tempo, ritrova il ritmo e continua a fare progressi.
+        </p>
       </div>
-      <HeaderNote>Focus. Learn. Improve.</HeaderNote>
+      <div className="page-header-actions">
+        <HeaderNote>Focus. Learn. Improve.</HeaderNote>
+        <button className="primary-action" type="button" onClick={onNewSession}>
+          <Plus size={17} aria-hidden="true" />
+          Nuova sessione
+        </button>
+      </div>
     </header>
   )
 }

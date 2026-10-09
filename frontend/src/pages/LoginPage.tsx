@@ -3,40 +3,44 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { SyntheticEvent } from 'react'
 import { login } from '../services/authService'
+import { useAuth } from '../context/useAuth'
 
 function LoginPage() {
   const navigate = useNavigate()
-const [error, setError] = useState('')
+  const { setUser } = useAuth()
+  const [error, setError] = useState('')
 
-const handleLogin = async (event: SyntheticEvent<HTMLFormElement>) => {
-  event.preventDefault()
-  setError('')
+  const handleLogin = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError('')
 
-  const formData = new FormData(event.currentTarget)
+    const formData = new FormData(event.currentTarget)
 
-  const email = String(formData.get('email') ?? '').trim()
-  const password = String(formData.get('password') ?? '')
+    const email = String(formData.get('email') ?? '').trim()
+    const password = String(formData.get('password') ?? '')
 
-  if (!email || !password) {
-    setError('Inserisci email e password.')
-    return
+    if (!email || !password) {
+      setError('Inserisci email e password.')
+      return
+    }
+
+    try {
+      const authenticatedUser = await login({
+        email,
+        password,
+      })
+
+      setUser(authenticatedUser)
+      navigate('/dashboard')
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Si è verificato un errore durante il login.',
+      )
+    }
   }
 
-  try {
-    await login({
-      email,
-      password,
-    })
-
-    navigate('/dashboard')
-  } catch (err) {
-    setError(
-      err instanceof Error
-        ? err.message
-        : 'Si è verificato un errore durante il login.',
-    )
-  }
-}
   return (
     <main className="auth-page">
       <div className="auth-decoration auth-decoration-left" aria-hidden="true" />
