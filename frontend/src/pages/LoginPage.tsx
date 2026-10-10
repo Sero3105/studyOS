@@ -2,12 +2,11 @@ import { LoginForm } from '../components/AuthForm'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { SyntheticEvent } from 'react'
-import { login } from '../services/authService'
 import { useAuth } from '../context/useAuth'
 
 function LoginPage() {
   const navigate = useNavigate()
-  const { setUser } = useAuth()
+  const { login } = useAuth()
   const [error, setError] = useState('')
 
   const handleLogin = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -25,12 +24,7 @@ function LoginPage() {
     }
 
     try {
-      const authenticatedUser = await login({
-        email,
-        password,
-      })
-
-      setUser(authenticatedUser)
+      await login(email, password)
       navigate('/dashboard')
     } catch (err) {
       setError(

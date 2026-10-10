@@ -13,20 +13,29 @@ Questo permette di mantenere il codice organizzato per area funzionale
 (ad esempio autenticazione, utenti, ecc.).
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.userRegister_router import router as user_register_router
 from routers.auth_router import router as auth_router
+import config
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    config.validate_security_settings()
+    yield
 
 
 # Istanza principale dell'applicazione.
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # Configurazione CORS per consentire le richieste dal frontend React.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=list(config.FRONTEND_ORIGINS),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
