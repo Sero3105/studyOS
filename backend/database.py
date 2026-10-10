@@ -38,6 +38,7 @@ engine = create_engine(
 # IMPORT NECESSARIO: senza questo import, SQLAlchemy non rileverebbe il modello
 # `User` e quindi non sarebbe in grado di creare la tabella corrispondente.
 from models.user_models import User
+from models.auth_session_models import AuthSession
 
 
 # Crea tutte le tabelle definite dai modelli che ereditano da `Base`.

@@ -17,6 +17,7 @@ nel database configurato dal progetto.
 """
 
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 from database import Base
 
 
@@ -49,3 +50,7 @@ class User(Base):
     # Password già trasformata in hash. Non memorizziamo mai la password in chiaro.
     # L'hashing avviene prima del salvataggio tramite il service di creazione utente.
     password_hash = Column(String, nullable=False)
+
+    auth_sessions = relationship(
+        "AuthSession", back_populates="user", cascade="all, delete-orphan"
+    )

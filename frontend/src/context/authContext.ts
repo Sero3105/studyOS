@@ -1,5 +1,4 @@
 import { createContext } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
 
 export interface User {
   id: number
@@ -10,7 +9,9 @@ export interface User {
 
 export interface AuthContextValue {
   user: User | null
-  setUser: Dispatch<SetStateAction<User | null>>
+  login: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
+  isLoading: boolean
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
