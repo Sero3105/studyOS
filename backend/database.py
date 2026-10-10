@@ -39,6 +39,7 @@ engine = create_engine(
 # `User` e quindi non sarebbe in grado di creare la tabella corrispondente.
 from models.user_models import User
 from models.auth_session_models import AuthSession
+from models.exam_models import Exam
 
 
 # Crea tutte le tabelle definite dai modelli che ereditano da `Base`.

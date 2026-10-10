@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import TimerPage from './pages/TimerPage'
+import ExamsPage from './pages/ExamsPage'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import './styles/index.css'
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
             path: '/timer',
             element: <TimerPage />,
           },
+          { path: '/exams', element: <ExamsPage /> },
         ],
       },
     ],

@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.userRegister_router import router as user_register_router
 from routers.auth_router import router as auth_router
+from routers.exam_router import router as exam_router
 import config
 
 
@@ -46,3 +47,4 @@ app.include_router(user_register_router)
 
 # Registrazione del router di autenticazione.
 app.include_router(auth_router)
+app.include_router(exam_router)
