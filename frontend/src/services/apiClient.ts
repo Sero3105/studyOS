@@ -5,6 +5,12 @@ let csrfToken: string | null = null
 let refreshHandler: (() => Promise<boolean>) | null = null
 let pendingRefresh: Promise<boolean> | null = null
 
+function csrfFromCookie(): string | null {
+  const prefix = 'studyos_csrf='
+  const entry = document.cookie.split('; ').find((cookie) => cookie.startsWith(prefix))
+  return entry ? decodeURIComponent(entry.slice(prefix.length)) : null
+}
+
 export class ApiError extends Error {
   readonly status?: number
 
@@ -35,12 +41,18 @@ async function recoverSession(): Promise<boolean> {
   return pendingRefresh
 }
 
+/** Shares startup and 401 recovery refreshes, including React StrictMode mounts. */
+export function restoreAuthentication(): Promise<boolean> {
+  return recoverSession()
+}
+
 export async function apiRequest<T>(path: string, options: RequestInit = {}, retryAfterRefresh = true): Promise<T> {
   const headers = new Headers(options.headers)
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-  if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(options.method?.toUpperCase() ?? 'GET')) {
-    headers.set('X-CSRF-Token', csrfToken)
+  const currentCsrf = csrfToken ?? csrfFromCookie()
+  if (currentCsrf && !['GET', 'HEAD', 'OPTIONS'].includes(options.method?.toUpperCase() ?? 'GET')) {
+    headers.set('X-CSRF-Token', currentCsrf)
   }
   let response: Response
   try {

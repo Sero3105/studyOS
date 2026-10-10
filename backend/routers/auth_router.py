@@ -21,6 +21,7 @@ from services.token_service import (
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 REFRESH_COOKIE_NAME = "studyos_refresh"
+CSRF_COOKIE_NAME = "studyos_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 
 
@@ -36,6 +37,19 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
     )
 
 
+def _set_csrf_cookie(response: Response, token: str) -> None:
+    """Expose only the anti-CSRF value to the SPA; refresh stays HttpOnly."""
+    response.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=token,
+        httponly=False,
+        secure=config.APP_ENV == "production",
+        samesite="lax",
+        max_age=config.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/",
+    )
+
+
 def _clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(
         key=REFRESH_COOKIE_NAME,
@@ -43,6 +57,12 @@ def _clear_refresh_cookie(response: Response) -> None:
         secure=config.APP_ENV == "production",
         samesite="lax",
         path="/auth",
+    )
+    response.delete_cookie(
+        key=CSRF_COOKIE_NAME,
+        secure=config.APP_ENV == "production",
+        samesite="lax",
+        path="/",
     )
 
 
@@ -55,6 +75,7 @@ def login_user(user_data: UserLogin, response: Response, db: Session = Depends(g
 
     refresh_token, csrf_token, _ = create_refresh_session(user.id, db)
     _set_refresh_cookie(response, refresh_token)
+    _set_csrf_cookie(response, csrf_token)
     return TokenResponse(
         access_token=create_access_token(user.id),
         csrf_token=csrf_token,
@@ -84,6 +105,7 @@ def refresh_access_token(
         _clear_refresh_cookie(response)
         raise HTTPException(status_code=401, detail="Refresh session is invalid or expired")
     _set_refresh_cookie(response, new_refresh_token)
+    _set_csrf_cookie(response, new_csrf_token)
     return TokenResponse(
         access_token=create_access_token(user.id),
         csrf_token=new_csrf_token,
