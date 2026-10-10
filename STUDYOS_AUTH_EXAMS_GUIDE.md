@@ -143,6 +143,10 @@ Pytest è dichiarato in `backend/requirements.txt`, ma una suite automatizzata d
 
 ## 10. Stato effettivo
 
+### Diagnosi refresh dopo reload
+
+I `401` nei log erano il caso normale di avvio senza cookie di sessione, amplificato in sviluppo da React StrictMode: i due mount inviavano direttamente due ripristini. I `403` erano invece reali: dopo CMD+R il CSRF esisteva solo nella memoria JavaScript, quindi `/auth/refresh` riceveva il refresh HttpOnly ma nessun header CSRF. Il refresh resta HttpOnly; `auth_router.py` ora invia anche `studyos_csrf`, cookie non-HttpOnly con lo stesso valore hashato nella sessione. `apiClient.ts` lo legge solo per inviare `X-CSRF-Token`; `restoreAuthentication()` condivide un solo refresh in corso tra mount StrictMode e richieste concorrenti. Un 401 senza cookie resta un logout controllato, senza retry.
+
 Creati: `.env.example`, dipendenza auth, modello sessioni, `requirements.txt`, schema/token service auth, `ProtectedRoute`, modello/schema/service/router Exams, service/pagina/componenti/CSS Exams. Modificati: config, database, User, main, auth router, contesto e client auth, routing e CSS index.
 
 Commit pubblicati e verificati: `54f709c feat(auth): implement JWT authentication and secure sessions`; `318f487 feat(exams): implement authenticated exam management MVP`, entrambi su `origin/feat-auth-exams-mvp`.

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AuthContext } from './authContext'
 import type { User } from './authContext'
 import { login as loginRequest, logout as logoutRequest, refreshSession } from '../services/authService'
-import { setRefreshHandler } from '../services/apiClient'
+import { restoreAuthentication, setRefreshHandler } from '../services/apiClient'
 
 interface AuthProviderProps { children: ReactNode }
 
@@ -16,7 +16,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
   useEffect(() => {
     setRefreshHandler(restoreSession)
-    queueMicrotask(() => { void restoreSession().finally(() => setIsLoading(false)) })
+    queueMicrotask(() => { void restoreAuthentication().finally(() => setIsLoading(false)) })
     return () => setRefreshHandler(null)
   }, [restoreSession])
   const login = useCallback(async (email: string, password: string) => { setUser(await loginRequest({ email, password })) }, [])
