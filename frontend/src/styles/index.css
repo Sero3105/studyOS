@@ -3,20 +3,21 @@
  *
  * Questo file centralizza l'importazione di tutti i fogli di stile, in modo che il
  * progetto rimanga organizzato per aree logiche:
- * - base: reset e variabili globali,
- * - layout: struttura delle pagine,
- * - componenti: sidebar, header, timer,
- * - screen: stili specifici per pagine come dashboard e timer.
+ * - base: token e reset,
+ * - layout: struttura dell'app e intestazione di pagina,
+ * - componenti: elementi condivisi, sidebar, grafico, timer,
+ * - screen: stili specifici delle singole pagine.
  *
- * La convenzione di separare i CSS per categoria rende più semplice mantenere e
- * aggiornare l'interfaccia senza dover leggere un unico file gigante.
+ * L'ordine conta: i token vengono prima di tutto, i componenti condivisi prima
+ * delle schermate, così ogni pagina può specializzare senza ridefinire.
  */
 
 @import './base/tokens.css';
 @import './base/reset.css';
 @import './layout/app-layout.css';
+@import './components/ui.css';
 @import './components/sidebar.css';
-@import './components/header.css';
+@import './components/week-chart.css';
 @import './components/pomodoro-timer.css';
 @import './screens/dashboard.css';
 @import './screens/timer.css';

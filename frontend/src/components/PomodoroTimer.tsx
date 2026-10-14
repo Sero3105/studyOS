@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Pause, Play, RotateCcw } from 'lucide-react'
 
 /**
  * Props del timer Pomodoro.
@@ -24,11 +25,15 @@ interface PomodoroTimerProps {
  * - quando il timer arriva a zero nella modalità `Work`, passa automaticamente a
  *   `Break` e ricomincia la pausa;
  * - quando la pausa termina, torna a `Work` e si ferma;
- * - il pulsante Start/Pause avvia o mette in pausa il countdown;
- * - Reset ripristina la sessione di lavoro iniziale.
+ * - il pulsante principale avvia, mette in pausa o riprende il countdown;
+ * - Ricomincia ripristina la sessione di lavoro iniziale.
  *
  * Per coordinare il cambio di modalità senza problemi di stale closure,
  * `modeRef` viene usato come riferimento mutabile sincronizzato con lo state.
+ *
+ * La resa grafica mette il countdown al centro di un quadrante grande: è
+ * l'unico elemento in primo piano; i controlli stanno subito sotto, il
+ * pulsante principale più grande degli altri.
  */
 function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
   const savedRef = useRef(false)
@@ -85,75 +90,69 @@ function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
   const percentage = seconds / totalSeconds
+  const clock = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  const modeLabel = mode === 'Work' ? 'Studio' : 'Pausa'
+  const hasStarted = seconds < totalSeconds
+
+  // Il titolo della scheda mostra il tempo rimasto: utile con la scheda in background.
+  useEffect(() => {
+    document.title = `${clock} · ${modeLabel} · StudyOS`
+  }, [clock, modeLabel])
 
   // Calcoli per il cerchio SVG del progresso del timer.
-  const radius = 100
+  const radius = 108
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference * (1 - percentage)
 
+  const primaryLabel = isRunning ? 'Pausa' : hasStarted ? 'Riprendi' : 'Avvia'
+
   return (
-    <section className="timer-panel" aria-label="Pomodoro timer">
-      <div className="timer-heading">
-        <div>
-          <p className="eyebrow">Deep work session</p>
-          <h2>{mode === 'Work' ? 'Time to focus' : 'Take a breather'}</h2>
-        </div>
-        <span className="mode-badge">{mode}</span>
-      </div>
-
-      <div className="timer-ring">
-        <svg
-          className="timer-svg"
-          width="240"
-          height="240"
-          viewBox="0 0 240 240"
-          role="img"
-          aria-label={`${minutes} minutes and ${remainingSeconds} seconds remaining`}
-        >
-          <circle
-            className="ring-track"
-            cx="120"
-            cy="120"
-            r={radius}
-            fill="none"
-            strokeWidth="12"
-          />
-
+    <section className={`timer-stage${mode === 'Break' ? ' is-break' : ''}`} aria-label="Timer Pomodoro">
+      <div className="timer-dial">
+        <svg className="timer-svg" viewBox="0 0 240 240" aria-hidden="true">
+          <circle className="ring-track" cx="120" cy="120" r={radius} fill="none" strokeWidth="6" />
           <circle
             className="ring-progress"
             cx="120"
             cy="120"
             r={radius}
             fill="none"
-            strokeWidth="12"
+            strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             transform="rotate(-90 120 120)"
           />
-
-          <text
-            className="timer-value"
-            x="120"
-            y="120"
-            textAnchor="middle"
-            dominantBaseline="middle"
-          >
-            {minutes}:{remainingSeconds.toString().padStart(2, '0')}
-          </text>
         </svg>
+        <div className="timer-readout">
+          <span className="timer-mode">{modeLabel}</span>
+          <span
+            className="timer-time num"
+            role="timer"
+            aria-label={`${minutes} minuti e ${remainingSeconds} secondi rimanenti, ${modeLabel.toLowerCase()}`}
+          >
+            {clock}
+          </span>
+          <span className="timer-next">
+            {mode === 'Work' ? `Poi ${pause} min di pausa` : `Poi ${timer} min di studio`}
+          </span>
+        </div>
       </div>
 
-      <div className="timer-actions">
+      <div className="timer-controls">
         <button
-          className="button button-primary"
+          className="btn btn-primary btn-lg timer-primary"
+          type="button"
           onClick={() => setIsRunning(!isRunning)}
         >
-          {isRunning ? 'Pause' : 'Start'}
+          {isRunning ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+          {primaryLabel}
         </button>
 
         <button
-          className="button button-secondary"
+          className="btn btn-secondary btn-lg"
+          type="button"
+          disabled={!hasStarted && mode === 'Work'}
           onClick={() => {
             setIsRunning(false)
             setSeconds(timer * 60)
@@ -161,7 +160,8 @@ function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
             savedRef.current = false
           }}
         >
-          Reset
+          <RotateCcw aria-hidden="true" />
+          Ricomincia
         </button>
       </div>
     </section>

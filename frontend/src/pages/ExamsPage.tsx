@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react'
-import { CalendarPlus, GraduationCap, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import Segmented from '../components/ui/Segmented'
+import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
-import ExamList from '../components/exams/ExamList'
+import ExamList, { NextExam } from '../components/exams/ExamList'
 import { createExam, deleteExam, getExams, updateExam } from '../services/examService'
 import type { CreateExamPayload, Exam } from '../services/examService'
+import { daysUntil, relativeDay } from '../utils/dates'
+import { errorMessage } from '../utils/errors'
+
+type ExamFilter = 'upcoming' | 'archive' | 'all'
+
+/** In arrivo: non ancora sostenuto e con data da oggi in poi. */
+function isUpcoming(exam: Exam): boolean {
+  return (exam.status === 'planned' || exam.status === 'in_progress') && daysUntil(exam.exam_date) >= 0
+}
 
 function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
@@ -11,17 +23,14 @@ function ExamsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingExam, setEditingExam] = useState<Exam | null>(null)
   const [error, setError] = useState('')
+  const [filter, setFilter] = useState<ExamFilter>('upcoming')
 
   const loadExams = async () => {
     try {
       setError('')
       setExams(await getExams())
     } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : 'Impossibile caricare gli esami',
-      )
+      setError(errorMessage(loadError, 'Impossibile caricare gli esami'))
     } finally {
       setLoading(false)
     }
@@ -51,89 +60,102 @@ function ExamsPage() {
   }
 
   const handleDelete = async (exam: Exam) => {
-    await deleteExam(exam.id)
-    setExams((currentExams) => currentExams.filter((x) => x.id !== exam.id))
+    try {
+      await deleteExam(exam.id)
+      setExams((currentExams) => currentExams.filter((x) => x.id !== exam.id))
+    } catch (deleteError) {
+      setError(errorMessage(deleteError, 'Eliminazione non riuscita'))
+    }
   }
 
+  const openCreate = () => { setEditingExam(null); setIsModalOpen(true) }
+  const openEdit = (exam: Exam) => { setEditingExam(exam); setIsModalOpen(true) }
+
+  const upcoming = sortExams(exams.filter(isUpcoming))
+  const archive = sortExams(exams.filter((exam) => !isUpcoming(exam))).reverse()
+  const visible = filter === 'upcoming' ? upcoming : filter === 'archive' ? archive : sortExams(exams)
+  const [next, ...rest] = upcoming
+
+  const description = loading
+    ? 'Le tue prove, in ordine di data.'
+    : next
+      ? `${upcoming.length} in arrivo · il prossimo è ${relativeDay(next.exam_date).toLowerCase()}`
+      : 'Nessun esame in arrivo.'
+
   return (
-    <section className="dashboard-page exams-page">
-      <div className="exams-hero">
-        <div className="exams-hero-copy">
-          <div className="exams-title-row">
-            <span className="exams-title-icon" aria-hidden="true">
-              <GraduationCap size={19} />
-            </span>
-            <div>
-              <p className="section-kicker">Library / Exams</p>
-              <h1>I tuoi esami</h1>
-            </div>
-          </div>
-          <p className="exams-intro">
-            Tieni sotto controllo le prossime prove e organizza meglio la tua
-            preparazione.
-          </p>
-        </div>
+    <div className="page exams-page">
+      <PageHeader
+        title="Esami"
+        description={description}
+        actions={
+          <button className="btn btn-primary" type="button" onClick={openCreate}>
+            <Plus aria-hidden="true" />
+            Nuovo esame
+          </button>
+        }
+      />
 
-        <button
-          className="button exams-primary-action"
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Plus size={17} aria-hidden="true" />
-          Nuovo esame
-        </button>
-      </div>
-
-      <div className="exams-summary" aria-label="Riepilogo esami">
-        <div>
-          <span className="exams-summary-label">Totale esami</span>
-          <strong>{exams.length}</strong>
-        </div>
-        <div className="exams-summary-divider" />
-        <p>
-          {exams.length
-            ? 'Mantieni il ritmo e preparati con anticipo.'
-            : 'Aggiungi il primo esame per iniziare a pianificare.'}
-        </p>
-      </div>
+      {error && <ErrorNotice message={error} onRetry={exams.length ? undefined : () => void loadExams()} onDismiss={exams.length ? () => setError('') : undefined} />}
 
       {loading ? (
-        <div className="dashboard-card exams-state-card">
-          <div className="exams-loading-dot" aria-hidden="true" />
-          <p>Caricamento esami…</p>
-        </div>
-      ) : error ? (
-        <div className="dashboard-card exams-state-card exams-error-card" role="alert">
-          <h2>Non riusciamo a caricare gli esami</h2>
-          <p>{error}</p>
-          <button className="button button-secondary" type="button" onClick={loadExams}>
-            Riprova
-          </button>
-        </div>
-      ) : exams.length ? (
-        <ExamList exams={exams} onEdit={(exam) => { setEditingExam(exam); setIsModalOpen(true) }} onDelete={(exam) => { void handleDelete(exam) }} />
-      ) : (
-        <div className="dashboard-card exams-empty-card">
-          <span className="exams-empty-icon" aria-hidden="true">
-            <CalendarPlus size={25} />
-          </span>
-          <div>
-            <p className="section-kicker">Il tuo calendario inizia qui</p>
-            <h2>Nessun esame salvato</h2>
-            <p>
-              Inserisci la prossima prova per avere sempre a portata di mano
-              data, materia e luogo.
-            </p>
-            <button
-              className="button exams-empty-action"
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus size={16} aria-hidden="true" />
-              Aggiungi il primo esame
-            </button>
+        <LoadingRows label="Caricamento esami" />
+      ) : exams.length === 0 && !error ? (
+        <section className="panel">
+          <EmptyState
+            title="Nessun esame salvato"
+            action={
+              <button className="btn btn-primary" type="button" onClick={openCreate}>
+                <Plus aria-hidden="true" />
+                Aggiungi il primo esame
+              </button>
+            }
+          >
+            Inserisci la prossima prova: vedrai quanti giorni mancano qui e nella dashboard.
+          </EmptyState>
+        </section>
+      ) : exams.length > 0 && (
+        <section className="page-section" aria-label="Elenco esami">
+          <div className="toolbar">
+            <Segmented
+              label="Filtra esami"
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: 'upcoming', label: 'In arrivo', count: upcoming.length },
+                { value: 'archive', label: 'Archivio', count: archive.length },
+                { value: 'all', label: 'Tutti', count: exams.length },
+              ]}
+            />
           </div>
-        </div>
+
+          {filter === 'upcoming' ? (
+            next ? (
+              <>
+                <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} />
+                {rest.length > 0 && (
+                  <div className="page-section">
+                    <h2 className="section-title">Più avanti</h2>
+                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} />
+                  </div>
+                )}
+              </>
+            ) : (
+              <section className="panel">
+                <EmptyState title="Nessun esame in arrivo">
+                  Gli esami passati o già sostenuti sono nell'archivio.
+                </EmptyState>
+              </section>
+            )
+          ) : visible.length > 0 ? (
+            <ExamList exams={visible} onEdit={openEdit} onDelete={handleDelete} />
+          ) : (
+            <section className="panel">
+              <EmptyState title="L'archivio è vuoto">
+                Qui finiscono gli esami con data passata o con esito registrato.
+              </EmptyState>
+            </section>
+          )}
+        </section>
       )}
 
       {isModalOpen && (
@@ -151,7 +173,7 @@ function ExamsPage() {
           } : undefined}
         />
       )}
-    </section>
+    </div>
   )
 }
 

@@ -1,15 +1,198 @@
-.activity-bars { display: flex; gap: 0.5rem; align-items: end; height: 120px; }
-.activity-bar { flex: 1; display: grid; gap: 0.35rem; justify-items: center; height: 100%; align-content: end; }
-.activity-bar span { display: block; width: 100%; max-width: 34px; background: var(--accent, var(--accent)); border-radius: 6px 6px 0 0; }
-.activity-bar small { font-size: 0.7rem; opacity: 0.7; }
-.hbar-list { display: grid; gap: 10px; margin: 12px 0 20px; }
-.hbar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr 64px; gap: 12px; align-items: center; font-size: 0.82rem; }
-.hbar-track { display: block; height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-.hbar-track span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
-.hbar-value { text-align: right; color: var(--text-strong); }
-.chart-bars { display: flex; gap: 10px; align-items: stretch; height: 170px; margin-top: 14px; }
-.chart-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; min-width: 0; }
-.chart-value { min-height: 1.1em; color: var(--text-strong); font-size: 0.75rem; font-weight: 700; }
-.chart-column { width: 100%; max-width: 44px; border-radius: 6px 6px 3px 3px; background: var(--surface-3); }
-.chart-column.chart-today { background: var(--accent); }
-.chart-label { color: var(--text-muted); font-size: 0.72rem; text-transform: capitalize; }
+/**
+ * Statistiche: cifre in alto (il totale guida), poi grafico e avanzamento
+ * affiancati 2:1, poi due classifiche gemelle, infine gli obiettivi.
+ */
+
+/* Cifre */
+
+.figures {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr);
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+.figure {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.figure-label {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.figure-value {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+}
+
+.figure-lead {
+  align-content: center;
+  padding-right: var(--space-6);
+  border-right: 1px solid var(--line);
+}
+
+.figure-lead .figure-value {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+}
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-5);
+  margin: 0;
+}
+
+/* Grafico + avanzamento */
+
+.stats-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  align-items: stretch;
+  gap: var(--space-5);
+}
+
+.progress-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+}
+
+.progress-stat {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.progress-stat-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.progress-stat-line .num {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+/* Classifiche */
+
+.stats-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.ranked {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ranked-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.9fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.ranked-name {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranked-track {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+}
+
+.ranked-track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--line-strong);
+}
+
+.ranked-row:first-child .ranked-track span {
+  background: var(--accent);
+}
+
+.ranked-value {
+  display: flex;
+  min-width: 96px;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  color: var(--text-strong);
+}
+
+.ranked-share {
+  width: 3.2em;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* Obiettivi */
+
+.goal-stat-bar {
+  width: min(240px, 30%);
+}
+
+.goal-stat-percent {
+  width: 3.5em;
+  color: var(--text-strong);
+  font-weight: 600;
+  text-align: right;
+}
+
+@media (max-width: 1000px) {
+  .figures {
+    grid-template-columns: 1fr;
+  }
+
+  .figure-lead {
+    padding: 0 0 var(--space-5);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .stats-split,
+  .stats-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .figures {
+    padding: var(--space-5);
+  }
+
+  .figure-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .goal-stat {
+    flex-wrap: wrap;
+  }
+
+  .goal-stat .row-main {
+    flex-basis: 100%;
+  }
+
+  .goal-stat-bar {
+    width: auto;
+    flex: 1;
+  }
+}

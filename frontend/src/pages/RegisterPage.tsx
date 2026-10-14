@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AuthLayout from '../components/AuthLayout'
 import { RegisterForm } from '../components/AuthForm'
 import { register } from '../services/authService'
 import type { SyntheticEvent } from 'react'
@@ -71,7 +72,7 @@ function RegisterPage() {
         password,
       })
 
-      navigate('/login')
+      navigate('/login', { state: { registered: true } })
     } catch (err) {
       setError(
         err instanceof Error
@@ -82,24 +83,9 @@ function RegisterPage() {
   }
 
   return (
-    <main className="auth-page">
-      <div className="auth-decoration auth-decoration-left" aria-hidden="true" />
-      <div className="auth-decoration auth-decoration-right" aria-hidden="true" />
-
-      <section className="auth-card auth-card-register" aria-labelledby="register-title">
-        <div className="auth-brand" aria-label="StudyOS">
-          <span className="brand-icon" aria-hidden="true">S</span>
-          <span>StudyOS</span>
-        </div>
-        <div className="auth-heading">
-          <p className="eyebrow">Inizia il tuo percorso</p>
-          <h1 id="register-title">Costruisci il tuo focus.</h1>
-          <p>Crea il tuo account e organizza ogni sessione di studio in un unico spazio.</p>
-        </div>
-
-        <RegisterForm onSubmit={handleRegister} error={error} />
-      </section>
-    </main>
+    <AuthLayout title="Crea il tuo account" description="Un unico spazio per sessioni, esami, task e progressi.">
+      <RegisterForm onSubmit={handleRegister} error={error} />
+    </AuthLayout>
   )
 }
 

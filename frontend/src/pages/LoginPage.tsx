@@ -1,11 +1,14 @@
 import { LoginForm } from '../components/AuthForm'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import AuthLayout from '../components/AuthLayout'
 import type { SyntheticEvent } from 'react'
 import { useAuth } from '../context/useAuth'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const justRegistered = (location.state as { registered?: boolean } | null)?.registered === true
   const { login } = useAuth()
   const [error, setError] = useState('')
 
@@ -36,24 +39,12 @@ function LoginPage() {
   }
 
   return (
-    <main className="auth-page">
-      <div className="auth-decoration auth-decoration-left" aria-hidden="true" />
-      <div className="auth-decoration auth-decoration-right" aria-hidden="true" />
-
-      <section className="auth-card" aria-labelledby="login-title">
-        <div className="auth-brand" aria-label="StudyOS">
-          <span className="brand-icon" aria-hidden="true">S</span>
-          <span>StudyOS</span>
-        </div>
-        <div className="auth-heading">
-          <p className="eyebrow">Bentornato</p>
-          <h1 id="login-title">Riprendi il tuo focus.</h1>
-          <p>Accedi al tuo spazio di studio e continua da dove avevi lasciato.</p>
-        </div>
-
-        <LoginForm onSubmit={handleLogin} error={error} />
-      </section>
-    </main>
+    <AuthLayout title="Accedi" description="Bentornato. Riprendi da dove avevi lasciato.">
+      {justRegistered && !error && (
+        <p className="notice notice-success" role="status">Account creato. Accedi con le tue credenziali.</p>
+      )}
+      <LoginForm onSubmit={handleLogin} error={error} />
+    </AuthLayout>
   )
 }
 

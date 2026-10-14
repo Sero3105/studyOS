@@ -1,19 +1,145 @@
-.inline-create { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; }
-.inline-create label { display: grid; gap: 0.35rem; flex: 1 1 220px; }
-.inline-create input { padding: 0.55rem 0.7rem; border: 1px solid var(--border, var(--border)); border-radius: 8px; background: var(--surface, var(--surface)); color: inherit; }
-.card-list { display: grid; gap: 1rem; }
-.card-row-between { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.icon-action { background: none; border: 0; cursor: pointer; color: inherit; opacity: 0.7; padding: 0.25rem; }
-.icon-action:hover { opacity: 1; }
-.topic-list { list-style: none; margin: 0.75rem 0; padding: 0; display: grid; gap: 0.4rem; }
-.topic-list li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
-.topic-list label { display: flex; gap: 0.5rem; align-items: center; cursor: pointer; }
-.done-text { text-decoration: line-through; opacity: 0.65; }
-.subjects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-@media (max-width: 900px) { .subjects-grid { grid-template-columns: 1fr; } }
-.goals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-.goal-done { color: var(--success); background: var(--success-bg); border: 1px solid var(--success); border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; font-weight: 700; }
-.history-day { display: grid; gap: var(--space-3); }
-.history-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: var(--space-4); }
-.history-day-head h2 { margin: 0; font-size: 1rem; color: var(--text-strong); }
-@media (max-width: 900px) { .goals-grid { grid-template-columns: 1fr; } }
+/**
+ * Materie: indice a sinistra (larghezza fissa), dettaglio a destra.
+ * Sotto i 900px l'indice sta sopra al dettaglio.
+ */
+
+.subjects-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.subject-index {
+  position: sticky;
+  top: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.subject-nav {
+  display: grid;
+  gap: 2px;
+  margin: 0 calc(var(--space-3) * -1);
+}
+
+.subject-nav-item {
+  display: grid;
+  width: 100%;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-s);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+  transition: background var(--duration) var(--ease);
+}
+
+.subject-nav-item:hover {
+  background: var(--surface-2);
+}
+
+.subject-nav-item[aria-current='true'] {
+  background: var(--surface-3);
+}
+
+.subject-nav-name {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject-nav-meta {
+  margin-top: -4px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.subject-nav-item .progress {
+  height: 4px;
+}
+
+.subject-detail {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.subject-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.subject-detail-head h2 {
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+}
+
+.subject-detail-head .panel-meta {
+  margin-top: var(--space-2);
+}
+
+.subject-detail-head .row-actions {
+  gap: var(--space-2);
+}
+
+.topic-label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.subjects-empty {
+  display: grid;
+  max-width: 640px;
+  gap: var(--space-2);
+  padding-bottom: var(--space-6);
+}
+
+/* Riga "campo + pulsante" usata per aggiungere materie e argomenti */
+
+.inline-form {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.inline-form .input {
+  min-width: 0;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .subjects-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-index {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .subject-detail {
+    padding: var(--space-5);
+  }
+
+  .subject-detail-head {
+    flex-direction: column;
+  }
+
+  .subject-detail-head .row-actions {
+    width: 100%;
+  }
+
+  .subject-detail-head .btn-primary {
+    flex: 1;
+  }
+}

@@ -1,36 +1,166 @@
 /**
- * Layout principale dell'applicazione.
+ * Struttura dell'applicazione.
  *
- * Questa sezione definisce la struttura a due colonne:
- * - la sidebar a sinistra,
- * - l'area di contenuto a destra.
- *
- * `min-height: 100vh` fa sì che l'intera app occupi sempre l'altezza totale
- * dello schermo; `flex: 1` permette al contenuto di riempire lo spazio
- * disponibile in modo responsivo.
+ * Desktop: sidebar fissa a sinistra (larga o a icone) e contenuto a destra
+ * con larghezza massima e margini uguali per tutte le route.
+ * Mobile (≤ 800px): barra superiore compatta; la sidebar diventa un pannello.
  */
 
-.app-layout {
-  display: flex;
-  min-height: 100vh;
+.app-shell {
+  min-height: 100dvh;
   color: var(--text);
 }
 
-.main-area {
+.content {
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: var(--sidebar-width);
+  outline: none;
+  transition: margin-left 200ms var(--ease);
+}
+
+.app-shell.is-collapsed .content {
+  margin-left: var(--sidebar-rail);
+}
+
+.content-inner {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-7) var(--page-pad) var(--space-8);
+}
+
+/* Ritmo verticale delle pagine: intestazione, poi sezioni a distanza fissa */
+
+.page {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.page-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+/* Intestazione di pagina */
+
+.page-header {
   display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
 }
 
-.content-area {
-  flex: 1;
+.page-header-copy {
+  display: grid;
   min-width: 0;
-  padding: 28px 32px 40px;
+  gap: var(--space-2);
 }
 
-@media (max-width: 700px) {
-  .content-area {
-    padding: 20px 16px 32px;
+.page-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+.page-header-description {
+  max-width: 62ch;
+  color: var(--text-muted);
+  font-size: var(--text-md);
+}
+
+.page-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Barra superiore: solo mobile */
+
+.topbar {
+  display: none;
+}
+
+.drawer-backdrop {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .content,
+  .app-shell.is-collapsed .content {
+    margin-left: 0;
   }
+
+  .content-inner {
+    padding-top: var(--space-5);
+  }
+
+  .page {
+    gap: var(--space-6);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-topbar);
+    display: flex;
+    height: 56px;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-2);
+    background: var(--bg);
+  }
+
+  .topbar .brand {
+    flex: 1;
+  }
+
+  .topbar-cta {
+    color: var(--on-accent);
+    background: var(--accent);
+  }
+
+  .topbar-cta:hover {
+    color: var(--on-accent);
+    background: var(--accent-hover);
+  }
+
+  .topbar .icon-btn {
+    width: var(--target-min);
+    height: var(--target-min);
+    flex-basis: var(--target-min);
+  }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-drawer) - 1);
+    display: block;
+    background: var(--overlay);
+    animation: fade-in var(--duration) var(--ease);
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header-actions > .btn {
+    flex: 1;
+  }
+}
+
+/* Attesa del ripristino della sessione, prima di mostrare l'app */
+
+.session-loading {
+  display: flex;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }

@@ -1,27 +1,83 @@
-import { Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Menu, Play } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
+
+const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
 /**
  * Layout principale dell'applicazione.
  *
- * Questo componente definisce la struttura grafica comune a tutte le pagine:
- * - una sidebar di navigazione a sinistra,
- * - un'area centrale dove viene renderizzato il contenuto della route corrente
- *   tramite `Outlet`.
+ * Definisce la struttura comune a tutte le pagine protette:
+ * - la sidebar di navigazione (colonna fissa su desktop, pannello su mobile),
+ * - una barra superiore visibile solo su schermi stretti,
+ * - l'area centrale, con larghezza massima e margini uguali per ogni route,
+ *   dove `Outlet` renderizza la pagina corrente.
  *
- * In React Router v6, `Outlet` è il punto di inserimento per i componenti figli
- * di una route. È il modo più pulito per costruire layout annidati.
+ * Lo stato "ridotta" della sidebar viene ricordato tra una visita e l'altra;
+ * il pannello mobile si chiude a ogni cambio di pagina e con Escape.
  */
 function AppLayout() {
-  return (
-    <div className="app-layout">
-      <Sidebar />
+  const location = useLocation()
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [lastPath, setLastPath] = useState(location.pathname)
 
-      <div className="main-area">
-        <main className="content-area">
+  if (lastPath !== location.pathname) {
+    setLastPath(location.pathname)
+    setMobileOpen(false)
+  }
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
+  }, [collapsed])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [mobileOpen])
+
+  return (
+    <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
+      <a className="skip-link" href="#main-content">Vai al contenuto</a>
+
+      <header className="topbar">
+        <button
+          className="icon-btn"
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Apri il menu"
+          aria-expanded={mobileOpen}
+          aria-controls="app-sidebar"
+        >
+          <Menu aria-hidden="true" />
+        </button>
+        <Link to="/dashboard" className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-name">StudyOS</span>
+        </Link>
+        <Link to="/timer" className="icon-btn topbar-cta" aria-label="Nuova sessione">
+          <Play aria-hidden="true" />
+        </Link>
+      </header>
+
+      <Sidebar
+        collapsed={collapsed}
+        mobileOpen={mobileOpen}
+        onToggleCollapsed={() => setCollapsed((value) => !value)}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+      {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
+
+      <main id="main-content" className="content" tabIndex={-1}>
+        <div className="content-inner">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

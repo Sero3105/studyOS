@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { CreateExamPayload } from '../../services/examService'
+import { errorMessage } from '../../utils/errors'
 
 interface ExamFormProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
@@ -8,6 +9,11 @@ interface ExamFormProps {
   initial?: CreateExamPayload
 }
 
+/**
+ * Modulo esame in tre gruppi, nell'ordine in cui lo studente ragiona:
+ * cosa è, quando e dove, a che punto sono. Annulla e Salva stanno in fondo
+ * a destra, con Salva come unica azione primaria.
+ */
 function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
   const [data, setData] = useState<CreateExamPayload>(initial ?? {
     title: '',
@@ -35,23 +41,20 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
     try {
       await onSave(data)
     } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : 'Salvataggio non riuscito',
-      )
+      setError(errorMessage(saveError, 'Salvataggio non riuscito'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <form className="exam-form" onSubmit={handleSubmit}>
-      <div className="exam-form-section">
-        <p className="exam-form-section-title">Informazioni principali</p>
-        <div className="exam-form-grid exam-form-grid-primary">
-          <label className="exam-form-field" htmlFor="exam-title">
-            <span className="exam-field-label">Nome esame</span>
+    <form className="stacked-form" onSubmit={handleSubmit}>
+      <fieldset className="form-block">
+        <legend>Esame</legend>
+        <div className="form-grid">
+          <label className="field">
+            <span className="field-label">Nome esame</span>
             <input
-              id="exam-title"
               name="title"
               required
               maxLength={120}
@@ -60,10 +63,9 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
               onChange={handleChange}
             />
           </label>
-          <label className="exam-form-field" htmlFor="exam-subject">
-            <span className="exam-field-label">Materia</span>
+          <label className="field">
+            <span className="field-label">Materia</span>
             <input
-              id="exam-subject"
               name="subject"
               required
               maxLength={120}
@@ -73,15 +75,14 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             />
           </label>
         </div>
-      </div>
+      </fieldset>
 
-      <div className="exam-form-section">
-        <p className="exam-form-section-title">Quando e dove</p>
-        <div className="exam-form-grid exam-form-grid-datetime">
-          <label className="exam-form-field" htmlFor="exam-date">
-            <span className="exam-field-label">Data</span>
+      <fieldset className="form-block">
+        <legend>Quando e dove</legend>
+        <div className="form-grid form-grid-3">
+          <label className="field">
+            <span className="field-label">Data</span>
             <input
-              id="exam-date"
               name="exam_date"
               type="date"
               required
@@ -89,20 +90,18 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
               onChange={handleChange}
             />
           </label>
-          <label className="exam-form-field" htmlFor="exam-time">
-            <span className="exam-field-label">Ora <em>opzionale</em></span>
+          <label className="field">
+            <span className="field-label">Ora <em>opzionale</em></span>
             <input
-              id="exam-time"
               name="exam_time"
               type="time"
               value={data.exam_time ?? ''}
               onChange={handleChange}
             />
           </label>
-          <label className="exam-form-field exam-form-field-wide" htmlFor="exam-location">
-            <span className="exam-field-label">Luogo <em>opzionale</em></span>
+          <label className="field">
+            <span className="field-label">Luogo <em>opzionale</em></span>
             <input
-              id="exam-location"
               name="location"
               maxLength={120}
               placeholder="Es. Aula A2"
@@ -111,47 +110,40 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             />
           </label>
         </div>
-      </div>
+      </fieldset>
 
-      <div className="exam-form-section exam-form-section-last">
-        <p className="exam-form-section-title">Stato e note</p>
-        <div className="exam-form-grid exam-form-grid-status">
-          <label className="exam-form-field" htmlFor="exam-status">
-            <span className="exam-field-label">Stato</span>
-            <select id="exam-status" name="status" value={data.status} onChange={handleChange}>
-              <option value="planned">Da preparare</option>
-              <option value="in_progress">In preparazione</option>
-              <option value="passed">Superato</option>
-              <option value="failed">Non superato</option>
-            </select>
-          </label>
-        </div>
-        <label className="exam-form-field exam-form-field-notes" htmlFor="exam-notes">
-          <span className="exam-field-label">Note <em>opzionale</em></span>
+      <fieldset className="form-block">
+        <legend>Preparazione</legend>
+        <label className="field form-narrow">
+          <span className="field-label">Stato</span>
+          <select name="status" value={data.status} onChange={handleChange}>
+            <option value="planned">Da preparare</option>
+            <option value="in_progress">In preparazione</option>
+            <option value="passed">Superato</option>
+            <option value="failed">Non superato</option>
+          </select>
+        </label>
+        <label className="field">
+          <span className="field-label">Note <em>opzionale</em></span>
           <textarea
-            id="exam-notes"
             name="notes"
             maxLength={2000}
-            placeholder="Aggiungi una nota o un obiettivo di studio..."
+            placeholder="Capitoli da ripassare, materiale, obiettivo di voto…"
             value={data.notes ?? ''}
             onChange={handleChange}
             rows={3}
           />
         </label>
-      </div>
+      </fieldset>
 
-      {error && (
-        <p className="exam-form-error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <p className="notice notice-error" role="alert">{error}</p>}
 
-      <div className="exam-actions">
-        <button className="button button-secondary" type="button" onClick={onCancel}>
+      <div className="form-actions">
+        <button className="btn btn-ghost" type="button" onClick={onCancel}>
           Annulla
         </button>
-        <button className="button button-primary" type="submit" disabled={saving}>
-          {saving ? 'Salvataggio…' : initial ? 'Salva modifiche' : 'Salva esame'}
+        <button className="btn btn-primary" type="submit" disabled={saving}>
+          {saving ? 'Salvataggio…' : initial ? 'Salva modifiche' : 'Aggiungi esame'}
         </button>
       </div>
     </form>

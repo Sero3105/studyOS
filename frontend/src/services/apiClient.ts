@@ -30,9 +30,12 @@ export function setRefreshHandler(handler: (() => Promise<boolean>) | null) {
   refreshHandler = handler
 }
 
+/** Le DELETE rispondono 204 con content-type JSON ma corpo vuoto: niente da leggere. */
 async function readResponse(response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
-  return contentType.includes('application/json') ? response.json() : null
+  if (response.status === 204 || !contentType.includes('application/json')) return null
+  const body = await response.text()
+  return body ? JSON.parse(body) : null
 }
 
 async function recoverSession(): Promise<boolean> {

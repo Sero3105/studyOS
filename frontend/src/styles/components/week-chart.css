@@ -1,0 +1,64 @@
+/**
+ * Grafico settimanale condiviso da Dashboard e Statistiche.
+ * Colonne piene su traccia tonale, valore sopra, giorno sotto.
+ */
+
+.week-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-3);
+  height: 168px;
+}
+
+.week-chart-tall {
+  height: 240px;
+}
+
+.week-chart-col {
+  display: grid;
+  grid-template-rows: 20px 1fr 20px;
+  gap: var(--space-2);
+  min-width: 0;
+  text-align: center;
+}
+
+.week-chart-value {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.week-chart-track {
+  position: relative;
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.week-chart-bar {
+  position: absolute;
+  inset: auto 0 0;
+  border-radius: var(--radius-s);
+  background: var(--line-strong);
+  transition: height 400ms var(--ease);
+}
+
+.week-chart-label {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-transform: capitalize;
+}
+
+.is-today .week-chart-bar {
+  background: var(--accent);
+}
+
+.is-today .week-chart-value,
+.is-today .week-chart-label {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .week-chart {
+    gap: var(--space-2);
+  }
+}
