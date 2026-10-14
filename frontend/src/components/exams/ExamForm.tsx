@@ -1,3 +1,159 @@
 import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import type { CreateExamPayload } from '../../services/examService'
-export default function ExamForm({onSave,onCancel}:{onSave:(p:CreateExamPayload)=>Promise<void>;onCancel:()=>void}) { const [data,setData]=useState<CreateExamPayload>({title:'',subject:'',exam_date:'',status:'planned'}); const [saving,setSaving]=useState(false); const [error,setError]=useState(''); const change=(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>)=>setData({...data,[e.target.name]:e.target.value}); const submit=async(e:React.FormEvent)=>{e.preventDefault();setSaving(true);setError('');try{await onSave(data)}catch(err){setError(err instanceof Error?err.message:'Salvataggio non riuscito')}finally{setSaving(false)}}; return <form className="exam-form" onSubmit={submit}><label>Nome esame<input name="title" required maxLength={120} value={data.title} onChange={change}/></label><label>Materia<input name="subject" required maxLength={120} value={data.subject} onChange={change}/></label><label>Data<input name="exam_date" type="date" required value={data.exam_date} onChange={change}/></label><label>Ora<input name="exam_time" type="time" value={data.exam_time??''} onChange={change}/></label><label>Luogo<input name="location" maxLength={120} value={data.location??''} onChange={change}/></label><label>Stato<select name="status" value={data.status} onChange={change}><option value="planned">Da preparare</option><option value="in_progress">In preparazione</option><option value="passed">Superato</option><option value="failed">Non superato</option></select></label><label>Note<textarea name="notes" maxLength={2000} value={data.notes??''} onChange={change}/></label>{error&&<p role="alert">{error}</p>}<div className="exam-actions"><button type="button" onClick={onCancel}>Annulla</button><button className="button" disabled={saving}>{saving?'Salvataggio…':'Salva esame'}</button></div></form> }
+
+interface ExamFormProps {
+  onSave: (payload: CreateExamPayload) => Promise<void>
+  onCancel: () => void
+}
+
+function ExamForm({ onSave, onCancel }: ExamFormProps) {
+  const [data, setData] = useState<CreateExamPayload>({
+    title: '',
+    subject: '',
+    exam_date: '',
+    status: 'planned',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    setData((currentData) => ({
+      ...currentData,
+      [event.target.name]: event.target.value,
+    }))
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+
+    try {
+      await onSave(data)
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error ? saveError.message : 'Salvataggio non riuscito',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form className="exam-form" onSubmit={handleSubmit}>
+      <div className="exam-form-section">
+        <p className="exam-form-section-title">Informazioni principali</p>
+        <div className="exam-form-grid exam-form-grid-primary">
+          <label className="exam-form-field" htmlFor="exam-title">
+            <span className="exam-field-label">Nome esame</span>
+            <input
+              id="exam-title"
+              name="title"
+              required
+              maxLength={120}
+              placeholder="Es. Analisi 1"
+              value={data.title}
+              onChange={handleChange}
+            />
+          </label>
+          <label className="exam-form-field" htmlFor="exam-subject">
+            <span className="exam-field-label">Materia</span>
+            <input
+              id="exam-subject"
+              name="subject"
+              required
+              maxLength={120}
+              placeholder="Es. Matematica"
+              value={data.subject}
+              onChange={handleChange}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="exam-form-section">
+        <p className="exam-form-section-title">Quando e dove</p>
+        <div className="exam-form-grid exam-form-grid-three">
+          <label className="exam-form-field" htmlFor="exam-date">
+            <span className="exam-field-label">Data</span>
+            <input
+              id="exam-date"
+              name="exam_date"
+              type="date"
+              required
+              value={data.exam_date}
+              onChange={handleChange}
+            />
+          </label>
+          <label className="exam-form-field" htmlFor="exam-time">
+            <span className="exam-field-label">Ora <em>(opzionale)</em></span>
+            <input
+              id="exam-time"
+              name="exam_time"
+              type="time"
+              value={data.exam_time ?? ''}
+              onChange={handleChange}
+            />
+          </label>
+          <label className="exam-form-field" htmlFor="exam-location">
+            <span className="exam-field-label">Luogo <em>(opzionale)</em></span>
+            <input
+              id="exam-location"
+              name="location"
+              maxLength={120}
+              placeholder="Es. Aula A2"
+              value={data.location ?? ''}
+              onChange={handleChange}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="exam-form-section exam-form-section-last">
+        <div className="exam-form-grid exam-form-grid-status">
+          <label className="exam-form-field" htmlFor="exam-status">
+            <span className="exam-field-label">Stato</span>
+            <select id="exam-status" name="status" value={data.status} onChange={handleChange}>
+              <option value="planned">Da preparare</option>
+              <option value="in_progress">In preparazione</option>
+              <option value="passed">Superato</option>
+              <option value="failed">Non superato</option>
+            </select>
+          </label>
+          <label className="exam-form-field exam-form-field-notes" htmlFor="exam-notes">
+            <span className="exam-field-label">Note <em>(opzionale)</em></span>
+            <textarea
+              id="exam-notes"
+              name="notes"
+              maxLength={2000}
+              placeholder="Aggiungi una nota o un obiettivo di studio..."
+              value={data.notes ?? ''}
+              onChange={handleChange}
+              rows={3}
+            />
+          </label>
+        </div>
+      </div>
+
+      {error && (
+        <p className="exam-form-error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="exam-actions">
+        <button className="button button-secondary" type="button" onClick={onCancel}>
+          Annulla
+        </button>
+        <button className="button" type="submit" disabled={saving}>
+          {saving ? 'Salvataggio…' : 'Salva esame'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export default ExamForm
