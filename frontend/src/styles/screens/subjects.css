@@ -9,3 +9,11 @@
 .topic-list li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
 .topic-list label { display: flex; gap: 0.5rem; align-items: center; cursor: pointer; }
 .done-text { text-decoration: line-through; opacity: 0.65; }
+.subjects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+@media (max-width: 900px) { .subjects-grid { grid-template-columns: 1fr; } }
+.goals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.goal-done { color: var(--success); background: var(--success-bg); border: 1px solid var(--success); border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; font-weight: 700; }
+.history-day { display: grid; gap: var(--space-3); }
+.history-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: var(--space-4); }
+.history-day-head h2 { margin: 0; font-size: 1rem; color: var(--text-strong); }
+@media (max-width: 900px) { .goals-grid { grid-template-columns: 1fr; } }

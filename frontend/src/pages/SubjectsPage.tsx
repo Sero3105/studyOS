@@ -69,7 +69,7 @@ function SubjectsPage() {
       ) : subjects.length === 0 ? (
         <div className="dashboard-card"><h2>Nessuna materia</h2><p>Crea la prima materia per iniziare a organizzare lo studio.</p></div>
       ) : (
-        <div className="card-list">
+        <div className="card-list subjects-grid">
           {subjects.map((subject) => (
             <article className="dashboard-card" key={subject.id}>
               <div className="card-row-between">

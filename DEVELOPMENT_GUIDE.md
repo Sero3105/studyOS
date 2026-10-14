@@ -282,3 +282,15 @@ Convenzioni: target touch minimi 44px, focus visibile su ogni controllo
 interattivo, contrasto testo almeno 4.5:1, stati loading/vuoto/errore per
 ogni pagina dati. Breakpoint principale 700px: sotto, la sidebar parte
 compressa a icone.
+
+## 15. Layout e gerarchia (redesign strutturale)
+
+Pattern condiviso: contenitore max 1180px, ritmo unico `--space-5`, header
+allineato al contenitore (nessun padding proprio). Dashboard: pannello
+"Focus di oggi" primario (minuti, obiettivo, ultima sessione, CTA), scadenze
+a destra (esami e task), statistiche compatte sotto, attività a tutta
+larghezza. Planner: form sticky a sinistra (340px) e contenuti a destra; su
+mobile colonna singola. Subjects e Goals: griglie a due colonne. Statistics:
+barre orizzontali proporzionali con valore. History: sessioni raggruppate
+per giorno con totale. Timer: pannello centrato max 680px, countdown come
+elemento dominante.

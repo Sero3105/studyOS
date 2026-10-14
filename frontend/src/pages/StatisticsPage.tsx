@@ -36,11 +36,23 @@ function StatisticsPage() {
         <article className="dashboard-card">
           <h2>Tempo per materia</h2>
           {stats.by_subject.length === 0 ? <p className="muted-note">Nessun dato.</p> : (
-            <ul className="topic-list">{stats.by_subject.map((x) => <li key={x.name}><span>{x.name}</span><span>{x.minutes} min</span></li>)}</ul>
+            <div className="hbar-list">{stats.by_subject.map((x) => (
+              <div className="hbar-row" key={x.name}>
+                <span className="hbar-label">{x.name}</span>
+                <span className="hbar-track"><span style={{ width: `${(x.minutes / Math.max(1, stats.by_subject[0].minutes)) * 100}%` }} /></span>
+                <span className="hbar-value">{x.minutes} min</span>
+              </div>
+            ))}</div>
           )}
           <h2>Tempo per argomento</h2>
           {stats.by_topic.length === 0 ? <p className="muted-note">Nessun dato.</p> : (
-            <ul className="topic-list">{stats.by_topic.map((x) => <li key={x.name}><span>{x.name}</span><span>{x.minutes} min</span></li>)}</ul>
+            <div className="hbar-list">{stats.by_topic.map((x) => (
+              <div className="hbar-row" key={x.name}>
+                <span className="hbar-label">{x.name}</span>
+                <span className="hbar-track"><span style={{ width: `${(x.minutes / Math.max(1, stats.by_topic[0].minutes)) * 100}%` }} /></span>
+                <span className="hbar-value">{x.minutes} min</span>
+              </div>
+            ))}</div>
           )}
         </article>
 

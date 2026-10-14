@@ -7,7 +7,7 @@
  */
 
 .timer-panel {
-  width: min(100%, 620px);
+  width: min(100%, 680px);
   padding: clamp(24px, 5vw, 48px);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -41,14 +41,14 @@
 
 .timer-ring {
   display: grid;
-  max-width: 280px;
-  margin: 46px auto 34px;
+  max-width: 320px;
+  margin: 40px auto 32px;
   place-items: center;
 }
 
 .timer-svg {
   display: block;
-  width: min(100%, 240px);
+  width: min(100%, 280px);
   height: auto;
   overflow: visible;
 }
@@ -63,7 +63,7 @@
 
 .timer-value {
   fill: var(--text-strong);
-  font-size: 2.1rem;
+  font-size: 2.9rem;
   font-weight: 700;
   letter-spacing: -0.01em;
 }

@@ -76,7 +76,8 @@ function PlannerPage() {
         <div><p className="section-kicker">Planning</p><h1>Planner</h1><p className="muted-note">Task e prossime scadenze in un unico posto.</p></div>
       </div>
 
-      <form className="dashboard-card task-form" onSubmit={addTask}>
+      <div className="planner-layout">
+      <form className="dashboard-card task-form planner-form" onSubmit={addTask}>
         <label>Titolo<input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} placeholder="Es. Ripasso capitolo 4" /></label>
         <label>Descrizione<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={2000} /></label>
         <div className="form-grid">
@@ -102,6 +103,7 @@ function PlannerPage() {
         <button className="button button-primary" type="submit" disabled={saving}><Plus size={16} aria-hidden="true" /> Aggiungi task</button>
       </form>
 
+      <div className="planner-main">
       {loading ? <p>Caricamento planner…</p> : error ? (
         <div className="dashboard-card" role="alert"><h2>Caricamento non riuscito</h2><p>{error}</p><button className="button button-secondary" type="button" onClick={() => void load()}>Riprova</button></div>
       ) : (
@@ -144,6 +146,8 @@ function PlannerPage() {
           </article>
         </>
       )}
+      </div>
+      </div>
     </section>
   )
 }

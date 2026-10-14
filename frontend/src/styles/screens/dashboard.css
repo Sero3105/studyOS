@@ -1,7 +1,7 @@
 .dashboard-page {
   display: grid;
   width: min(100%, 1180px);
-  gap: 20px;
+  gap: var(--space-5);
   align-self: start;
   justify-self: center;
   margin-inline: auto;
@@ -51,8 +51,7 @@
 }
 
 .stat-card {
-  min-height: 142px;
-  padding: 17px;
+  padding: var(--space-4);
 }
 
 .stat-card-top,
@@ -89,7 +88,7 @@
 }
 
 .stat-card p {
-  margin: 20px 0 3px;
+  margin: 12px 0 3px;
   color: var(--text-muted);
   font-size: 0.8rem;
 }
@@ -102,12 +101,17 @@
 
 .dashboard-grid {
   display: grid;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
-.dashboard-grid-primary,
-.dashboard-grid-secondary {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.dashboard-grid-primary {
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.dashboard-side {
+  display: grid;
+  gap: var(--space-5);
 }
 
 .dashboard-card {
@@ -257,11 +261,13 @@
   }
 }
 
-@media (max-width: 700px) {
-  .dashboard-grid-primary,
-  .dashboard-grid-secondary {
+@media (max-width: 900px) {
+  .dashboard-grid-primary {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 700px) {
 
   .dashboard-section-heading {
     align-items: flex-start;
@@ -282,5 +288,35 @@
   .goal-values {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+.today-main {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.today-value {
+  color: var(--text-strong);
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.today-value span {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  letter-spacing: 0;
+}
+
+.today-cta {
+  width: fit-content;
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 700px) {
+  .today-cta {
+    width: 100%;
   }
 }

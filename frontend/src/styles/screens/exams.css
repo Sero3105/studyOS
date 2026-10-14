@@ -1,8 +1,7 @@
 .exams-page {
-  width: min(100% - 64px, 1180px);
+  width: min(100%, 1180px);
   margin-inline: auto;
-  gap: 22px;
-  padding-block: 46px 64px;
+  gap: var(--space-5);
 }
 
 .exams-hero {

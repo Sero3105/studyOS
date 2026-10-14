@@ -60,11 +60,12 @@ function GoalsPage() {
       ) : goals.length === 0 ? (
         <div className="dashboard-card"><h2>Nessun obiettivo</h2><p>Crea il primo obiettivo misurabile.</p></div>
       ) : (
-        <div className="card-list">
+        <div className="card-list goals-grid">
           {goals.map((goal) => (
             <article className="dashboard-card" key={goal.id}>
               <div className="card-row-between">
                 <h3>{goal.title}</h3>
+                {goal.percent >= 100 && <span className="goal-done">Completato</span>}
                 <button className="icon-action" type="button" onClick={() => void removeGoal(goal.id)} aria-label={`Elimina ${goal.title}`}><Trash2 size={16} /></button>
               </div>
               <p className="muted-note">{goalKindLabels[goal.kind]}: {goal.current} / {goal.target} ({goal.percent}%)</p>

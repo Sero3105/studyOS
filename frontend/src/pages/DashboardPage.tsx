@@ -5,8 +5,8 @@ import SessionSetupModal from '../components/timer/SessionSetupModal'
 import type { StudySessionConfig } from '../components/timer/types'
 import DashboardSectionHeading from '../components/dashboard/DashboardSectionHeading'
 import DashboardStats from '../components/dashboard/DashboardStats'
-import ContinueStudyingCard from '../components/dashboard/ContinueStudyingCard'
-import DailyGoalCard from '../components/dashboard/DailyGoalCard'
+import TodayFocusCard from '../components/dashboard/TodayFocusCard'
+import UpcomingExamsCard from '../components/dashboard/UpcomingExamsCard'
 import UpcomingTasksCard from '../components/dashboard/UpcomingTasksCard'
 import StudyActivityCard from '../components/dashboard/StudyActivityCard'
 import { getStatsSummary } from '../services/statsService'
@@ -40,17 +40,16 @@ function DashboardPage() {
       <section className="dashboard-page">
         <DashboardSectionHeading />
         {error && <div className="dashboard-card" role="alert"><p>{error}</p></div>}
-        <DashboardStats stats={stats} />
-
         <div className="dashboard-grid dashboard-grid-primary">
-          <ContinueStudyingCard lastSession={stats?.last_session ?? null} />
-          <DailyGoalCard todayMinutes={stats?.today_minutes ?? 0} goal={weeklyGoal} />
+          <TodayFocusCard todayMinutes={stats?.today_minutes ?? 0} goal={weeklyGoal} lastSession={stats?.last_session ?? null} />
+          <div className="dashboard-side">
+            <UpcomingExamsCard exams={stats?.upcoming_exams ?? []} />
+            <UpcomingTasksCard tasks={stats?.upcoming_tasks ?? []} />
+          </div>
         </div>
 
-        <div className="dashboard-grid dashboard-grid-secondary">
-          <UpcomingTasksCard tasks={stats?.upcoming_tasks ?? []} />
-          <StudyActivityCard daily={stats?.daily ?? []} />
-        </div>
+        <DashboardStats stats={stats} />
+        <StudyActivityCard daily={stats?.daily ?? []} />
       </section>
       {isSessionModalOpen && (
         <SessionSetupModal

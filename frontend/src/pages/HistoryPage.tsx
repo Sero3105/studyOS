@@ -41,16 +41,25 @@ function HistoryPage() {
       ) : sessions.length === 0 ? (
         <div className="dashboard-card"><h2>Nessuna sessione</h2><p>Completa una sessione dal Timer per vederla qui.</p></div>
       ) : (
-        <div className="card-list">
-          {sessions.map((session) => (
-            <article className="dashboard-card task-row" key={session.id}>
-              <div>
-                <h3>{subjectName(session.subject_id)}{topicName(session) ? ` / ${topicName(session)}` : ''}</h3>
-                <p className="muted-note">{session.studied_on} · {session.duration_minutes} minuti{session.notes ? ` · ${session.notes}` : ''}</p>
+        <div>
+          {[...new Set(sessions.map((s) => s.studied_on))].map((day) => {
+            const daySessions = sessions.filter((s) => s.studied_on === day)
+            const dayTotal = daySessions.reduce((sum, s) => sum + s.duration_minutes, 0)
+            return (
+              <div className="history-day" key={day}>
+                <div className="history-day-head"><h2>{day}</h2><span className="muted-note">{dayTotal} minuti · {daySessions.length} sessioni</span></div>
+                {daySessions.map((session) => (
+                  <article className="dashboard-card task-row" key={session.id}>
+                    <div>
+                      <h3>{subjectName(session.subject_id)}{topicName(session) ? ` / ${topicName(session)}` : ''}</h3>
+                      <p className="muted-note">{session.duration_minutes} minuti{session.notes ? ` · ${session.notes}` : ''}</p>
+                    </div>
+                    <button className="icon-action" type="button" onClick={() => void remove(session.id)} aria-label="Elimina sessione"><Trash2 size={16} /></button>
+                  </article>
+                ))}
               </div>
-              <button className="icon-action" type="button" onClick={() => void remove(session.id)} aria-label="Elimina sessione"><Trash2 size={16} /></button>
-            </article>
-          ))}
+            )
+          })}
         </div>
       )}
     </section>
