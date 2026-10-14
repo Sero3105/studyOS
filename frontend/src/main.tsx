@@ -55,6 +55,7 @@ const router = createBrowserRouter([
             element: <TimerPage />,
           },
           { path: '/exams', element: <ExamsPage /> },
+          { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },
     ],
