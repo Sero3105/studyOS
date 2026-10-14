@@ -58,3 +58,4 @@ class User(Base):
     subjects = relationship("Subject", back_populates="user", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     study_sessions = relationship("StudySession", back_populates="user", cascade="all, delete-orphan")
+    goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")

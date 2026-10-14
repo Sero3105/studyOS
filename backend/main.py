@@ -24,6 +24,7 @@ from routers.exam_router import router as exam_router
 from routers.subject_router import router as subject_router
 from routers.task_router import router as task_router
 from routers.session_router import router as session_router
+from routers.goal_router import router as goal_router
 import config
 
 
@@ -54,3 +55,4 @@ app.include_router(exam_router)
 app.include_router(subject_router)
 app.include_router(task_router)
 app.include_router(session_router)
+app.include_router(goal_router)
