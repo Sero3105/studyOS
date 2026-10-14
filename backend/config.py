@@ -47,7 +47,10 @@ def validate_security_settings() -> None:
         raise RuntimeError("DATABASE_URL must be configured")
     if not SECRET_KEY or len(SECRET_KEY) < 32:
         raise RuntimeError("SECRET_KEY must be configured and contain at least 32 characters")
-    if SECRET_KEY.lower() in {"secret", "changeme", "change-me", "your-secret-key", "example"}:
+    if SECRET_KEY.lower() in {
+        "secret", "changeme", "change-me", "your-secret-key", "example",
+        "replace-with-a-long-random-secret-at-least-32-characters",  # segnaposto di .env.example
+    }:
         raise RuntimeError("SECRET_KEY must not use a predictable example value")
     if ALGORITHM != "HS256":
         raise RuntimeError("ALGORITHM must be HS256")

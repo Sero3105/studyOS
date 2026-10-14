@@ -1,0 +1,97 @@
+# StudyOS con Docker Compose.
+#
+#   docker compose up --build -d     # avvia → http://localhost:8080
+#   docker compose down              # ferma (i dati restano nel volume)
+#
+# Due servizi:
+# - web: nginx con la build del frontend; unica porta pubblicata, solo su
+#        127.0.0.1. Inoltra /api/* al backend.
+# - api: FastAPI/uvicorn, un solo processo, raggiungibile solo dalla rete
+#        interna. SQLite gira dentro questo processo: niente container database.
+#
+# I dati stanno nel volume `studyos-data` (montato su /data). Sopravvive a
+# stop, ricreazione dei container e rebuild delle immagini; lo cancella solo
+# `docker compose down -v` o `docker volume rm` — non usarli per routine.
+#
+# Le variabili ${...} arrivano dal file .env nella root (vedi .env.example).
+# Il file .env NON entra nelle immagini: Compose ne legge i valori e li passa
+# ai container come variabili d'ambiente.
+
+name: studyos
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  api:
+    <<: *hardening
+    build: ./backend
+    image: studyos-api:local
+    environment:
+      # Percorso assoluto nel volume: mai il database locale del repository.
+      DATABASE_URL: sqlite:////data/studyos.db
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY mancante - copia .env.example in .env e imposta un valore casuale di almeno 32 caratteri}"
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      # development = cookie senza flag Secure, necessario su http://localhost
+      # in tutti i browser. Con HTTPS davanti impostare APP_ENV=production.
+      APP_ENV: ${APP_ENV:-development}
+      # Il browser vede un'unica origine (nginx); serve comunque alla validazione.
+      FRONTEND_ORIGINS: "${STUDYOS_ORIGIN:-http://localhost:${STUDYOS_PORT:-8080}}"
+    volumes:
+      - studyos-data:/data
+    tmpfs:
+      - /tmp:size=16m
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    stop_grace_period: 15s
+    # Limiti prudenti, regolabili da .env. Non sono requisiti misurati: vedi README.
+    deploy:
+      resources:
+        limits:
+          memory: ${API_MEMORY_LIMIT:-256M}
+          cpus: "${API_CPUS:-1.0}"
+          pids: 64
+
+  web:
+    <<: *hardening
+    build: ./frontend
+    image: studyos-web:local
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${STUDYOS_PORT:-8080}:8080"
+    tmpfs:
+      # nginx-unprivileged scrive pid e file temporanei in /tmp.
+      - /tmp:size=16m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: ${WEB_MEMORY_LIMIT:-64M}
+          cpus: "${WEB_CPUS:-0.5}"
+          pids: 64
+
+volumes:
+  studyos-data:

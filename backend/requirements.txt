@@ -1,8 +1,12 @@
-fastapi
-sqlalchemy
-pydantic
-python-dotenv
-pwdlib
-PyJWT
-pytest
-httpx
+# Dipendenze di runtime del backend, con le versioni verificate (test inclusi).
+# Usate sia in locale sia nell'immagine Docker.
+fastapi==0.141.1
+sqlalchemy==2.0.54
+pydantic==2.13.5
+# Gli schemi usano EmailStr.
+email-validator==2.3.0
+python-dotenv==1.2.3
+# `PasswordHash.recommended()` usa argon2: serve l'extra.
+pwdlib[argon2]==0.3.1
+PyJWT==2.15.1
+uvicorn==0.53.0

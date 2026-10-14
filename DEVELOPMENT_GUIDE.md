@@ -115,8 +115,13 @@ source .venv/bin/activate
 1. Installa le dipendenze principali:
 
 ```bash
-pip install fastapi sqlalchemy pydantic python-dotenv pwdlib uvicorn
+cd backend
+pip install -r requirements-dev.txt
 ```
+
+`requirements.txt` contiene solo le dipendenze di runtime (con versioni fissate,
+le stesse usate dall'immagine Docker); `requirements-dev.txt` aggiunge pytest e
+httpx per i test.
 
 1. Avvia il server:
 
@@ -156,6 +161,9 @@ Di solito il frontend sarà disponibile su:
 ```text
 http://localhost:5173
 ```
+
+Per avviare tutto con Docker, senza installare Python o Node, vedi la sezione
+"Run with Docker" nel README.
 
 ## 6. Variabili d'ambiente
 

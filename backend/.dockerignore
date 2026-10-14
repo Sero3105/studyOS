@@ -1,0 +1,23 @@
+# Solo il codice dell'app entra nell'immagine.
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+tests/
+requirements-dev.txt
+
+# Mai segreti né database locali nell'immagine.
+.env
+.env.*
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+Dockerfile
+.dockerignore
+.DS_Store
