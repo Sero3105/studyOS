@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { CalendarPlus, GraduationCap, Plus } from 'lucide-react'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
 import ExamList from '../components/exams/ExamList'
-import { createExam, getExams } from '../services/examService'
+import { createExam, deleteExam, getExams, updateExam } from '../services/examService'
 import type { CreateExamPayload, Exam } from '../services/examService'
 
 function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingExam, setEditingExam] = useState<Exam | null>(null)
   const [error, setError] = useState('')
 
   const loadExams = async () => {
@@ -30,16 +31,28 @@ function ExamsPage() {
     queueMicrotask(() => { void loadExams() })
   }, [])
 
-  const handleSave = async (payload: CreateExamPayload) => {
-    const exam = await createExam(payload)
-    setExams((currentExams) =>
-      [...currentExams, exam].sort(
-        (first, second) =>
-          first.exam_date.localeCompare(second.exam_date) ||
-          (first.exam_time ?? '99:99').localeCompare(second.exam_time ?? '99:99'),
-      ),
+  const sortExams = (list: Exam[]) =>
+    [...list].sort(
+      (first, second) =>
+        first.exam_date.localeCompare(second.exam_date) ||
+        (first.exam_time ?? '99:99').localeCompare(second.exam_time ?? '99:99'),
     )
+
+  const handleSave = async (payload: CreateExamPayload) => {
+    if (editingExam) {
+      const exam = await updateExam(editingExam.id, payload)
+      setExams((currentExams) => sortExams(currentExams.map((x) => (x.id === exam.id ? exam : x))))
+    } else {
+      const exam = await createExam(payload)
+      setExams((currentExams) => sortExams([...currentExams, exam]))
+    }
     setIsModalOpen(false)
+    setEditingExam(null)
+  }
+
+  const handleDelete = async (exam: Exam) => {
+    await deleteExam(exam.id)
+    setExams((currentExams) => currentExams.filter((x) => x.id !== exam.id))
   }
 
   return (
@@ -98,7 +111,7 @@ function ExamsPage() {
           </button>
         </div>
       ) : exams.length ? (
-        <ExamList exams={exams} />
+        <ExamList exams={exams} onEdit={(exam) => { setEditingExam(exam); setIsModalOpen(true) }} onDelete={(exam) => { void handleDelete(exam) }} />
       ) : (
         <div className="dashboard-card exams-empty-card">
           <span className="exams-empty-icon" aria-hidden="true">
@@ -126,7 +139,16 @@ function ExamsPage() {
       {isModalOpen && (
         <ExamCreateModal
           onSave={handleSave}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => { setIsModalOpen(false); setEditingExam(null) }}
+          initial={editingExam ? {
+            title: editingExam.title,
+            subject: editingExam.subject,
+            exam_date: editingExam.exam_date,
+            exam_time: editingExam.exam_time ?? undefined,
+            location: editingExam.location ?? undefined,
+            notes: editingExam.notes ?? undefined,
+            status: editingExam.status,
+          } : undefined}
         />
       )}
     </section>

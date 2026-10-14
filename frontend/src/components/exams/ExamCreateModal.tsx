@@ -4,9 +4,11 @@ import type { CreateExamPayload } from '../../services/examService'
 interface ExamCreateModalProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
   onClose: () => void
+  initial?: CreateExamPayload
 }
 
-function ExamCreateModal({ onSave, onClose }: ExamCreateModalProps) {
+function ExamCreateModal({ onSave, onClose, initial }: ExamCreateModalProps) {
+  const editing = Boolean(initial)
   return (
     <div className="session-modal-backdrop" role="presentation">
       <section
@@ -19,9 +21,9 @@ function ExamCreateModal({ onSave, onClose }: ExamCreateModalProps) {
         <div className="session-modal-heading">
           <div>
             <p className="eyebrow">Pianificazione</p>
-            <h2 id="exam-create-title">Nuovo esame</h2>
+            <h2 id="exam-create-title">{editing ? 'Modifica esame' : 'Nuovo esame'}</h2>
             <p id="exam-create-description">
-              Inserisci i dettagli della prova per aggiungerla alla tua agenda.
+              {editing ? 'Aggiorna i dettagli della prova.' : 'Inserisci i dettagli della prova per aggiungerla alla tua agenda.'}
             </p>
           </div>
           <button
@@ -33,7 +35,7 @@ function ExamCreateModal({ onSave, onClose }: ExamCreateModalProps) {
             ×
           </button>
         </div>
-        <ExamForm onSave={onSave} onCancel={onClose} />
+        <ExamForm onSave={onSave} onCancel={onClose} initial={initial} />
       </section>
     </div>
   )

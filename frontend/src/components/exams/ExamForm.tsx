@@ -5,10 +5,11 @@ import type { CreateExamPayload } from '../../services/examService'
 interface ExamFormProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
   onCancel: () => void
+  initial?: CreateExamPayload
 }
 
-function ExamForm({ onSave, onCancel }: ExamFormProps) {
-  const [data, setData] = useState<CreateExamPayload>({
+function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
+  const [data, setData] = useState<CreateExamPayload>(initial ?? {
     title: '',
     subject: '',
     exam_date: '',

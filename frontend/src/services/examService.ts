@@ -4,3 +4,5 @@ export interface Exam { id:number; user_id:number; title:string; subject:string;
 export interface CreateExamPayload { title:string; subject:string; exam_date:string; exam_time?:string; location?:string; notes?:string; status:ExamStatus }
 export const getExams=()=>apiRequest<Exam[]>('/exams')
 export const createExam=(payload:CreateExamPayload)=>apiRequest<Exam>('/exams',{method:'POST',body:JSON.stringify(payload)})
+export const updateExam=(id:number,payload:CreateExamPayload)=>apiRequest<Exam>(`/exams/${id}`,{method:'PATCH',body:JSON.stringify(payload)})
+export const deleteExam=(id:number)=>apiRequest<void>(`/exams/${id}`,{method:'DELETE'})

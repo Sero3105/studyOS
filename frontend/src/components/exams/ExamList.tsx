@@ -8,7 +8,13 @@ const statusLabels = {
   failed: 'Non superato',
 }
 
-function ExamList({ exams }: { exams: Exam[] }) {
+interface ExamListProps {
+  exams: Exam[]
+  onEdit: (exam: Exam) => void
+  onDelete: (exam: Exam) => void
+}
+
+function ExamList({ exams, onEdit, onDelete }: ExamListProps) {
   return (
     <div className="exam-list">
       {exams.map((exam) => (
@@ -45,6 +51,11 @@ function ExamList({ exams }: { exams: Exam[] }) {
           </div>
 
           {exam.notes && <p className="exam-card-notes">{exam.notes}</p>}
+
+          <div className="exam-actions">
+            <button className="button button-secondary" type="button" onClick={() => onEdit(exam)}>Modifica</button>
+            <button className="button button-secondary" type="button" onClick={() => onDelete(exam)}>Elimina</button>
+          </div>
         </article>
       ))}
     </div>
