@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import SessionSetupModal from '../components/timer/SessionSetupModal'
 import type { StudySessionConfig } from '../components/timer/types'
-import DashboardSectionHeading from '../components/dashboard/DashboardSectionHeading'
 import DashboardStats from '../components/dashboard/DashboardStats'
 import TodayFocusCard from '../components/dashboard/TodayFocusCard'
 import UpcomingExamsCard from '../components/dashboard/UpcomingExamsCard'
@@ -38,7 +37,6 @@ function DashboardPage() {
       <Header userName={userName} onNewSession={() => setIsSessionModalOpen(true)} />
 
       <section className="dashboard-page">
-        <DashboardSectionHeading />
         {error && <div className="dashboard-card" role="alert"><p>{error}</p></div>}
         <div className="dashboard-grid dashboard-grid-primary">
           <TodayFocusCard todayMinutes={stats?.today_minutes ?? 0} goal={weeklyGoal} lastSession={stats?.last_session ?? null} />

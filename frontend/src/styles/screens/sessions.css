@@ -1,1 +1,1 @@
-.session-setup-form select { padding: 0.55rem 0.7rem; border: 1px solid var(--border, var(--border)); border-radius: 8px; background: var(--surface, var(--surface)); color: inherit; width: 100%; }
+.session-setup-form select { width: 100%; }

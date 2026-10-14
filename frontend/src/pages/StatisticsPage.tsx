@@ -58,12 +58,16 @@ function StatisticsPage() {
 
         <article className="dashboard-card">
           <h2>Ultimi 7 giorni</h2>
-          <ul className="topic-list">{stats.daily.map((d) => (
-            <li key={d.date}>
-              <span>{new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric' }).format(new Date(`${d.date}T00:00:00`))}</span>
-              <span>{d.minutes} min</span>
-            </li>
-          ))}</ul>
+          <div className="chart-bars" role="img" aria-label={`Minuti di studio degli ultimi 7 giorni, totale ${stats.week_minutes} minuti`}>
+            {stats.daily.map((d, i) => (
+              <div className="chart-bar" key={d.date} title={`${d.date}: ${d.minutes} min`}>
+                <span className="chart-value">{d.minutes > 0 ? d.minutes : ''}</span>
+                <span className={`chart-column${i === stats.daily.length - 1 ? ' chart-today' : ''}`} style={{ height: d.minutes ? `${Math.max(6, (d.minutes / Math.max(1, ...stats.daily.map((x) => x.minutes))) * 100)}%` : '2px' }} />
+                <span className="chart-label">{new Intl.DateTimeFormat('it-IT', { weekday: 'narrow' }).format(new Date(`${d.date}T00:00:00`))}</span>
+              </div>
+            ))}
+          </div>
+          <p className="muted-note">Totale settimana: {stats.week_minutes} min.</p>
         </article>
       </div>
 

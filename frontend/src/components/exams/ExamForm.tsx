@@ -77,7 +77,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
 
       <div className="exam-form-section">
         <p className="exam-form-section-title">Quando e dove</p>
-        <div className="exam-form-grid exam-form-grid-three">
+        <div className="exam-form-grid exam-form-grid-datetime">
           <label className="exam-form-field" htmlFor="exam-date">
             <span className="exam-field-label">Data</span>
             <input
@@ -90,7 +90,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             />
           </label>
           <label className="exam-form-field" htmlFor="exam-time">
-            <span className="exam-field-label">Ora <em>(opzionale)</em></span>
+            <span className="exam-field-label">Ora <em>opzionale</em></span>
             <input
               id="exam-time"
               name="exam_time"
@@ -99,8 +99,8 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
               onChange={handleChange}
             />
           </label>
-          <label className="exam-form-field" htmlFor="exam-location">
-            <span className="exam-field-label">Luogo <em>(opzionale)</em></span>
+          <label className="exam-form-field exam-form-field-wide" htmlFor="exam-location">
+            <span className="exam-field-label">Luogo <em>opzionale</em></span>
             <input
               id="exam-location"
               name="location"
@@ -114,6 +114,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
       </div>
 
       <div className="exam-form-section exam-form-section-last">
+        <p className="exam-form-section-title">Stato e note</p>
         <div className="exam-form-grid exam-form-grid-status">
           <label className="exam-form-field" htmlFor="exam-status">
             <span className="exam-field-label">Stato</span>
@@ -124,19 +125,19 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
               <option value="failed">Non superato</option>
             </select>
           </label>
-          <label className="exam-form-field exam-form-field-notes" htmlFor="exam-notes">
-            <span className="exam-field-label">Note <em>(opzionale)</em></span>
-            <textarea
-              id="exam-notes"
-              name="notes"
-              maxLength={2000}
-              placeholder="Aggiungi una nota o un obiettivo di studio..."
-              value={data.notes ?? ''}
-              onChange={handleChange}
-              rows={3}
-            />
-          </label>
         </div>
+        <label className="exam-form-field exam-form-field-notes" htmlFor="exam-notes">
+          <span className="exam-field-label">Note <em>opzionale</em></span>
+          <textarea
+            id="exam-notes"
+            name="notes"
+            maxLength={2000}
+            placeholder="Aggiungi una nota o un obiettivo di studio..."
+            value={data.notes ?? ''}
+            onChange={handleChange}
+            rows={3}
+          />
+        </label>
       </div>
 
       {error && (
@@ -149,8 +150,8 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
         <button className="button button-secondary" type="button" onClick={onCancel}>
           Annulla
         </button>
-        <button className="button" type="submit" disabled={saving}>
-          {saving ? 'Salvataggio…' : 'Salva esame'}
+        <button className="button button-primary" type="submit" disabled={saving}>
+          {saving ? 'Salvataggio…' : initial ? 'Salva modifiche' : 'Salva esame'}
         </button>
       </div>
     </form>

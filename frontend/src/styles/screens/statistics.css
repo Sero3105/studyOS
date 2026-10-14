@@ -7,3 +7,9 @@
 .hbar-track { display: block; height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
 .hbar-track span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
 .hbar-value { text-align: right; color: var(--text-strong); }
+.chart-bars { display: flex; gap: 10px; align-items: stretch; height: 170px; margin-top: 14px; }
+.chart-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; min-width: 0; }
+.chart-value { min-height: 1.1em; color: var(--text-strong); font-size: 0.75rem; font-weight: 700; }
+.chart-column { width: 100%; max-width: 44px; border-radius: 6px 6px 3px 3px; background: var(--surface-3); }
+.chart-column.chart-today { background: var(--accent); }
+.chart-label { color: var(--text-muted); font-size: 0.72rem; text-transform: capitalize; }

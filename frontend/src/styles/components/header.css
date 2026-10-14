@@ -28,9 +28,8 @@
 
 .page-header-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 18px;
+  align-items: center;
+  align-self: center;
 }
 
 .primary-action,
@@ -89,7 +88,6 @@
 
   .page-header-actions {
     width: 100%;
-    align-items: stretch;
   }
 
   .page-header-actions .header-note {
