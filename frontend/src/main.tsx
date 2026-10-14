@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage'
 import TimerPage from './pages/TimerPage'
 import ExamsPage from './pages/ExamsPage'
 import SubjectsPage from './pages/SubjectsPage'
+import PlannerPage from './pages/PlannerPage'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import './styles/index.css'
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
           },
           { path: '/exams', element: <ExamsPage /> },
           { path: '/subjects', element: <SubjectsPage /> },
+          { path: '/planner', element: <PlannerPage /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },

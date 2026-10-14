@@ -41,6 +41,7 @@ from models.user_models import User
 from models.auth_session_models import AuthSession
 from models.exam_models import Exam
 from models.subject_models import Subject, Topic
+from models.task_models import Task
 
 
 # Crea tutte le tabelle definite dai modelli che ereditano da `Base`.
