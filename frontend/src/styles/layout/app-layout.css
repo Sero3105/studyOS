@@ -22,3 +22,15 @@
   flex: 1;
   flex-direction: column;
 }
+
+.content-area {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 40px;
+}
+
+@media (max-width: 700px) {
+  .content-area {
+    padding: 20px 16px 32px;
+  }
+}

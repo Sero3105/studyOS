@@ -18,7 +18,7 @@ function StudyActivityCard({ daily }: { daily: DayMinutes[] }) {
         <div className="activity-bars" role="img" aria-label="Minuti di studio degli ultimi sette giorni">
           {daily.map((day) => (
             <div className="activity-bar" key={day.date} title={`${day.date}: ${day.minutes} min`}>
-              <span style={{ height: `${Math.max(4, (day.minutes / max) * 100)}%` }} />
+              <span style={{ height: day.minutes ? `${Math.max(6, (day.minutes / max) * 100)}%` : '0%' }} />
               <small>{day.date.slice(5)}</small>
             </div>
           ))}
