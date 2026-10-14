@@ -13,6 +13,7 @@ import SubjectsPage from './pages/SubjectsPage'
 import PlannerPage from './pages/PlannerPage'
 import HistoryPage from './pages/HistoryPage'
 import GoalsPage from './pages/GoalsPage'
+import StatisticsPage from './pages/StatisticsPage'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import './styles/index.css'
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
           { path: '/planner', element: <PlannerPage /> },
           { path: '/history', element: <HistoryPage /> },
           { path: '/goals', element: <GoalsPage /> },
+          { path: '/statistics', element: <StatisticsPage /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },

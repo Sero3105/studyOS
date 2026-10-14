@@ -32,6 +32,8 @@ interface PomodoroTimerProps {
  */
 function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
   const savedRef = useRef(false)
+  const onWorkCompleteRef = useRef(onWorkComplete)
+  onWorkCompleteRef.current = onWorkComplete
   const [seconds, setSeconds] = useState(timer * 60)
   const [isRunning, setIsRunning] = useState(false)
   const [mode, setMode] = useState<'Work' | 'Break'>('Work')
@@ -59,7 +61,7 @@ function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
           if (currentMode === 'Work') {
             if (!savedRef.current) {
               savedRef.current = true
-              onWorkComplete?.(timer)
+              onWorkCompleteRef.current?.(timer)
             }
             setMode('Break')
             setIsRunning(true)

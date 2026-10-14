@@ -25,6 +25,7 @@ from routers.subject_router import router as subject_router
 from routers.task_router import router as task_router
 from routers.session_router import router as session_router
 from routers.goal_router import router as goal_router
+from routers.stats_router import router as stats_router
 import config
 
 
@@ -56,3 +57,4 @@ app.include_router(subject_router)
 app.include_router(task_router)
 app.include_router(session_router)
 app.include_router(goal_router)
+app.include_router(stats_router)
