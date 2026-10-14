@@ -241,3 +241,31 @@ Se vuoi, in un secondo momento posso anche preparare una versione ancora più de
 - una mappa dei componenti React,
 - una checklist per nuove feature,
 - o una mini guida “come aggiungere un modulo nuovo” (es. task, subjects, planner, statistics).
+
+## 13. Moduli completati (aggiornamento)
+
+Aree implementate end-to-end (frontend, API, persistenza, isolamento per utente):
+
+| Area | Backend | Frontend |
+|---|---|---|
+| Auth | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Login/Register, sessione ripristinata al reload |
+| Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` | `/subjects` |
+| Task | `/tasks` (CRUD, link materia/topic validati) | `/planner` con prossimi esami |
+| Esami | `/exams` (CRUD completo) | `/exams` con modifica ed eliminazione |
+| Sessioni | `/sessions` | Timer salva la sessione a fine focus; `/history` |
+| Obiettivi | `/goals` (progresso calcolato dai dati) | `/goals` |
+| Statistiche | `/stats/summary` | Dashboard e `/statistics` su dati reali |
+
+Assunzioni adottate: una sessione viene registrata quando il blocco Work del
+timer termina, con la durata pianificata; gli obiettivi misurano minuti
+(settimanali/totali), task completati, topic completati o numero di sessioni;
+la costanza (streak) conta i giorni consecutivi con almeno una sessione,
+incluso oggi o ieri.
+
+Database: le nuove tabelle (`subjects`, `topics`, `tasks`, `study_sessions`,
+`goals`) vengono create da `Base.metadata.create_all` all'avvio; nessuna
+colonna esistente è stata modificata, quindi il database di sviluppo è
+preservato senza migrazioni distruttive.
+
+Test: `backend/tests/` usa un database SQLite temporaneo isolato.
+Esecuzione: `source backend/.venv/bin/activate && python -m pytest backend/tests/ -q`.
