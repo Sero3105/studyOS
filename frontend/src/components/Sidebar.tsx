@@ -54,7 +54,7 @@ function Sidebar() {
 
         <nav className="sidebar-nav" aria-label="Main navigation">
           <p className="nav-label">Workspace</p>
-          <NavLink to="/" end className={getNavLinkClassName}>
+          <NavLink to="/dashboard" className={getNavLinkClassName}>
             <LayoutDashboard className="nav-icon" aria-hidden="true" />
             <span className="nav-text">Dashboard</span>
           </NavLink>
