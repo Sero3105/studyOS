@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { EmptyState, ErrorNotice } from '../ui/Feedback'
+import Meta from '../ui/Meta'
 import { updateTask } from '../../services/taskService'
 import type { Task } from '../../services/taskService'
 import { daysUntil, relativeDay } from '../../utils/dates'
@@ -62,13 +63,14 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
                 />
                 <span className="row-main">
                   <span className="row-title">{task.title}</span>
-                  <span className="row-meta">
-                    <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>
-                    {' · '}
-                    <span className={overdue ? 'text-danger' : undefined}>
-                      {task.due_date ? relativeDay(task.due_date) : 'Senza scadenza'}
-                    </span>
-                  </span>
+                  <Meta
+                    items={[
+                      <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>,
+                      <span className={overdue ? 'text-danger' : undefined}>
+                        {task.due_date ? relativeDay(task.due_date) : 'Senza scadenza'}
+                      </span>,
+                    ]}
+                  />
                 </span>
               </li>
             )

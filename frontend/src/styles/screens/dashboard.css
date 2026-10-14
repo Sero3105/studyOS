@@ -187,13 +187,6 @@
   color: inherit;
 }
 
-.task-mini .row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--space-1);
-}
-
 .text-danger {
   color: var(--danger);
 }

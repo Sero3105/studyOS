@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/useAuth'
+import { useTimer } from '../context/useTimer'
 
 interface NavEntry {
   to: string
@@ -72,6 +73,11 @@ interface SidebarProps {
  */
 function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuth()
+  const timer = useTimer()
+  const timerBadge =
+    timer.config && (timer.isRunning || timer.hasStarted)
+      ? `${Math.floor(timer.remainingSeconds / 60)}:${String(timer.remainingSeconds % 60).padStart(2, '0')}`
+      : null
   const navigate = useNavigate()
   const displayName = user?.full_name || user?.username || 'Studente'
   const initials = displayName
@@ -132,6 +138,12 @@ function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile }: Si
                   <NavLink to={to} className={linkClass} data-label={label}>
                     <Icon className="nav-icon" aria-hidden="true" />
                     <span className="nav-text">{label}</span>
+                    {to === '/timer' && timerBadge && (
+                      <span className={`nav-text nav-timer num${timer.mode === 'Break' ? ' is-break' : ''}`}>
+                        <span className="visually-hidden">, {timer.isRunning ? 'in corso' : 'in pausa'}: </span>
+                        {timerBadge}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               ))}

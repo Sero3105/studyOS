@@ -43,8 +43,15 @@
   transform: translateY(1px);
 }
 
+/*
+ * Disattivato: superficie neutra e testo attenuato, per tutte le varianti.
+ * Niente opacità sull'accento (diventava verde oliva): il pulsante si legge
+ * ancora (testo ≥ 4.5:1 sulla superficie) ma non sembra più cliccabile.
+ */
 .btn:disabled {
-  opacity: 0.5;
+  border-color: transparent;
+  color: var(--text-muted);
+  background: var(--surface-3);
 }
 
 .btn-lg {

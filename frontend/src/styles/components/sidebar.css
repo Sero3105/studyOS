@@ -130,6 +130,19 @@
   color: var(--accent);
 }
 
+/* Timer in corso, visibile da ogni pagina */
+
+.nav-timer {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.nav-timer.is-break {
+  color: var(--success);
+}
+
 /* Account */
 
 .sidebar-account {

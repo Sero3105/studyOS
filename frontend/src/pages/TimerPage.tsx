@@ -1,45 +1,39 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import PomodoroTimer from '../components/PomodoroTimer'
 import PageHeader from '../components/ui/PageHeader'
 import SessionSetupForm from '../components/timer/SessionSetupForm'
 import type { StudySessionConfig } from '../components/timer/types'
-import { createSession } from '../services/sessionService'
-import { todayIso } from '../utils/dates'
+import { useTimer } from '../context/useTimer'
 
 /**
  * Pagina dedicata al timer Pomodoro.
  *
  * Due stati:
- * - senza configurazione mostra il modulo per impostare la sessione;
- * - con una configurazione (arrivata dalla navigazione) mostra il timer a
- *   tutta pagina, con materia e argomento come titolo.
+ * - senza una sessione attiva mostra il modulo per impostarla;
+ * - con una sessione attiva mostra il timer a tutta pagina, con materia e
+ *   argomento come titolo.
  *
- * Al termine di ogni blocco di studio la sessione viene salvata nello
- * storico e l'esito compare sotto ai controlli.
+ * La sessione vive in `TimerProvider`: uscendo da questa pagina il timer
+ * continua, e tornandoci si ritrova al punto giusto. Una configurazione
+ * arrivata con la navigazione (dal dialog della dashboard o da Materie)
+ * avvia una nuova sessione e viene poi tolta dalla history, così tornare
+ * indietro o ricaricare non la reimposta.
  */
 function TimerPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const sessionConfig = location.state as StudySessionConfig | null
-  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle')
+  const incoming = location.state as StudySessionConfig | null
+  const { config, saveState, start, clear } = useTimer()
 
-  const handleWorkComplete = async (minutes: number) => {
-    if (!sessionConfig) return
-    try {
-      await createSession({
-        subject_id: sessionConfig.subjectId ?? undefined,
-        topic_id: sessionConfig.topicId ?? undefined,
-        duration_minutes: minutes,
-        studied_on: todayIso(),
-        notes: sessionConfig.notes || undefined,
-      })
-      setSaveState('saved')
-    } catch {
-      setSaveState('error')
-    }
-  }
+  useEffect(() => {
+    if (!incoming) return
+    start(incoming)
+    navigate('/timer', { replace: true, state: null })
+  }, [incoming, start, navigate])
+
+  const sessionConfig = config ?? incoming
 
   if (!sessionConfig) {
     return (
@@ -49,7 +43,7 @@ function TimerPage() {
           description="Scegli quanto studiare e su cosa. Ogni blocco di studio completato finisce nello storico."
         />
         <section className="panel timer-setup-panel" aria-label="Impostazioni della sessione">
-          <SessionSetupForm onSubmit={(config) => navigate('/timer', { state: config })} />
+          <SessionSetupForm onSubmit={start} />
         </section>
       </div>
     )
@@ -66,18 +60,14 @@ function TimerPage() {
         title={title}
         description={context}
         actions={
-          <Link className="btn btn-ghost" to="/timer" replace>
+          <button className="btn btn-ghost" type="button" onClick={clear}>
             <ArrowLeft aria-hidden="true" />
             Cambia sessione
-          </Link>
+          </button>
         }
       />
 
-      <PomodoroTimer
-        timer={sessionConfig.focusMinutes}
-        pause={sessionConfig.breakMinutes}
-        onWorkComplete={(minutes) => { void handleWorkComplete(minutes) }}
-      />
+      {config && <PomodoroTimer />}
 
       <div className="timer-footer" aria-live="polite">
         {sessionConfig.notes && <p className="timer-note">{sessionConfig.notes}</p>}

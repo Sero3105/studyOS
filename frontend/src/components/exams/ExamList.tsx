@@ -1,5 +1,6 @@
 import { CalendarDays, Clock3, MapPin, Pencil } from 'lucide-react'
 import ConfirmButton from '../ui/ConfirmButton'
+import Meta from '../ui/Meta'
 import type { Exam, ExamStatus } from '../../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../../utils/dates'
 
@@ -91,12 +92,16 @@ function ExamList({ exams, onEdit, onDelete }: ExamListProps) {
             </span>
             <span className="row-main">
               <span className="row-title">{exam.title}</span>
-              <span className="row-meta">
-                {exam.subject}
-                <span className="visually-hidden">, {formatDay(exam.exam_date, 'long')}</span>
-                {exam.exam_time && ` · ${exam.exam_time.slice(0, 5)}`}
-                {exam.location && ` · ${exam.location}`}
-              </span>
+              <Meta
+                items={[
+                  <>
+                    {exam.subject}
+                    <span className="visually-hidden">, {formatDay(exam.exam_date, 'long')}</span>
+                  </>,
+                  exam.exam_time?.slice(0, 5),
+                  exam.location,
+                ]}
+              />
             </span>
             <span className="exam-row-status">
               {!isPast && <span className={`exam-row-days num ${urgencyClass(days)}`}>{relativeDay(exam.exam_date)}</span>}

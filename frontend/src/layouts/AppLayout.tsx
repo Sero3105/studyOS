@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Menu, Play } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
+import { TimerProvider } from '../context/TimerProvider'
 
 const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
@@ -13,6 +14,9 @@ const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
  * - una barra superiore visibile solo su schermi stretti,
  * - l'area centrale, con larghezza massima e margini uguali per ogni route,
  *   dove `Outlet` renderizza la pagina corrente.
+ *
+ * Qui vive anche `TimerProvider`: il layout resta montato tra una route e
+ * l'altra, quindi il timer continua a girare mentre si naviga.
  *
  * Lo stato "ridotta" della sidebar viene ricordato tra una visita e l'altra;
  * il pannello mobile si chiude a ogni cambio di pagina e con Escape.
@@ -42,43 +46,45 @@ function AppLayout() {
   }, [mobileOpen])
 
   return (
-    <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
-      <a className="skip-link" href="#main-content">Vai al contenuto</a>
+    <TimerProvider>
+      <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
+        <a className="skip-link" href="#main-content">Vai al contenuto</a>
 
-      <header className="topbar">
-        <button
-          className="icon-btn"
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Apri il menu"
-          aria-expanded={mobileOpen}
-          aria-controls="app-sidebar"
-        >
-          <Menu aria-hidden="true" />
-        </button>
-        <Link to="/dashboard" className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <span className="brand-name">StudyOS</span>
-        </Link>
-        <Link to="/timer" className="icon-btn topbar-cta" aria-label="Nuova sessione">
-          <Play aria-hidden="true" />
-        </Link>
-      </header>
+        <header className="topbar">
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Apri il menu"
+            aria-expanded={mobileOpen}
+            aria-controls="app-sidebar"
+          >
+            <Menu aria-hidden="true" />
+          </button>
+          <Link to="/dashboard" className="brand">
+            <span className="brand-mark" aria-hidden="true" />
+            <span className="brand-name">StudyOS</span>
+          </Link>
+          <Link to="/timer" className="icon-btn topbar-cta" aria-label="Nuova sessione">
+            <Play aria-hidden="true" />
+          </Link>
+        </header>
 
-      <Sidebar
-        collapsed={collapsed}
-        mobileOpen={mobileOpen}
-        onToggleCollapsed={() => setCollapsed((value) => !value)}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
-      {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
+        <Sidebar
+          collapsed={collapsed}
+          mobileOpen={mobileOpen}
+          onToggleCollapsed={() => setCollapsed((value) => !value)}
+          onCloseMobile={() => setMobileOpen(false)}
+        />
+        {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
 
-      <main id="main-content" className="content" tabIndex={-1}>
-        <div className="content-inner">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+        <main id="main-content" className="content" tabIndex={-1}>
+          <div className="content-inner">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </TimerProvider>
   )
 }
 

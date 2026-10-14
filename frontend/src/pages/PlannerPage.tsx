@@ -5,6 +5,7 @@ import { ArrowRight, ChevronDown, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
 import ConfirmButton from '../components/ui/ConfirmButton'
+import Meta from '../components/ui/Meta'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createTask, deleteTask, getTasks, updateTask } from '../services/taskService'
 import type { Task, TaskPriority, TaskStatus } from '../services/taskService'
@@ -130,15 +131,18 @@ function PlannerPage() {
         <span className="row-main">
           <span className={`row-title${done ? ' is-done' : ''}`}>{task.title}</span>
           {task.description && <span className="task-description">{task.description}</span>}
-          <span className="row-meta task-meta">
-            <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>
-            {task.due_date && (
-              <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long')}>
-                {relativeDay(task.due_date)}
-              </span>
-            )}
-            {subject && <span>{subject}{topic ? ` / ${topic}` : ''}</span>}
-          </span>
+          <Meta
+            className="row-meta task-meta"
+            items={[
+              <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>,
+              task.due_date && (
+                <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long')}>
+                  {relativeDay(task.due_date)}
+                </span>
+              ),
+              subject && `${subject}${topic ? ` / ${topic}` : ''}`,
+            ]}
+          />
         </span>
         <span className="row-actions">
           {!done && (
@@ -310,10 +314,15 @@ function PlannerPage() {
                       </span>
                       <span className="row-main">
                         <span className="row-title">{exam.title}</span>
-                        <span className="row-meta">
-                          <span className="visually-hidden">{formatDay(exam.exam_date, 'long')}, </span>
-                          <span className={`exam-row-days ${urgencyClass(days)}`}>{relativeDay(exam.exam_date)}</span> · {exam.subject}
-                        </span>
+                        <Meta
+                          items={[
+                            <>
+                              <span className="visually-hidden">{formatDay(exam.exam_date, 'long')}, </span>
+                              <span className={`exam-row-days ${urgencyClass(days)}`}>{relativeDay(exam.exam_date)}</span>
+                            </>,
+                            exam.subject,
+                          ]}
+                        />
                       </span>
                     </li>
                   )

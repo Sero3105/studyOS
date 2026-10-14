@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { EmptyState } from '../ui/Feedback'
+import Meta from '../ui/Meta'
 import type { Exam } from '../../services/examService'
 import { daysUntil, formatDay, urgencyClass } from '../../utils/dates'
 
@@ -44,10 +45,7 @@ function UpcomingExams({ exams }: { exams: Exam[] }) {
                 </span>
                 <span className="row-main">
                   <span className="row-title">{exam.title}</span>
-                  <span className="row-meta">
-                    {exam.subject} · {formatDay(exam.exam_date)}
-                    {exam.exam_time ? `, ${exam.exam_time.slice(0, 5)}` : ''}
-                  </span>
+                  <Meta items={[exam.subject, `${formatDay(exam.exam_date)}${exam.exam_time ? `, ${exam.exam_time.slice(0, 5)}` : ''}`]} />
                 </span>
               </li>
             )

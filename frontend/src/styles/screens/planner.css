@@ -96,16 +96,7 @@
 }
 
 .task-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px var(--space-2);
   margin-top: 2px;
-}
-
-.task-meta > span + span::before {
-  margin-right: var(--space-2);
-  color: var(--text-muted);
-  content: '·';
 }
 
 .tag-button {
