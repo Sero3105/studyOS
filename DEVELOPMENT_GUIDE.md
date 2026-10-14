@@ -255,7 +255,7 @@ Se vuoi, in un secondo momento posso anche preparare una versione ancora più de
 Aree implementate end-to-end (frontend, API, persistenza, isolamento per utente):
 
 | Area | Backend | Frontend |
-|---|---|---|
+| --- | --- | --- |
 | Auth | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Login/Register, sessione ripristinata al reload |
 | Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` | `/subjects` |
 | Task | `/tasks` (CRUD, link materia/topic validati) | `/planner` con prossimi esami |

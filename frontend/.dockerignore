@@ -1,11 +1,13 @@
-# Le dipendenze si installano nell'immagine con `npm ci`.
+# Le dipendenze si installano nell'immagine con `npm ci`
+
 node_modules/
 dist/
 .vite/
 coverage/
 *.log
 
-# Mai segreti nel contesto di build: VITE_API_BASE_URL arriva come build arg.
+# Mai segreti nel contesto di build: VITE_API_BASE_URL arriva come build arg
+
 .env
 .env.*
 

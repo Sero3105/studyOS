@@ -1,380 +1,222 @@
-# StudyOS
+<div align="center">
 
-> A personal study operating system designed to help students plan, manage, track, and improve their study.
+# 📚 StudyOS
 
-## 📚 What is StudyOS?
+### Il tuo sistema operativo per lo studio
 
-**StudyOS** is a study management platform designed to bring the different aspects of studying into a single environment.
+**Pianifica. Studia. Traccia. Analizza. Migliora.** — tutto in un unico posto.
 
-It is not simply a Pomodoro timer or a task manager.
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](./compose.yaml)
+[![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](./backend)
+[![React](https://img.shields.io/badge/frontend-React_19-61DAFB?logo=react&logoColor=black)](./frontend)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](./frontend)
+[![SQLite](https://img.shields.io/badge/database-SQLite-003B57?logo=sqlite&logoColor=white)](./database)
 
-The goal is to create a complete **"operating system for studying"**, where students can organize their academic activities, plan their time, track what they actually study, and analyze their progress over time.
+[🚀 Quickstart](#-quickstart-3-minuti) · [✨ Funzionalità](#-funzionalità) · [🖼️ Screenshot](#️-screenshot) · [🛠️ Stack](#️-stack-tecnologico) · [📦 Struttura](#-struttura-del-progetto)
 
-StudyOS is built around a simple idea:
-
-> **Plan your study. Track what you do. Understand your progress. Improve your habits.**
-
----
-
-# 🎯 Objective
-
-The main objective of StudyOS is to help students study in a more **organized, measurable, and conscious way**.
-
-Students often use multiple tools to manage their studies:
-
-- A calendar for deadlines
-- A to-do list for assignments
-- A timer for study sessions
-- Notes for planning
-- Spreadsheets for tracking progress
-- Other applications for statistics and productivity
-
-StudyOS aims to bring these different aspects together into one coherent system.
-
-Instead of only tracking **how long** a student studies, StudyOS aims to provide a broader picture of their study process.
-
-For example:
-
-- What should I study?
-- What do I need to complete?
-- When should I study it?
-- How much time am I actually spending on each subject?
-- Am I following my plan?
-- Which subjects require more attention?
-- How consistent am I?
-- How is my progress changing over time?
+</div>
 
 ---
 
-# 🧩 What StudyOS Does
+## 🎬 Vedi StudyOS in azione
 
-StudyOS is designed around several interconnected areas.
+<div align="center">
 
-## 📅 Planning
+![Demo di StudyOS](./docs/media/demo.gif)
 
-StudyOS allows students to organize their study activities and plan what they need to do.
+*Timer Pomodoro → sessione registrata → dashboard e statistiche aggiornate.*
 
-Planning can include:
+</div>
 
-- Subjects
-- Topics
-- Tasks
-- Assignments
-- Deadlines
-- Study sessions
-- Goals
-
-The purpose is to transform a student's academic workload into an organized and manageable plan.
+> Non un altro timer. Non un'altra to-do list.
+> **StudyOS collega piano e realtà**: cosa dovevi studiare vs. cosa hai studiato davvero.
 
 ---
 
-## 📝 Tasks
+## ✨ Funzionalità
 
-Students can keep track of the things they need to complete.
+| | Area | Cosa fa |
+|---|---|---|
+| 📅 | **Planner** | Task con materia, topic, priorità, scadenze e stato |
+| ⏱️ | **Timer Pomodoro** | Focus persistente tra le pagine, salva la sessione a fine blocco |
+| 📚 | **Materie & Topic** | Gerarchia `Materia → Topic` collegata a sessioni e progressi |
+| 📝 | **Esami** | CRUD completo con scadenze e countdown |
+| 🎯 | **Obiettivi** | Minuti settimanali/totali, task, topic, sessioni — progresso calcolato dai dati reali |
+| 📊 | **Statistiche** | Tempo totale, per materia/topic, attività giornaliera/settimanale/mensile, streak |
+| 🕘 | **Storico** | Sessioni raggruppate per giorno con totali |
+| 🔐 | **Auth** | Register/login, refresh cookie-based, sessione ripristinata al reload |
 
-Tasks can be associated with specific subjects or areas of study and can include information such as:
-
-- Title
-- Description
-- Deadline
-- Priority
-- Status
-- Subject
-- Topic
-
-This allows academic work to be managed in one centralized place.
-
----
-
-## 📚 Subjects & Topics
-
-StudyOS organizes studying around subjects and topics.
-
-For example:
+### 🔄 Il ciclo StudyOS
 
 ```text
-Computer Networks
-│
-├── HTTP
-├── TCP/IP
-├── DNS
-└── Routing
+PLAN → STUDY → TRACK → ANALYZE → IMPROVE → PLAN (di nuovo, meglio)
 ```
 
-This structure allows study activity and progress to be connected to the actual content being studied.
+Ogni parte alimenta la successiva: un task genera una sessione, la sessione alimenta le statistiche, le statistiche migliorano il piano.
+
+<div align="center">
+
+![Dashboard](./docs/media/dashboard.jpg)
+
+*La dashboard: focus di oggi, scadenze, statistiche compatte, attività recente.*
+
+</div>
 
 ---
 
-## ⏱️ Study Sessions
+## 🖼️ Screenshot
 
-StudyOS tracks actual study activity through study sessions.
+| Timer Pomodoro | Statistiche | Materie |
+|---|---|---|
+| ![Timer](./docs/media/timer.jpg) | ![Statistiche](./docs/media/statistics.jpg) | ![Materie](./docs/media/subjects.jpg) |
 
-A session can contain information such as:
+| Planner | Esami | Obiettivi |
+|---|---|---|
+| ![Planner](./docs/media/planner.jpg) | ![Esami](./docs/media/exams.jpg) | ![Obiettivi](./docs/media/goals.jpg) |
 
-```text
-Subject: Computer Networks
-Topic: HTTP
-Duration: 1h 30m
-Date: September 16
-```
+| Storico | Login | Mobile |
+|---|---|---|
+| ![Storico](./docs/media/history.jpg) | ![Login](./docs/media/login.jpg) | ![Mobile](./docs/media/mobile-dashboard.jpg) |
 
-This makes it possible to distinguish between what a student **planned to study** and what they **actually studied**.
-
----
-
-## 🎯 Goals
-
-Students can define personal study goals.
-
-For example:
-
-```text
-Complete the HTTP chapter
-Study 15 hours this week
-Finish the Database assignment
-Prepare for the Mathematics exam
-```
-
-Goals provide a way to define objectives and measure progress toward them.
+> 📁 Tutte le immagini stanno in [`docs/media/`](./docs/media). Video demo: [`demo.mp4`](./docs/media/demo.mp4).
 
 ---
 
-## 📊 Progress & Statistics
+## 🚀 Quickstart (3 minuti)
 
-StudyOS collects information about study activity and turns it into useful statistics.
-
-Examples include:
-
-- Total study time
-- Study time by subject
-- Study time by topic
-- Daily activity
-- Weekly activity
-- Monthly activity
-- Completed tasks
-- Goal progress
-- Study consistency
-
-The purpose is not simply to display numbers.
-
-The objective is to help students **understand their study behavior**.
-
----
-
-# 🔄 The StudyOS Cycle
-
-The platform is built around a continuous cycle:
-
-```text
-       ┌──────────┐
-       │   PLAN   │
-       └────┬─────┘
-            │
-            ▼
-       ┌──────────┐
-       │  STUDY   │
-       └────┬─────┘
-            │
-            ▼
-       ┌──────────┐
-       │  TRACK   │
-       └────┬─────┘
-            │
-            ▼
-       ┌──────────┐
-       │ ANALYZE  │
-       └────┬─────┘
-            │
-            ▼
-       ┌──────────┐
-       │ IMPROVE  │
-       └────┬─────┘
-            │
-            └──────────► PLAN
-```
-
-This is the core philosophy behind StudyOS.
-
-The system should not only help students **do more**.
-
-It should help them understand **how they study** and make better decisions about their time.
-
----
-
-# 📈 Long-Term Vision
-
-The long-term vision of StudyOS is to become a complete personal **study operating system**.
-
-The platform should eventually connect:
-
-```text
-                    STUDYOS
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-        ▼              ▼              ▼
-     PLANNING       TRACKING       ANALYTICS
-        │              │              │
-        ▼              ▼              ▼
-      Tasks        Sessions       Statistics
-      Goals        Time           Progress
-      Calendar     Activity       Trends
-        │              │              │
-        └──────────────┼──────────────┘
-                       │
-                       ▼
-                BETTER STUDYING
-```
-
-The idea is to create a system where every part of the study process is connected.
-
-A task can lead to a study session.
-
-A study session contributes to progress.
-
-Progress generates statistics.
-
-Statistics can then help improve future planning.
-
----
-
-# 💡 Core Idea
-
-StudyOS is based on a simple principle:
-
-> **Studying should be something you can understand, not just something you can measure.**
-
-A timer can tell you that you studied for two hours.
-
-A task manager can tell you that you have three assignments left.
-
-A calendar can tell you that an exam is next week.
-
-StudyOS aims to connect all of this information and provide a complete picture of the student's study process.
-
----
-
-# 🚀 Vision
-
-StudyOS aims to become a centralized environment where a student can:
-
-**Plan → Study → Track → Analyze → Improve**
-
-all within the same system.
-
-The ultimate goal is to make studying more **organized, measurable, and adaptive**, while keeping the experience simple enough to use every day.
-
----
-
-# 🐳 Run with Docker
-
-StudyOS runs entirely in Docker. You don't need Python or Node.js on your machine.
-
-## What runs
-
-| Service | Image | Role | Port |
-| --- | --- | --- | --- |
-| `web` | nginx (unprivileged, Alpine) | Serves the built frontend and forwards `/api/*` to the backend | `127.0.0.1:8080` (the only published port) |
-| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, one uvicorn process; SQLite runs inside it | internal only |
-
-There is no database container. SQLite is a file inside the named volume `studyos-data`, mounted at `/data` in `api`.
-
-The browser only talks to `http://localhost:8080`. API calls go to `/api/...` on the same origin, so no CORS is involved and the auth cookies work unchanged. nginx rewrites the refresh cookie path from `/auth` to `/api/auth`.
-
-## First run
-
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine with the Compose plugin.
-2. Create the environment file and set a real secret:
-
-   ```bash
-   cp .env.example .env
-   python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # paste the output as SECRET_KEY in .env
-   ```
-
-   `SECRET_KEY` is required: Compose refuses to start without it, and the backend refuses the placeholder value. `.env` is git-ignored and never copied into an image.
-3. Start:
-
-   ```bash
-   docker compose up --build -d
-   ```
-
-4. Open **<http://localhost:8080>** and register an account.
-
-## Everyday commands
+Serve solo **Docker**. Niente Python o Node installati.
 
 ```bash
-docker compose up -d              # start (after the first build)
-docker compose down               # stop and remove containers; data stays in the volume
-docker compose up --build -d      # rebuild images after code changes; data stays
-docker compose ps                 # status and health
-docker compose logs -f api        # follow backend logs (web for nginx)
-docker stats                      # live RAM/CPU per container
-docker image ls studyos-*         # image sizes
+cp .env.example .env
+python3 -c "import secrets; print(secrets.token_urlsafe(48))"  # → incolla come SECRET_KEY in .env
+docker compose up --build -d
 ```
 
-> ⚠️ Never use `docker compose down -v` for routine work: `-v` deletes the `studyos-data` volume, and with it every user and every study session.
-
-## Where the data lives
-
-- **Docker:** in the named volume `studyos_studyos-data`, at `/data/studyos.db` inside `api`. The volume survives `down`, restarts, container recreation and image rebuilds.
-- **Local development:** `database/studyos.db` in the repository, as before. Docker never reads or writes this file.
-
-### Back up the Docker database
+Apri **http://localhost:8080** e registrati. Fatto. 🎉
 
 ```bash
+docker compose up -d        # avvia
+docker compose down         # ferma (dati al sicuro nel volume)
+docker compose logs -f api  # log backend (web per nginx)
+```
+
+> ⚠️ Mai `docker compose down -v` per routine: cancella il volume con tutti gli utenti e le sessioni.
+
+<details>
+<summary><strong>🐳 Dettagli Docker, backup e configurazione</strong></summary>
+
+### Cosa gira
+
+| Servizio | Immagine | Ruolo | Porta |
+|---|---|---|---|
+| `web` | nginx unprivileged (Alpine) | Serve il frontend, inoltra `/api/*` al backend | `127.0.0.1:8080` (unica pubblicata) |
+| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, un processo uvicorn, SQLite dentro | solo rete interna |
+
+Nessun container database: SQLite è un file nel volume `studyos-data` (`/data` in `api`). Il browser parla solo con `http://localhost:8080`, quindi niente CORS e i cookie auth funzionano.
+
+### Dati e backup
+
+- **Docker:** volume `studyos_studyos-data`, `/data/studyos.db` in `api`. Sopravvive a `down`, restart e rebuild.
+- **Sviluppo locale:** `database/studyos.db` nel repo. Docker non lo tocca mai.
+
+```bash
+# Backup del database Docker
 docker compose exec -T api python -c "import sqlite3; sqlite3.connect('/data/studyos.db').backup(sqlite3.connect('/tmp/backup.db'))"
 docker compose exec -T api cat /tmp/backup.db > studyos-backup.db
-```
 
-### Import an existing local database (explicit, one time)
-
-Docker never copies your personal database automatically. To move `database/studyos.db` into Docker, do it **before the first start**, so the volume is still empty:
-
-```bash
+# Import una tantum del DB locale (prima del primo avvio, volume vuoto)
 docker compose build
 docker compose run --rm --no-deps -T api sh -c 'test ! -e /data/studyos.db && cat > /data/studyos.db' < database/studyos.db
 docker compose up -d
-```
 
-The `test ! -e` guard refuses to overwrite a database that already exists in the volume. If Docker has already created one, back it up first (see above), then remove the volume as described in the next section.
-
-### Reset a disposable database
-
-This deletes all Docker data on purpose. Back up first if anything matters.
-
-```bash
+# Reset volontario (cancella tutto — backup prima!)
 docker compose down
 docker volume rm studyos_studyos-data
 docker compose up -d
 ```
 
-## Configuration
+### Configurazione (`.env`)
 
-All values come from `.env` (see `.env.example`):
-
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `SECRET_KEY` | — (required) | At least 32 random characters, unique per installation |
-| `APP_ENV` | `development` | `production` marks cookies `Secure`: use it only behind HTTPS |
+| Variabile | Default | Note |
+|---|---|---|
+| `SECRET_KEY` | — (obbligatoria) | ≥32 caratteri casuali, unica per installazione |
+| `APP_ENV` | `development` | `production` = cookie `Secure`, solo dietro HTTPS |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` / `REFRESH_TOKEN_EXPIRE_DAYS` | `30` / `7` | |
-| `STUDYOS_PORT` | `8080` | Host port, bound to 127.0.0.1 only |
-| `STUDYOS_ORIGIN` | `http://localhost:<port>` | Public origin, if StudyOS is served elsewhere |
-| `API_MEMORY_LIMIT` / `API_CPUS` | `256M` / `1.0` | Container limits |
-| `WEB_MEMORY_LIMIT` / `WEB_CPUS` | `64M` / `0.5` | Container limits |
+| `STUDYOS_PORT` | `8080` | Bind su 127.0.0.1 |
+| `STUDYOS_ORIGIN` | `http://localhost:<port>` | Origine pubblica se diversa |
+| `API_MEMORY_LIMIT` / `API_CPUS` | `256M` / `1.0` | Limiti container |
+| `WEB_MEMORY_LIMIT` / `WEB_CPUS` | `64M` / `0.5` | Limiti container |
 
-In Docker, `DATABASE_URL` and `FRONTEND_ORIGINS` are set by `compose.yaml`. The `DATABASE_URL` in your `.env`, used for local development, does not apply inside the containers.
+**HTTPS:** setup di default = HTTP su localhost. In produzione: proxy TLS davanti, `APP_ENV=production`, `STUDYOS_ORIGIN=https://…`.
 
-**HTTPS:** the default setup is plain HTTP on localhost, intended for local use. For a real deployment, put StudyOS behind a TLS-terminating proxy, set `APP_ENV=production` and set `STUDYOS_ORIGIN` to the `https://` address.
+</details>
 
-## Resources
+---
 
-- Builds are multi-stage. Node, `node_modules`, TypeScript, pip caches and tests stay in the build stages; the runtime images contain only nginx with the static files, and Python with the app's dependencies.
-- One uvicorn process. SQLite does not benefit from several writers on the same file.
-- Memory and CPU limits are conservative defaults, adjustable in `.env`. Lower them only after checking `docker stats` on your machine.
-- Container logs are capped at 3 × 10 MB per service.
-- Hardening: non-root users, read-only root filesystems (only `/data` and a small `/tmp` are writable), all Linux capabilities dropped, `no-new-privileges`, no Docker socket, no host networking.
+## 🛠️ Stack tecnologico
 
-## Development vs production
+| Layer | Tecnologie |
+|---|---|
+| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · CSS vanilla con design token |
+| **Backend** | FastAPI · SQLAlchemy · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
+| **Database** | SQLite (file nel volume Docker, `database/studyos.db` in locale) |
+| **Deploy** | Docker Compose · nginx (statici + proxy `/api`) · immagini multi-stage |
 
-- **Docker (`compose.yaml`)** is the production-style setup: one build, static files served by nginx, no dev servers, no hot reload, no source mounts.
-- **Development** still uses the local workflow described in `DEVELOPMENT_GUIDE.md`: `uvicorn main:app --reload` plus `npm run dev`, with hot reload, on `http://localhost:5173`.
+**Design:** dark-first, superfici quasi-nere, accento viola, flat (no gradienti), transizioni 160 ms, `prefers-reduced-motion` rispettato, target touch 44 px, breakpoint 700/900 px. Token in `frontend/src/styles/base/tokens.css`.
+
+---
+
+## 📦 Struttura del progetto
+
+```text
+StudyOS/
+├── compose.yaml          # setup produzione (nginx + api)
+├── .env.example          # template variabili
+├── backend/
+│   ├── main.py           # entry FastAPI + mount router
+│   ├── config.py / database.py
+│   ├── models/           # tabelle SQLAlchemy
+│   ├── schemas/          # validazione Pydantic
+│   ├── services/         # logica di business
+│   ├── routers/          # endpoint HTTP (solo orchestrazione)
+│   └── tests/            # pytest su SQLite temporaneo
+├── frontend/
+│   └── src/
+│       ├── pages/        # dashboard, timer, planner, subjects, exams, goals, history, statistics
+│       ├── components/   # sidebar, pomodoro, form, UI kit
+│       ├── context/      # auth + timer persistente
+│       └── styles/       # base / layout / componenti / schermate
+├── database/             # studyos.db locale (mai toccato da Docker)
+└── docs/media/           # screenshot + demo
+```
+
+**Regola d'oro:** router orchestra, service ragiona, schema valida. Dettagli in [`DEVELOPMENT_GUIDE.md`](./DEVELOPMENT_GUIDE.md).
+
+### Sviluppo locale (hot reload)
+
+```bash
+cd backend && pip install -r requirements-dev.txt && uvicorn main:app --reload  # :8000
+cd frontend && npm install && npm run dev                                        # :5173
+```
+
+Test backend: `python -m pytest backend/tests/ -q`
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Auth, materie/topic, task, esami, sessioni, obiettivi, statistiche
+- [ ] Calendario integrato e pianificazione settimanale
+- [ ] Import/export dati e backup one-click
+- [ ] Notifiche scadenze e reminder intelligenti
+- [ ] Condivisione piani di studio
+
+---
+
+<div align="center">
+
+**StudyOS — studia in modo che puoi capire, non solo misurare.**
+
+*Se ti aiuta a studiare meglio, lascia una ⭐ — è carburante per il progetto.*
+
+</div>
