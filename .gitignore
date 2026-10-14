@@ -1,4 +1,16 @@
 .env
+.env.*
+!.env.example
+
+# Local databases — never commit real user data
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+*-journal
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # Python
 __pycache__/
