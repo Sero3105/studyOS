@@ -47,7 +47,7 @@ function HistoryPage() {
             const dayTotal = daySessions.reduce((sum, s) => sum + s.duration_minutes, 0)
             return (
               <div className="history-day" key={day}>
-                <div className="history-day-head"><h2>{day}</h2><span className="muted-note">{dayTotal} minuti · {daySessions.length} sessioni</span></div>
+                <div className="history-day-head"><h2>{new Intl.DateTimeFormat('it-IT', { dateStyle: 'full' }).format(new Date(`${day}T00:00:00`))}</h2><span className="muted-note">{dayTotal} minuti · {daySessions.length} sessioni</span></div>
                 {daySessions.map((session) => (
                   <article className="dashboard-card task-row" key={session.id}>
                     <div>

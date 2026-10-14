@@ -225,6 +225,13 @@
 
 .exams-empty-action {
   margin-top: 2px;
+  min-height: 44px;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.exams-empty-action:hover {
+  background: var(--accent-strong);
 }
 
 .exams-loading-dot {

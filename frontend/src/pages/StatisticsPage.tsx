@@ -58,7 +58,12 @@ function StatisticsPage() {
 
         <article className="dashboard-card">
           <h2>Ultimi 7 giorni</h2>
-          <ul className="topic-list">{stats.daily.map((d) => <li key={d.date}><span>{d.date}</span><span>{d.minutes} min</span></li>)}</ul>
+          <ul className="topic-list">{stats.daily.map((d) => (
+            <li key={d.date}>
+              <span>{new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric' }).format(new Date(`${d.date}T00:00:00`))}</span>
+              <span>{d.minutes} min</span>
+            </li>
+          ))}</ul>
         </article>
       </div>
 
