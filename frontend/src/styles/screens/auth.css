@@ -14,14 +14,14 @@
   padding: 34px clamp(24px, 5vw, 48px) 38px;
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: rgba(20, 27, 36, 0.92);
+  background: var(--surface);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
 }
 
 .auth-card-register {
   padding-bottom: 42px;
-  border-color: rgba(97, 212, 194, 0.24);
-  background: linear-gradient(145deg, rgba(20, 27, 36, 0.98), rgba(18, 31, 35, 0.94));
+  border-color: var(--accent-border);
+  background: var(--surface);
 }
 
 .auth-brand {
@@ -167,7 +167,7 @@
   border-radius: 9px;
   outline: none;
   color: var(--text-strong);
-  background: rgba(13, 17, 23, 0.72);
+  background: var(--surface-2);
   font: inherit;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -183,7 +183,7 @@
 
 .auth-error {
   margin: -4px 0 0;
-  color: #ff9d9d;
+  color: var(--danger);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -197,7 +197,7 @@
   padding: 0 16px 0 18px;
   border: 1px solid var(--accent);
   border-radius: 9px;
-  color: #0d1117;
+  color: var(--on-accent);
   background: var(--accent);
   font-size: 0.9rem;
   font-weight: 800;
@@ -226,7 +226,7 @@
   position: absolute;
   width: 28rem;
   height: 28rem;
-  border: 1px solid rgba(97, 212, 194, 0.08);
+  border: 1px solid var(--accent-bg);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -239,7 +239,7 @@
 .auth-decoration-right {
   right: -14rem;
   bottom: -17rem;
-  box-shadow: 0 0 0 40px rgba(97, 212, 194, 0.025), 0 0 0 80px rgba(97, 212, 194, 0.02);
+  box-shadow: 0 0 0 40px var(--accent-bg), 0 0 0 80px var(--accent-bg);
 }
 
 @media (max-width: 520px) {

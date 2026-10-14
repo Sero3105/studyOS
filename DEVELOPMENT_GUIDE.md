@@ -269,3 +269,16 @@ preservato senza migrazioni distruttive.
 
 Test: `backend/tests/` usa un database SQLite temporaneo isolato.
 Esecuzione: `source backend/.venv/bin/activate && python -m pytest backend/tests/ -q`.
+
+## 14. Design system (redesign UI/UX)
+
+Direzione: dark-first, superfici quasi-nere, accento viola unico, stile piatto
+(niente gradienti/glow), transizioni 150-200ms, `prefers-reduced-motion`
+rispettato. Tutti i valori vivono in `frontend/src/styles/base/tokens.css`:
+superfici, testo, accento, colori semantici, tipografia, spaziature, raggi,
+ombre, focus ring, z-index. I componenti usano solo token semantici.
+
+Convenzioni: target touch minimi 44px, focus visibile su ogni controllo
+interattivo, contrasto testo almeno 4.5:1, stati loading/vuoto/errore per
+ogni pagina dati. Breakpoint principale 700px: sotto, la sidebar parte
+compressa a icone.

@@ -11,7 +11,7 @@
   padding: clamp(24px, 5vw, 48px);
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(26, 35, 48, 0.96), rgba(20, 27, 36, 0.94));
+  background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
 }
 
@@ -59,7 +59,6 @@
 
 .ring-progress {
   stroke: var(--accent);
-  filter: drop-shadow(0 0 8px rgba(97, 212, 194, 0.24));
 }
 
 .timer-value {
@@ -77,6 +76,7 @@
 
 .button {
   min-width: 104px;
+  min-height: 44px;
   padding: 11px 18px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -90,7 +90,7 @@
 }
 
 .button-primary {
-  color: #0d1117;
+  color: var(--on-accent);
   background: var(--accent);
 }
 

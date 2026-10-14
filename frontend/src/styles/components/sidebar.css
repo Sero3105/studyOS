@@ -8,12 +8,13 @@
 
 .sidebar {
   position: relative;
+  z-index: var(--z-sidebar);
   width: 248px;
   min-height: 100vh;
   flex: 0 0 248px;
   padding: 32px 18px;
   border-right: 1px solid var(--border);
-  background: rgba(13, 17, 23, 0.82);
+  background: var(--surface);
   transition: width 180ms ease, flex-basis 180ms ease;
 }
 
@@ -72,7 +73,7 @@
   height: 32px;
   place-items: center;
   border-radius: 10px;
-  color: #0d1117;
+  color: var(--on-accent);
   background: var(--accent);
   font-weight: 800;
 }
@@ -96,6 +97,7 @@
   align-items: center;
   gap: 14px;
   padding: 11px 12px;
+  min-height: 44px;
   border-radius: 8px;
   color: var(--text-muted);
   font-size: 0.92rem;

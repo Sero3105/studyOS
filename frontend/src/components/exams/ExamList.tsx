@@ -14,6 +14,17 @@ interface ExamListProps {
   onDelete: (exam: Exam) => void
 }
 
+function daysLabel(examDate: string): string {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const date = new Date(`${examDate}T00:00:00`)
+  const days = Math.round((date.getTime() - today.getTime()) / 86400000)
+  if (days < 0) return 'Data passata'
+  if (days === 0) return 'Oggi'
+  if (days === 1) return 'Domani'
+  return `Tra ${days} giorni`
+}
+
 function ExamList({ exams, onEdit, onDelete }: ExamListProps) {
   return (
     <div className="exam-list">
@@ -25,7 +36,7 @@ function ExamList({ exams, onEdit, onDelete }: ExamListProps) {
               <h2>{exam.title}</h2>
             </div>
             <span className={`exam-status exam-status-${exam.status}`}>
-              {statusLabels[exam.status]}
+              {statusLabels[exam.status]} · {daysLabel(exam.exam_date)}
             </span>
           </div>
 

@@ -41,11 +41,12 @@
   gap: 8px;
   border: 1px solid var(--accent-border);
   border-radius: 9px;
-  color: #0d1117;
+  color: var(--on-accent);
   background: var(--accent);
   font-size: 0.86rem;
   font-weight: 700;
   padding: 11px 16px;
+  min-height: 44px;
   text-decoration: none;
   transition: opacity 160ms ease, transform 160ms ease;
 }
@@ -67,6 +68,7 @@
 
 .page-header h1 {
   margin: 0;
+  overflow-wrap: anywhere;
   color: var(--text-strong);
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   letter-spacing: -0.04em;

@@ -65,7 +65,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-strong);
-  background: rgba(13, 17, 23, 0.72);
+  background: var(--surface-2);
   font: inherit;
   font-size: 0.82rem;
   padding: 11px 12px;
@@ -75,7 +75,7 @@
 .session-setup-form input:focus,
 .session-setup-form textarea:focus {
   border-color: var(--accent-border);
-  outline: 2px solid rgba(97, 212, 194, 0.12);
+  outline: 2px solid var(--accent-bg);
 }
 
 .session-setup-form input::placeholder,
@@ -97,7 +97,7 @@
   overflow-y: auto;
   padding: 24px;
   place-items: center;
-  background: rgba(5, 8, 12, 0.76);
+  background: rgba(4, 5, 8, 0.72);
 }
 
 .session-modal {

@@ -29,7 +29,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at 85% 8%, rgba(97, 212, 194, 0.07), transparent 28rem), var(--bg);
+  background: var(--bg);
+  line-height: var(--line-body);
+}
+
+::selection {
+  background: var(--accent-bg);
+  color: var(--text-strong);
 }
 
 button,
@@ -42,7 +48,21 @@ button {
 }
 
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

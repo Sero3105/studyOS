@@ -47,7 +47,7 @@
 .dashboard-card {
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(145deg, rgba(20, 27, 36, 0.96), rgba(16, 22, 30, 0.96));
+  background: var(--surface);
 }
 
 .stat-card {

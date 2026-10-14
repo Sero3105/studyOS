@@ -76,6 +76,14 @@ function SubjectsPage() {
                 <h2><BookOpen size={18} aria-hidden="true" /> {subject.name}</h2>
                 <button className="icon-action" type="button" onClick={() => removeSubject(subject.id)} aria-label={`Elimina ${subject.name}`}><Trash2 size={16} /></button>
               </div>
+              {subject.topics.length > 0 && (
+                <>
+                  <p className="muted-note">{subject.topics.filter((t) => t.completed).length}/{subject.topics.length} argomenti completati</p>
+                  <div className="progress-track" role="progressbar" aria-valuenow={Math.round((subject.topics.filter((t) => t.completed).length / subject.topics.length) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Progresso ${subject.name}`}>
+                    <span style={{ width: `${(subject.topics.filter((t) => t.completed).length / subject.topics.length) * 100}%` }} />
+                  </div>
+                </>
+              )}
               {subject.topics.length === 0 ? <p className="muted-note">Nessun argomento.</p> : (
                 <ul className="topic-list">
                   {subject.topics.map((topic) => (

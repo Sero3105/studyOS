@@ -1,25 +1,71 @@
 /**
- * Design tokens globali.
- *
- * Per convenzione, i colori, i font e le variabili progettuali vengono definiti
- * qui in un unico punto. Questo semplifica molto il refactoring del design,
- * perché cambiare lo schema cromatico o il tipo di carattere non richiede di
- * cercare in ogni file CSS.
- *
- * Le variabili in `:root` sono accessibili ovunque nel frontend, e i componenti
- * fanno riferimento a esse tramite `var(--nome-variabile)`.
+ * Design tokens globali: unico punto di verità per colori, tipografia,
+ * spaziature, raggi, ombre, focus e transizioni. I componenti usano solo
+ * token semantici, mai valori letterali.
  */
 
 :root {
-  --text: #aab3c2;
-  --text-muted: #707b8d;
-  --text-strong: #f3f6fb;
-  --bg: #0d1117;
-  --surface: #141b24;
-  --border: #263242;
-  --accent: #61d4c2;
-  --accent-strong: #9ae8dc;
-  --accent-bg: rgba(97, 212, 194, 0.12);
-  --accent-border: rgba(97, 212, 194, 0.42);
+  /* Superfici */
+  --bg: #08090d;
+  --surface: #10131a;
+  --surface-2: #161b26;
+  --surface-3: #1c2231;
+  --border: #232a3a;
+  --border-strong: #313a4f;
+
+  /* Testo */
+  --text: #c2c9d8;
+  --text-muted: #8e99ae;
+  --text-strong: #f4f6fb;
+
+  /* Accento primario: viola sofisticato, leggibile su quasi-nero */
+  --accent: #a78bfa;
+  --accent-strong: #c4b0fc;
+  --accent-solid: #8b74f2;
+  --accent-bg: rgba(167, 139, 250, 0.12);
+  --accent-border: rgba(167, 139, 250, 0.45);
+  --on-accent: #16101f;
+
+  /* Colori semantici */
+  --success: #4ade80;
+  --success-bg: rgba(74, 222, 128, 0.12);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --info: #7dd3fc;
+  --info-bg: rgba(125, 211, 252, 0.12);
+
+  /* Tipografia */
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-xs: 0.72rem;
+  --font-sm: 0.82rem;
+  --font-base: 0.95rem;
+  --font-lg: 1.1rem;
+  --font-xl: 1.35rem;
+  --line-body: 1.55;
+
+  /* Spaziature */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Raggi e ombre */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+  /* Focus e movimento */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --transition: 160ms ease;
+
+  /* Livelli */
+  --z-sidebar: 20;
+  --z-modal: 60;
+  --z-toast: 80;
 }

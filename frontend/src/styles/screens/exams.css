@@ -51,7 +51,13 @@
 
 .exams-primary-action {
   flex: 0 0 auto;
-  min-height: 42px;
+  min-height: 44px;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.exams-primary-action:hover {
+  background: var(--accent-strong);
 }
 
 .exams-summary {
@@ -62,7 +68,7 @@
   padding: 16px 22px;
   border: 1px solid var(--border);
   border-radius: 13px;
-  background: rgba(20, 27, 36, 0.68);
+  background: var(--surface-2);
 }
 
 .exams-summary > div:first-child {
@@ -141,15 +147,15 @@
 }
 
 .exam-status-passed {
-  color: #a9e7b6;
-  border-color: rgba(117, 220, 139, 0.34);
-  background: rgba(117, 220, 139, 0.1);
+  color: var(--success);
+  border-color: var(--success-bg);
+  background: var(--success-bg);
 }
 
 .exam-status-failed {
-  color: #f1a6a6;
-  border-color: rgba(232, 112, 112, 0.34);
-  background: rgba(232, 112, 112, 0.1);
+  color: var(--danger);
+  border-color: var(--danger-bg);
+  background: var(--danger-bg);
 }
 
 .exam-card-details {
@@ -174,7 +180,7 @@
 .exam-card-notes {
   margin: 18px 0 0;
   padding-top: 14px;
-  border-top: 1px solid rgba(38, 50, 66, 0.72);
+  border-top: 1px solid var(--surface-2);
   color: var(--text-muted);
   font-size: 0.76rem;
   line-height: 1.55;
@@ -259,7 +265,7 @@
 
 .exam-form-section {
   padding: 0 0 26px;
-  border-bottom: 1px solid rgba(38, 50, 66, 0.8);
+  border-bottom: 1px solid var(--surface-2);
 }
 
 .exam-form-section + .exam-form-section {
@@ -333,7 +339,7 @@
   border-radius: 9px;
   outline: none;
   color: var(--text-strong);
-  background: rgba(10, 15, 22, 0.76);
+  background: rgba(4, 5, 8, 0.72);
   font: inherit;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -357,7 +363,7 @@
 
 .exam-form-field input::placeholder,
 .exam-form-field textarea::placeholder {
-  color: #566274;
+  color: var(--text-muted);
 }
 
 .exam-form-field input:focus,
@@ -370,10 +376,10 @@
 .exam-form-error {
   margin: 16px 0 0;
   padding: 10px 12px;
-  border: 1px solid rgba(232, 112, 112, 0.34);
+  border: 1px solid var(--danger-bg);
   border-radius: 9px;
-  color: #f1a6a6;
-  background: rgba(232, 112, 112, 0.1);
+  color: var(--danger);
+  background: var(--danger-bg);
   font-size: 0.76rem;
 }
 
@@ -384,7 +390,7 @@
   gap: 10px;
   margin-top: 28px;
   padding-top: 22px;
-  border-top: 1px solid rgba(38, 50, 66, 0.8);
+  border-top: 1px solid var(--surface-2);
 }
 
 .exam-actions .button {

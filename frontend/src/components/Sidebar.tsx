@@ -27,7 +27,7 @@ import {
  * più chiara dal punto di vista visivo.
  */
 function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(() => window.innerWidth > 700)
 
   const getNavLinkClassName = ({ isActive }: { isActive: boolean }) =>
     `nav-item${isActive ? ' active' : ''}`
