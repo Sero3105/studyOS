@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 interface PomodoroTimerProps {
   timer: number
   pause: number
+  onWorkComplete?: (minutes: number) => void
 }
 
 /**
@@ -29,7 +30,8 @@ interface PomodoroTimerProps {
  * Per coordinare il cambio di modalità senza problemi di stale closure,
  * `modeRef` viene usato come riferimento mutabile sincronizzato con lo state.
  */
-function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
+function PomodoroTimer({ timer, pause, onWorkComplete }: PomodoroTimerProps) {
+  const savedRef = useRef(false)
   const [seconds, setSeconds] = useState(timer * 60)
   const [isRunning, setIsRunning] = useState(false)
   const [mode, setMode] = useState<'Work' | 'Break'>('Work')
@@ -55,6 +57,10 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
           const currentMode = modeRef.current
 
           if (currentMode === 'Work') {
+            if (!savedRef.current) {
+              savedRef.current = true
+              onWorkComplete?.(timer)
+            }
             setMode('Break')
             setIsRunning(true)
             return pause * 60
@@ -150,6 +156,7 @@ function PomodoroTimer({ timer, pause }: PomodoroTimerProps) {
             setIsRunning(false)
             setSeconds(timer * 60)
             setMode('Work')
+            savedRef.current = false
           }}
         >
           Reset

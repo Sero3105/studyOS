@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { StudySessionConfig } from './types'
+import { getSubjects } from '../../services/subjectService'
+import type { Subject } from '../../services/subjectService'
 
 interface SessionSetupFormProps {
   onSubmit: (config: StudySessionConfig) => void
@@ -16,8 +18,16 @@ function SessionSetupForm({
   const [focusMinutes, setFocusMinutes] = useState('')
   const [breakMinutes, setBreakMinutes] = useState('')
   const [notes, setNotes] = useState('')
-  const [topic, setTopic] = useState('')
-  const [subject, setSubject] = useState('')
+  const [subjectId, setSubjectId] = useState('')
+  const [topicId, setTopicId] = useState('')
+  const [subjects, setSubjects] = useState<Subject[]>([])
+
+  useEffect(() => {
+    getSubjects().then(setSubjects).catch(() => setSubjects([]))
+  }, [])
+
+  const selectedSubject = subjects.find((s) => s.id === Number(subjectId))
+  const selectedTopic = selectedSubject?.topics.find((t) => t.id === Number(topicId))
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -33,8 +43,10 @@ function SessionSetupForm({
       focusMinutes: focusDuration,
       breakMinutes: breakDuration,
       notes: notes.trim(),
-      topic: topic.trim(),
-      subject: subject.trim(),
+      subjectId: subjectId ? Number(subjectId) : null,
+      topicId: topicId ? Number(topicId) : null,
+      subject: selectedSubject?.name ?? '',
+      topic: selectedTopic?.title ?? '',
     })
   }
 
@@ -69,25 +81,21 @@ function SessionSetupForm({
 
       <div className="session-setup-fields">
         <label>
-          Materia <span>(non ancora implementata)</span>
-          <input
-            type="text"
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            placeholder="Es. Matematica"
-          />
+          Materia
+          <select value={subjectId} onChange={(event) => { setSubjectId(event.target.value); setTopicId('') }}>
+            <option value="">Nessuna</option>
+            {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
         </label>
         <label>
-          Argomento <span>(non ancora implementato)</span>
-          <input
-            type="text"
-            value={topic}
-            onChange={(event) => setTopic(event.target.value)}
-            placeholder="Su cosa vuoi lavorare?"
-          />
+          Argomento
+          <select value={topicId} onChange={(event) => setTopicId(event.target.value)} disabled={!selectedSubject}>
+            <option value="">Nessuno</option>
+            {selectedSubject?.topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
         </label>
         <label>
-          Note <span>(non ancora implementate)</span>
+          Note
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
