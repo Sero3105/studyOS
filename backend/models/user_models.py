@@ -55,3 +55,4 @@ class User(Base):
         "AuthSession", back_populates="user", cascade="all, delete-orphan"
     )
     exams = relationship("Exam", back_populates="user", cascade="all, delete-orphan")
+    subjects = relationship("Subject", back_populates="user", cascade="all, delete-orphan")
