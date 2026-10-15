@@ -1,8 +1,10 @@
+<!-- markdownlint-disable MD033 MD041 MD060 -->
+
 <div align="center">
 
 # 📚 StudyOS
 
-### Your operating system for studying
+## Your operating system for studying
 
 **Plan. Study. Track. Analyze. Improve.** — all in one place.
 
@@ -92,7 +94,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"  # → paste as SE
 docker compose up --build -d
 ```
 
-Open **http://localhost:8080** and create an account. That’s it. 🎉
+Open **<http://localhost:8080>** and create an account. That’s it. 🎉
 
 ```bash
 docker compose up -d        # start
@@ -110,7 +112,7 @@ docker compose logs -f api  # backend logs (web for nginx)
 | Service | Image | Role | Port |
 |---|---|---|---|
 | `web` | nginx unprivileged (Alpine) | Serves the frontend and forwards `/api/*` to the backend | `127.0.0.1:8080` (only published port) |
-| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, one uvicorn process, SQLite included | internal network only |
+| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, one uvicorn process, SQLite included | Internal network only |
 
 There is no database container: SQLite is a file in the `studyos-data` volume (`/data` in `api`). The browser communicates only with `http://localhost:8080`, so no CORS is needed and auth cookies work.
 
@@ -194,9 +196,18 @@ StudyOS/
 
 ### Local development (hot reload)
 
+Run these commands in separate terminals from the repository root:
+
 ```bash
-cd backend && pip install -r requirements-dev.txt && uvicorn main:app --reload  # :8000
-cd frontend && npm install && npm run dev                                        # :5173
+cd backend
+pip install -r requirements-dev.txt
+uvicorn main:app --reload
+```
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 Backend tests: `python -m pytest backend/tests/ -q`
