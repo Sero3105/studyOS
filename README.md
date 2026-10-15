@@ -2,9 +2,9 @@
 
 # 📚 StudyOS
 
-### Il tuo sistema operativo per lo studio
+### Your operating system for studying
 
-**Pianifica. Studia. Traccia. Analizza. Migliora.** — tutto in un unico posto.
+**Plan. Study. Track. Analyze. Improve.** — all in one place.
 
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](./compose.yaml)
 [![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](./backend)
@@ -12,211 +12,211 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](./frontend)
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?logo=sqlite&logoColor=white)](./database)
 
-[🚀 Quickstart](#-quickstart-3-minuti) · [✨ Funzionalità](#-funzionalità) · [🖼️ Screenshot](#️-screenshot) · [🛠️ Stack](#️-stack-tecnologico) · [📦 Struttura](#-struttura-del-progetto)
+[🚀 Quickstart](#-quickstart-3-minutes) · [✨ Features](#-features) · [🖼️ Screenshots](#️-screenshots) · [🛠️ Tech Stack](#️-tech-stack) · [📦 Project Structure](#-project-structure)
 
 </div>
 
 ---
 
-## 🎬 Vedi StudyOS in azione
+## 🎬 See StudyOS in action
 
 <div align="center">
 
-![Demo di StudyOS](./docs/media/demo.gif)
+![StudyOS demo](./docs/media/demo.gif)
 
-*Timer Pomodoro → sessione registrata → dashboard e statistiche aggiornate.*
+*Pomodoro timer → session recorded → dashboard and statistics updated.*
 
 </div>
 
-> Non un altro timer. Non un'altra to-do list.
-> **StudyOS collega piano e realtà**: cosa dovevi studiare vs. cosa hai studiato davvero.
+> Not just another timer. Not just another to-do list.  
+> **StudyOS connects plans with reality**: what you planned to study versus what you actually studied.
 
 ---
 
-## ✨ Funzionalità
+## ✨ Features
 
-| | Area | Cosa fa |
+| | Area | What it does |
 |---|---|---|
-| 📅 | **Planner** | Task con materia, topic, priorità, scadenze e stato |
-| ⏱️ | **Timer Pomodoro** | Focus persistente tra le pagine, salva la sessione a fine blocco |
-| 📚 | **Materie & Topic** | Gerarchia `Materia → Topic` collegata a sessioni e progressi |
-| 📝 | **Esami** | CRUD completo con scadenze e countdown |
-| 🎯 | **Obiettivi** | Minuti settimanali/totali, task, topic, sessioni — progresso calcolato dai dati reali |
-| 📊 | **Statistiche** | Tempo totale, per materia/topic, attività giornaliera/settimanale/mensile, streak |
-| 🕘 | **Storico** | Sessioni raggruppate per giorno con totali |
-| 🔐 | **Auth** | Register/login, refresh cookie-based, sessione ripristinata al reload |
+| 📅 | **Planner** | Tasks with subject, topic, priority, deadlines, and status |
+| ⏱️ | **Pomodoro Timer** | Keeps running across pages and saves the session when a focus block ends |
+| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy connected to sessions and progress |
+| 📝 | **Exams** | Full CRUD with deadlines and countdowns |
+| 🎯 | **Goals** | Weekly/total minutes, tasks, topics, sessions — progress calculated from real data |
+| 📊 | **Statistics** | Total time, time by subject/topic, daily/weekly/monthly activity, streaks |
+| 🕘 | **History** | Sessions grouped by day with totals |
+| 🔐 | **Auth** | Registration/login, cookie-based refresh, session restored on page reload |
 
-### 🔄 Il ciclo StudyOS
+### 🔄 The StudyOS cycle
 
 ```text
-PLAN → STUDY → TRACK → ANALYZE → IMPROVE → PLAN (di nuovo, meglio)
+PLAN → STUDY → TRACK → ANALYZE → IMPROVE → PLAN (again, better)
 ```
 
-Ogni parte alimenta la successiva: un task genera una sessione, la sessione alimenta le statistiche, le statistiche migliorano il piano.
+Each part feeds the next: a task leads to a session, the session powers the statistics, and the statistics help improve the plan.
 
 <div align="center">
 
 ![Dashboard](./docs/media/dashboard.jpg)
 
-*La dashboard: focus di oggi, scadenze, statistiche compatte, attività recente.*
+*The dashboard: today's focus, deadlines, compact statistics, and recent activity.*
 
 </div>
 
 ---
 
-## 🖼️ Screenshot
+## 🖼️ Screenshots
 
-| Timer Pomodoro | Statistiche | Materie |
+| Pomodoro Timer | Statistics | Subjects |
 |---|---|---|
-| ![Timer](./docs/media/timer.jpg) | ![Statistiche](./docs/media/statistics.jpg) | ![Materie](./docs/media/subjects.jpg) |
+| ![Timer](./docs/media/timer.jpg) | ![Statistics](./docs/media/statistics.jpg) | ![Subjects](./docs/media/subjects.jpg) |
 
-| Planner | Esami | Obiettivi |
+| Planner | Exams | Goals |
 |---|---|---|
-| ![Planner](./docs/media/planner.jpg) | ![Esami](./docs/media/exams.jpg) | ![Obiettivi](./docs/media/goals.jpg) |
+| ![Planner](./docs/media/planner.jpg) | ![Exams](./docs/media/exams.jpg) | ![Goals](./docs/media/goals.jpg) |
 
-| Storico | Login | Mobile |
+| History | Login | Mobile |
 |---|---|---|
-| ![Storico](./docs/media/history.jpg) | ![Login](./docs/media/login.jpg) | ![Mobile](./docs/media/mobile-dashboard.jpg) |
+| ![History](./docs/media/history.jpg) | ![Login](./docs/media/login.jpg) | ![Mobile](./docs/media/mobile-dashboard.jpg) |
 
-> 📁 Tutte le immagini stanno in [`docs/media/`](./docs/media). Video demo: [`demo.mp4`](./docs/media/demo.mp4).
+> 📁 All images are in [`docs/media/`](./docs/media). Demo video: [`demo.mp4`](./docs/media/demo.mp4).
 
 ---
 
-## 🚀 Quickstart (3 minuti)
+## 🚀 Quickstart (3 minutes)
 
-Serve solo **Docker**. Niente Python o Node installati.
+All you need is **Docker**. No Python or Node installation required.
 
 ```bash
 cp .env.example .env
-python3 -c "import secrets; print(secrets.token_urlsafe(48))"  # → incolla come SECRET_KEY in .env
+python3 -c "import secrets; print(secrets.token_urlsafe(48))"  # → paste as SECRET_KEY in .env
 docker compose up --build -d
 ```
 
-Apri **http://localhost:8080** e registrati. Fatto. 🎉
+Open **http://localhost:8080** and create an account. That’s it. 🎉
 
 ```bash
-docker compose up -d        # avvia
-docker compose down         # ferma (dati al sicuro nel volume)
-docker compose logs -f api  # log backend (web per nginx)
+docker compose up -d        # start
+docker compose down         # stop (data remains safe in the volume)
+docker compose logs -f api  # backend logs (web for nginx)
 ```
 
-> ⚠️ Mai `docker compose down -v` per routine: cancella il volume con tutti gli utenti e le sessioni.
+> ⚠️ Don’t use `docker compose down -v` as part of your regular workflow: it deletes the volume containing all users and sessions.
 
 <details>
-<summary><strong>🐳 Dettagli Docker, backup e configurazione</strong></summary>
+<summary><strong>🐳 Docker, backups, and configuration details</strong></summary>
 
-### Cosa gira
+### What runs
 
-| Servizio | Immagine | Ruolo | Porta |
+| Service | Image | Role | Port |
 |---|---|---|---|
-| `web` | nginx unprivileged (Alpine) | Serve il frontend, inoltra `/api/*` al backend | `127.0.0.1:8080` (unica pubblicata) |
-| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, un processo uvicorn, SQLite dentro | solo rete interna |
+| `web` | nginx unprivileged (Alpine) | Serves the frontend and forwards `/api/*` to the backend | `127.0.0.1:8080` (only published port) |
+| `api` | Python 3.14 slim | FastAPI + SQLAlchemy, one uvicorn process, SQLite included | internal network only |
 
-Nessun container database: SQLite è un file nel volume `studyos-data` (`/data` in `api`). Il browser parla solo con `http://localhost:8080`, quindi niente CORS e i cookie auth funzionano.
+There is no database container: SQLite is a file in the `studyos-data` volume (`/data` in `api`). The browser communicates only with `http://localhost:8080`, so no CORS is needed and auth cookies work.
 
-### Dati e backup
+### Data and backups
 
-- **Docker:** volume `studyos_studyos-data`, `/data/studyos.db` in `api`. Sopravvive a `down`, restart e rebuild.
-- **Sviluppo locale:** `database/studyos.db` nel repo. Docker non lo tocca mai.
+- **Docker:** volume `studyos_studyos-data`, mounted at `/data/studyos.db` in `api`. It survives `down`, restarts, and rebuilds.
+- **Local development:** `database/studyos.db` in the repository. Docker never touches it.
 
 ```bash
-# Backup del database Docker
+# Back up the Docker database
 docker compose exec -T api python -c "import sqlite3; sqlite3.connect('/data/studyos.db').backup(sqlite3.connect('/tmp/backup.db'))"
 docker compose exec -T api cat /tmp/backup.db > studyos-backup.db
 
-# Import una tantum del DB locale (prima del primo avvio, volume vuoto)
+# One-time import of the local database (before first startup, with an empty volume)
 docker compose build
 docker compose run --rm --no-deps -T api sh -c 'test ! -e /data/studyos.db && cat > /data/studyos.db' < database/studyos.db
 docker compose up -d
 
-# Reset volontario (cancella tutto — backup prima!)
+# Intentional reset (deletes everything — back up first!)
 docker compose down
 docker volume rm studyos_studyos-data
 docker compose up -d
 ```
 
-### Configurazione (`.env`)
+### Configuration (`.env`)
 
-| Variabile | Default | Note |
+| Variable | Default | Notes |
 |---|---|---|
-| `SECRET_KEY` | — (obbligatoria) | ≥32 caratteri casuali, unica per installazione |
-| `APP_ENV` | `development` | `production` = cookie `Secure`, solo dietro HTTPS |
+| `SECRET_KEY` | — (required) | At least 32 random characters, unique to each installation |
+| `APP_ENV` | `development` | `production` = `Secure` cookies, HTTPS only |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` / `REFRESH_TOKEN_EXPIRE_DAYS` | `30` / `7` | |
-| `STUDYOS_PORT` | `8080` | Bind su 127.0.0.1 |
-| `STUDYOS_ORIGIN` | `http://localhost:<port>` | Origine pubblica se diversa |
-| `API_MEMORY_LIMIT` / `API_CPUS` | `256M` / `1.0` | Limiti container |
-| `WEB_MEMORY_LIMIT` / `WEB_CPUS` | `64M` / `0.5` | Limiti container |
+| `STUDYOS_PORT` | `8080` | Bound to 127.0.0.1 |
+| `STUDYOS_ORIGIN` | `http://localhost:<port>` | Public origin if different |
+| `API_MEMORY_LIMIT` / `API_CPUS` | `256M` / `1.0` | Container limits |
+| `WEB_MEMORY_LIMIT` / `WEB_CPUS` | `64M` / `0.5` | Container limits |
 
-**HTTPS:** setup di default = HTTP su localhost. In produzione: proxy TLS davanti, `APP_ENV=production`, `STUDYOS_ORIGIN=https://…`.
+**HTTPS:** The default setup uses HTTP on localhost. In production, put a TLS proxy in front, set `APP_ENV=production`, and configure `STUDYOS_ORIGIN=https://…`.
 
 </details>
 
 ---
 
-## 🛠️ Stack tecnologico
+## 🛠️ Tech stack
 
-| Layer | Tecnologie |
+| Layer | Technologies |
 |---|---|
-| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · CSS vanilla con design token |
+| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · vanilla CSS with design tokens |
 | **Backend** | FastAPI · SQLAlchemy · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
-| **Database** | SQLite (file nel volume Docker, `database/studyos.db` in locale) |
-| **Deploy** | Docker Compose · nginx (statici + proxy `/api`) · immagini multi-stage |
+| **Database** | SQLite (file in the Docker volume, `database/studyos.db` locally) |
+| **Deployment** | Docker Compose · nginx (static files + `/api` proxy) · multi-stage images |
 
-**Design:** dark-first, superfici quasi-nere, accento viola, flat (no gradienti), transizioni 160 ms, `prefers-reduced-motion` rispettato, target touch 44 px, breakpoint 700/900 px. Token in `frontend/src/styles/base/tokens.css`.
+**Design:** dark-first, near-black surfaces, a single purple accent, flat (no gradients), 160 ms transitions, `prefers-reduced-motion` respected, 44 px touch targets, 700/900 px breakpoints. Tokens are in `frontend/src/styles/base/tokens.css`.
 
 ---
 
-## 📦 Struttura del progetto
+## 📦 Project structure
 
 ```text
 StudyOS/
-├── compose.yaml          # setup produzione (nginx + api)
-├── .env.example          # template variabili
+├── compose.yaml          # production setup (nginx + api)
+├── .env.example          # environment variable template
 ├── backend/
-│   ├── main.py           # entry FastAPI + mount router
+│   ├── main.py           # FastAPI entry point + router mounting
 │   ├── config.py / database.py
-│   ├── models/           # tabelle SQLAlchemy
-│   ├── schemas/          # validazione Pydantic
-│   ├── services/         # logica di business
-│   ├── routers/          # endpoint HTTP (solo orchestrazione)
-│   └── tests/            # pytest su SQLite temporaneo
+│   ├── models/           # SQLAlchemy tables
+│   ├── schemas/          # Pydantic validation
+│   ├── services/         # business logic
+│   ├── routers/          # HTTP endpoints (orchestration only)
+│   └── tests/            # pytest with temporary SQLite database
 ├── frontend/
 │   └── src/
 │       ├── pages/        # dashboard, timer, planner, subjects, exams, goals, history, statistics
-│       ├── components/   # sidebar, pomodoro, form, UI kit
-│       ├── context/      # auth + timer persistente
-│       └── styles/       # base / layout / componenti / schermate
-├── database/             # studyos.db locale (mai toccato da Docker)
-└── docs/media/           # screenshot + demo
+│       ├── components/   # sidebar, Pomodoro, forms, UI kit
+│       ├── context/      # auth + persistent timer
+│       └── styles/       # base / layout / components / screens
+├── database/             # local studyos.db (never touched by Docker)
+└── docs/media/           # screenshots + demo
 ```
 
-**Regola d'oro:** router orchestra, service ragiona, schema valida. Dettagli in [`DEVELOPMENT_GUIDE.md`](./DEVELOPMENT_GUIDE.md).
+**Golden rule:** routers orchestrate, services handle logic, schemas validate. See [`DEVELOPMENT_GUIDE.md`](./DEVELOPMENT_GUIDE.md) for details.
 
-### Sviluppo locale (hot reload)
+### Local development (hot reload)
 
 ```bash
 cd backend && pip install -r requirements-dev.txt && uvicorn main:app --reload  # :8000
 cd frontend && npm install && npm run dev                                        # :5173
 ```
 
-Test backend: `python -m pytest backend/tests/ -q`
+Backend tests: `python -m pytest backend/tests/ -q`
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Auth, materie/topic, task, esami, sessioni, obiettivi, statistiche
-- [ ] Calendario integrato e pianificazione settimanale
-- [ ] Import/export dati e backup one-click
-- [ ] Notifiche scadenze e reminder intelligenti
-- [ ] Condivisione piani di studio
+- [x] Auth, subjects/topics, tasks, exams, sessions, goals, statistics
+- [ ] Integrated calendar and weekly planning
+- [ ] Data import/export and one-click backups
+- [ ] Deadline notifications and smart reminders
+- [ ] Study plan sharing
 
 ---
 
 <div align="center">
 
-**StudyOS — studia in modo che puoi capire, non solo misurare.**
+**StudyOS — study so you can understand, not just measure.**
 
-*Se ti aiuta a studiare meglio, lascia una ⭐ — è carburante per il progetto.*
+*If it helps you study better, leave a ⭐ — it keeps the project going.*
 
 </div>
