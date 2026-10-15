@@ -15,19 +15,21 @@ import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { useLanguage } from '../i18n/useLanguage'
+import type { TranslationKey } from '../i18n/translations'
 
-const priorityLabels: Record<TaskPriority, string> = { low: 'Bassa', medium: 'Media', high: 'Alta' }
+const priorityKeys: Record<TaskPriority, TranslationKey> = { low: 'priority.low', medium: 'priority.medium', high: 'priority.high' }
 const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 }
 
 type TaskFilter = 'open' | 'done' | 'all'
 
 /** Gruppi per scadenza, nell'ordine in cui vanno affrontati. */
-const groups = [
-  { id: 'overdue', title: 'In ritardo', test: (d: number | null) => d !== null && d < 0 },
-  { id: 'today', title: 'Oggi', test: (d: number | null) => d === 0 },
-  { id: 'week', title: 'Prossimi 7 giorni', test: (d: number | null) => d !== null && d > 0 && d <= 7 },
-  { id: 'later', title: 'Più avanti', test: (d: number | null) => d !== null && d > 7 },
-  { id: 'none', title: 'Senza scadenza', test: (d: number | null) => d === null },
+const groups: { id: string; titleKey: TranslationKey; test: (d: number | null) => boolean }[] = [
+  { id: 'overdue', titleKey: 'planner.group.overdue', test: (d) => d !== null && d < 0 },
+  { id: 'today', titleKey: 'planner.group.today', test: (d) => d === 0 },
+  { id: 'week', titleKey: 'planner.group.week', test: (d) => d !== null && d > 0 && d <= 7 },
+  { id: 'later', titleKey: 'planner.group.later', test: (d) => d !== null && d > 7 },
+  { id: 'none', titleKey: 'planner.group.none', test: (d) => d === null },
 ]
 
 function sortTasks(list: Task[]): Task[] {
@@ -44,6 +46,7 @@ function sortTasks(list: Task[]): Task[] {
  * a lato, gli esami in arrivo come contesto per pianificare.
  */
 function PlannerPage() {
+  const { t, locale } = useLanguage()
   const [tasks, setTasks] = useState<Task[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [exams, setExams] = useState<Exam[]>([])
@@ -64,7 +67,7 @@ function PlannerPage() {
       setError('')
       const [taskList, subjectList, examList] = await Promise.all([getTasks(), getSubjects(), getExams()])
       setTasks(taskList); setSubjects(subjectList); setExams(examList)
-    } catch (e) { setError(errorMessage(e, 'Impossibile caricare il planner')) }
+    } catch (e) { setError(errorMessage(e, t('planner.loadError'))) }
     finally { setLoading(false) }
   }
   useEffect(() => { queueMicrotask(() => { void load() }) }, [])
@@ -86,7 +89,7 @@ function PlannerPage() {
       })
       setTasks((t) => [...t, created])
       setTitle(''); setDescription(''); setDueDate(''); setTopicId('')
-    } catch (e) { setError(errorMessage(e, 'Salvataggio non riuscito')) }
+    } catch (e) { setError(errorMessage(e, t('planner.saveError'))) }
     finally { setSaving(false) }
   }
 
@@ -94,14 +97,14 @@ function PlannerPage() {
     try {
       const updated = await updateTask(task.id, { status })
       setTasks((t) => t.map((x) => x.id === task.id ? updated : x))
-    } catch (e) { setError(errorMessage(e, 'Impossibile aggiornare il task')) }
+    } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
   }
 
   const removeTask = async (id: number) => {
     try {
       await deleteTask(id)
       setTasks((t) => t.filter((x) => x.id !== id))
-    } catch (e) { setError(errorMessage(e, 'Eliminazione non riuscita')) }
+    } catch (e) { setError(errorMessage(e, t('planner.deleteError'))) }
   }
 
   const subjectName = (id: number | null) => subjects.find((s) => s.id === id)?.name
@@ -126,7 +129,7 @@ function PlannerPage() {
           type="checkbox"
           checked={done}
           onChange={(e) => void changeStatus(task, e.target.checked ? 'done' : 'todo')}
-          aria-label={done ? `Riapri: ${task.title}` : `Segna come fatto: ${task.title}`}
+          aria-label={done ? t('planner.reopen', { title: task.title }) : t('planner.markDone', { title: task.title })}
         />
         <span className="row-main">
           <span className={`row-title${done ? ' is-done' : ''}`}>{task.title}</span>
@@ -134,10 +137,10 @@ function PlannerPage() {
           <Meta
             className="row-meta task-meta"
             items={[
-              <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>,
+              <span className={`priority priority-${task.priority}`}>{t(priorityKeys[task.priority])}</span>,
               task.due_date && (
-                <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long')}>
-                  {relativeDay(task.due_date)}
+                <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long', locale)}>
+                  {relativeDay(task.due_date, locale)}
                 </span>
               ),
               subject && `${subject}${topic ? ` / ${topic}` : ''}`,
@@ -152,11 +155,11 @@ function PlannerPage() {
               aria-pressed={task.status === 'in_progress'}
               onClick={() => void changeStatus(task, task.status === 'in_progress' ? 'todo' : 'in_progress')}
             >
-              In corso
+              {t('planner.inProgress')}
             </button>
           )}
           <span className="row-reveal">
-            <ConfirmButton label={`Elimina ${task.title}`} onConfirm={() => removeTask(task.id)} />
+            <ConfirmButton label={t('planner.deleteLabel', { title: task.title })} onConfirm={() => removeTask(task.id)} />
           </span>
         </span>
       </li>
@@ -168,16 +171,16 @@ function PlannerPage() {
       ? groups
           .map((group) => ({ ...group, items: openTasks.filter((t) => group.test(t.due_date ? daysUntil(t.due_date) : null)) }))
           .filter((group) => group.items.length > 0)
-      : [{ id: filter, title: filter === 'done' ? 'Completati' : 'Tutti i task', items: filter === 'done' ? doneTasks : sortTasks(tasks) }]
+      : [{ id: filter, titleKey: (filter === 'done' ? 'planner.group.done' : 'planner.group.all') as TranslationKey, items: filter === 'done' ? doneTasks : sortTasks(tasks) }]
 
   return (
     <div className="page planner-page">
       <PageHeader
-        title="Planner"
+        title={t('planner.title')}
         description={
           loading
-            ? 'Task e scadenze in un unico posto.'
-            : `${openTasks.length} ${openTasks.length === 1 ? 'task aperto' : 'task aperti'}${overdueCount ? ` · ${overdueCount} in ritardo` : ''}`
+            ? t('planner.descriptionLoading')
+            : t('planner.descriptionWith', { count: openTasks.length, countLabel: openTasks.length === 1 ? t('planner.taskOpenOne') : t('planner.taskOpenMany'), overdue: overdueCount ? t('planner.overdueSuffix', { count: overdueCount }) : '' })
         }
       />
 
@@ -185,9 +188,9 @@ function PlannerPage() {
 
       <div className="planner-layout">
         <div className="planner-main">
-          <form className="panel composer" onSubmit={addTask} aria-label="Nuovo task">
+          <form className="panel composer" onSubmit={addTask} aria-label={t('planner.newTask')}>
             <div className="composer-row">
-              <label className="visually-hidden" htmlFor="task-title">Titolo del task</label>
+              <label className="visually-hidden" htmlFor="task-title">{t('planner.taskTitle')}</label>
               <input
                 id="task-title"
                 className="input composer-title"
@@ -195,20 +198,20 @@ function PlannerPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 maxLength={200}
-                placeholder="Cosa devi fare? Es. Ripasso capitolo 4"
+                placeholder={t('planner.titlePlaceholder')}
               />
               <label className="field composer-compact">
-                <span className="visually-hidden">Scadenza</span>
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} aria-label="Scadenza" />
+                <span className="visually-hidden">{t('planner.dueDate')}</span>
+                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} aria-label={t('planner.dueDate')} />
               </label>
               <label className="field composer-compact">
-                <span className="visually-hidden">Priorità</span>
-                <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} aria-label="Priorità">
-                  {Object.entries(priorityLabels).map(([v, l]) => <option key={v} value={v}>Priorità {l.toLowerCase()}</option>)}
+                <span className="visually-hidden">{t('planner.priority')}</span>
+                <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} aria-label={t('planner.priority')}>
+                  {(Object.keys(priorityKeys) as TaskPriority[]).map((v) => <option key={v} value={v}>{t('planner.priorityOption', { label: t(priorityKeys[v]).toLowerCase() })}</option>)}
                 </select>
               </label>
               <button className="btn btn-primary" type="submit" disabled={saving || !title.trim()}>
-                <Plus aria-hidden="true" /> Aggiungi
+                <Plus aria-hidden="true" /> {t('common.add')}
               </button>
             </div>
 
@@ -220,27 +223,27 @@ function PlannerPage() {
               onClick={() => setShowDetails((v) => !v)}
             >
               <ChevronDown aria-hidden="true" className={showDetails ? 'is-flipped' : undefined} />
-              {showDetails ? 'Meno dettagli' : 'Descrizione, materia e argomento'}
+              {showDetails ? t('planner.lessDetails') : t('planner.moreDetails')}
             </button>
 
             {showDetails && (
               <div id="composer-details" className="composer-details">
                 <label className="field">
-                  <span className="field-label">Descrizione <em>opzionale</em></span>
+                  <span className="field-label">{t('planner.description')} <em>{t('common.optional')}</em></span>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={2000} />
                 </label>
                 <div className="form-grid">
                   <label className="field">
-                    <span className="field-label">Materia</span>
+                    <span className="field-label">{t('planner.subject')}</span>
                     <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId('') }}>
-                      <option value="">Nessuna</option>
+                      <option value="">{t('common.noneFeminine')}</option>
                       {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </label>
                   <label className="field">
-                    <span className="field-label">Argomento</span>
+                    <span className="field-label">{t('planner.topic')}</span>
                     <select value={topicId} onChange={(e) => setTopicId(e.target.value)} disabled={!selectedSubject || selectedSubject.topics.length === 0}>
-                      <option value="">Nessuno</option>
+                      <option value="">{t('common.noneMasculine')}</option>
                       {selectedSubject?.topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
                     </select>
                   </label>
@@ -250,32 +253,32 @@ function PlannerPage() {
           </form>
 
           {loading ? (
-            <LoadingRows label="Caricamento planner" />
+            <LoadingRows label={t('planner.loading')} />
           ) : tasks.length === 0 ? (
             <section className="panel">
-              <EmptyState title="Nessun task">
-                Scrivi qui sopra la prima cosa da fare: titolo e invio bastano.
+              <EmptyState title={t('planner.noTasksTitle')}>
+                {t('planner.noTasksBody')}
               </EmptyState>
             </section>
           ) : (
-            <section className="page-section" aria-label="Task">
+            <section className="page-section" aria-label={t('planner.tasksLabel')}>
               <div className="toolbar">
                 <Segmented
-                  label="Filtra task"
+                  label={t('planner.filter')}
                   value={filter}
                   onChange={setFilter}
                   options={[
-                    { value: 'open', label: 'Aperti', count: openTasks.length },
-                    { value: 'done', label: 'Completati', count: doneTasks.length },
-                    { value: 'all', label: 'Tutti', count: tasks.length },
+                    { value: 'open', label: t('planner.filterOpen'), count: openTasks.length },
+                    { value: 'done', label: t('planner.filterDone'), count: doneTasks.length },
+                    { value: 'all', label: t('planner.filterAll'), count: tasks.length },
                   ]}
                 />
               </div>
 
               {visibleGroups.length === 0 || visibleGroups.every((g) => g.items.length === 0) ? (
                 <section className="panel">
-                  <EmptyState title={filter === 'open' ? 'Tutto fatto' : 'Nessun task completato'}>
-                    {filter === 'open' ? 'Non ci sono task aperti. Aggiungine uno o goditi la pausa.' : 'I task spuntati compariranno qui.'}
+                  <EmptyState title={filter === 'open' ? t('planner.allDoneTitle') : t('planner.noDoneTitle')}>
+                    {filter === 'open' ? t('planner.allDoneBody') : t('planner.noDoneBody')}
                   </EmptyState>
                 </section>
               ) : (
@@ -283,7 +286,7 @@ function PlannerPage() {
                   {visibleGroups.map((group) => (
                     <div className="list-group" key={group.id}>
                       <h2 className={`list-group-title${group.id === 'overdue' ? ' text-danger' : ''}`}>
-                        {group.title} <span className="num">{group.items.length}</span>
+                        {t(group.titleKey)} <span className="num">{group.items.length}</span>
                       </h2>
                       <ul className="rows">{group.items.map(renderTask)}</ul>
                     </div>
@@ -297,11 +300,11 @@ function PlannerPage() {
         <aside className="planner-side" aria-labelledby="planner-exams-title">
           <section className="panel">
             <div className="panel-head">
-              <h2 id="planner-exams-title" className="panel-title">Esami in arrivo</h2>
-              <Link className="text-link" to="/exams">Esami <ArrowRight aria-hidden="true" /></Link>
+              <h2 id="planner-exams-title" className="panel-title">{t('planner.upcomingExams')}</h2>
+              <Link className="text-link" to="/exams">{t('exams.title')} <ArrowRight aria-hidden="true" /></Link>
             </div>
             {upcomingExams.length === 0 ? (
-              <EmptyState compact title="Nessun esame in arrivo">Le prove in calendario aiutano a scegliere le scadenze dei task.</EmptyState>
+              <EmptyState compact title={t('exams.noUpcomingTitle')}>{t('planner.noUpcomingBody')}</EmptyState>
             ) : (
               <ul className="rows">
                 {upcomingExams.map((exam) => {
@@ -310,15 +313,15 @@ function PlannerPage() {
                     <li className="row" key={exam.id}>
                       <span className="date-block" aria-hidden="true">
                         <span className="date-block-day num">{parseDay(exam.exam_date).getDate()}</span>
-                        <span className="date-block-month">{monthShort(exam.exam_date)}</span>
+                        <span className="date-block-month">{monthShort(exam.exam_date, locale)}</span>
                       </span>
                       <span className="row-main">
                         <span className="row-title">{exam.title}</span>
                         <Meta
                           items={[
                             <>
-                              <span className="visually-hidden">{formatDay(exam.exam_date, 'long')}, </span>
-                              <span className={`exam-row-days ${urgencyClass(days)}`}>{relativeDay(exam.exam_date)}</span>
+                              <span className="visually-hidden">{formatDay(exam.exam_date, 'long', locale)}, </span>
+                              <span className={`exam-row-days ${urgencyClass(days)}`}>{relativeDay(exam.exam_date, locale)}</span>
                             </>,
                             exam.subject,
                           ]}

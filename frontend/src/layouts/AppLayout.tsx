@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Menu, Play } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
 import { TimerProvider } from '../context/TimerProvider'
+import { useLanguage } from '../i18n/useLanguage'
 
 const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
@@ -22,6 +23,7 @@ const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
  * il pannello mobile si chiude a ogni cambio di pagina e con Escape.
  */
 function AppLayout() {
+  const { t } = useLanguage()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -48,14 +50,14 @@ function AppLayout() {
   return (
     <TimerProvider>
       <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
-        <a className="skip-link" href="#main-content">Vai al contenuto</a>
+        <a className="skip-link" href="#main-content">{t('app.skipToContent')}</a>
 
         <header className="topbar">
           <button
             className="icon-btn"
             type="button"
             onClick={() => setMobileOpen(true)}
-            aria-label="Apri il menu"
+            aria-label={t('nav.openMenu')}
             aria-expanded={mobileOpen}
             aria-controls="app-sidebar"
           >
@@ -65,7 +67,7 @@ function AppLayout() {
             <span className="brand-mark" aria-hidden="true" />
             <span className="brand-name">StudyOS</span>
           </Link>
-          <Link to="/timer" className="icon-btn topbar-cta" aria-label="Nuova sessione">
+          <Link to="/timer" className="icon-btn topbar-cta" aria-label={t('nav.newSession')}>
             <Play aria-hidden="true" />
           </Link>
         </header>

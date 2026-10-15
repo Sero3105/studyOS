@@ -14,12 +14,14 @@ import type { StatsSummary } from '../services/statsService'
 import { useAuth } from '../context/useAuth'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { useLanguage } from '../i18n/useLanguage'
+import type { Translate } from '../i18n/translations'
 
-function greeting(): string {
+function greeting(t: Translate): string {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Buongiorno'
-  if (hour < 18) return 'Buon pomeriggio'
-  return 'Buonasera'
+  if (hour < 12) return t('dashboard.greetingMorning')
+  if (hour < 18) return t('dashboard.greetingAfternoon')
+  return t('dashboard.greetingEvening')
 }
 
 /**
@@ -29,33 +31,34 @@ function greeting(): string {
  * 3. Che ritmo ho tenuto? (ultimi sette giorni, sotto)
  */
 function DashboardPage() {
+  const { t, locale } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
-  const firstName = (user?.full_name?.split(' ')[0] || user?.username) ?? 'Studente'
+  const firstName = (user?.full_name?.split(' ')[0] || user?.username) ?? t('nav.studentFallback')
 
   const load = () => {
     setError('')
     getStatsSummary()
       .then(setStats)
-      .catch((e) => setError(errorMessage(e, 'Impossibile caricare la dashboard')))
+      .catch((e) => setError(errorMessage(e, t('dashboard.loadError'))))
   }
 
   useEffect(() => { queueMicrotask(load) }, [])
 
-  const today = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
+  const today = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 
   return (
     <div className="page">
-      <PageHeader title={`${greeting()}, ${firstName}`} description={today.charAt(0).toUpperCase() + today.slice(1)} />
+      <PageHeader title={`${greeting(t)}, ${firstName}`} description={today.charAt(0).toUpperCase() + today.slice(1)} />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
 
       {!stats && !error && (
         <div className="dashboard-grid" aria-busy="true">
-          <span className="visually-hidden">Caricamento della dashboard</span>
+          <span className="visually-hidden">{t('dashboard.loading')}</span>
           <div className="skeleton dashboard-skeleton-main" aria-hidden="true" />
           <div className="skeleton dashboard-skeleton-side" aria-hidden="true" />
         </div>
@@ -68,14 +71,14 @@ function DashboardPage() {
 
             <section className="panel" aria-labelledby="dash-week-title">
               <div className="panel-head">
-                <h2 id="dash-week-title" className="panel-title">Ultimi 7 giorni</h2>
+                <h2 id="dash-week-title" className="panel-title">{t('dashboard.last7Days')}</h2>
                 <span className="panel-meta num">
-                  Totale {formatMinutes(stats.daily.reduce((sum, day) => sum + day.minutes, 0))}
+                  {t('dashboard.total', { value: formatMinutes(stats.daily.reduce((sum, day) => sum + day.minutes, 0)) })}
                 </span>
               </div>
               <WeekChart daily={stats.daily} />
               <Link className="text-link panel-foot-link" to="/statistics">
-                Tutte le statistiche <ArrowRight aria-hidden="true" />
+                {t('dashboard.allStatistics')} <ArrowRight aria-hidden="true" />
               </Link>
             </section>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { useLanguage } from '../i18n/useLanguage'
 
 interface AuthLayoutProps {
   title: string
@@ -15,6 +16,7 @@ interface AuthLayoutProps {
  * marchio in alto.
  */
 function AuthLayout({ title, description, children }: AuthLayoutProps) {
+  const { t } = useLanguage()
   useEffect(() => {
     document.title = `${title} · StudyOS`
   }, [title])
@@ -27,12 +29,12 @@ function AuthLayout({ title, description, children }: AuthLayoutProps) {
           <span className="brand-name">StudyOS</span>
         </div>
         <div className="auth-intro-copy">
-          <p className="auth-statement">Il tuo studio, in ordine.</p>
+          <p className="auth-statement">{t('auth.statement')}</p>
           <ul className="auth-points">
-            <li>Materie e argomenti, con il progresso di ciascuno.</li>
-            <li>Esami e task con le loro scadenze.</li>
-            <li>Un timer che salva ogni blocco di studio.</li>
-            <li>Statistiche e obiettivi calcolati dai tuoi dati.</li>
+            <li>{t('auth.pointSubjects')}</li>
+            <li>{t('auth.pointExams')}</li>
+            <li>{t('auth.pointTimer')}</li>
+            <li>{t('auth.pointStats')}</li>
           </ul>
         </div>
       </section>

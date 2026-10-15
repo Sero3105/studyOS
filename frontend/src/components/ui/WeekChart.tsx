@@ -1,5 +1,6 @@
 import type { DayMinutes } from '../../services/statsService'
 import { formatDay, formatMinutes, weekdayShort } from '../../utils/dates'
+import { useLanguage } from '../../i18n/useLanguage'
 
 interface WeekChartProps {
   daily: DayMinutes[]
@@ -14,9 +15,10 @@ interface WeekChartProps {
  * accessibile riporta tutti i valori per gli screen reader.
  */
 function WeekChart({ daily, tall = false }: WeekChartProps) {
+  const { t, locale } = useLanguage()
   const max = Math.max(1, ...daily.map((day) => day.minutes))
   const summary = daily
-    .map((day) => `${formatDay(day.date, 'full')}: ${formatMinutes(day.minutes)}`)
+    .map((day) => `${formatDay(day.date, 'full', locale)}: ${formatMinutes(day.minutes)}`)
     .join('; ')
 
   return (
@@ -32,7 +34,7 @@ function WeekChart({ daily, tall = false }: WeekChartProps) {
                 style={{ height: day.minutes ? `${Math.max(4, (day.minutes / max) * 100)}%` : '0%' }}
               />
             </span>
-            <span className="week-chart-label">{isToday ? 'Oggi' : weekdayShort(day.date)}</span>
+            <span className="week-chart-label">{isToday ? t('common.today') : weekdayShort(day.date, locale)}</span>
           </div>
         )
       })}

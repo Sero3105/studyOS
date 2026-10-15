@@ -12,6 +12,7 @@ import type { Subject, Topic } from '../services/subjectService'
 import { getStatsSummary } from '../services/statsService'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { useLanguage } from '../i18n/useLanguage'
 
 function progressOf(topics: Topic[]): number {
   if (topics.length === 0) return 0
@@ -24,6 +25,7 @@ function progressOf(topics: Topic[]): number {
  * per iniziare subito una sessione su quella materia.
  */
 function SubjectsPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [minutesBySubject, setMinutesBySubject] = useState<Record<string, number>>({})
@@ -41,7 +43,7 @@ function SubjectsPage() {
       setSubjects(list)
       setSelectedId((current) => current ?? list[0]?.id ?? null)
     } catch (e) {
-      setError(errorMessage(e, 'Impossibile caricare le materie'))
+      setError(errorMessage(e, t('subjects.loadError')))
     } finally {
       setLoading(false)
     }
@@ -68,7 +70,7 @@ function SubjectsPage() {
       setSubjects((s) => [...s, created])
       setSelectedId(created.id)
       setName('')
-    }, 'Salvataggio non riuscito')
+    }, t('subjects.saveError'))
     setSaving(false)
   }
 
@@ -80,20 +82,20 @@ function SubjectsPage() {
       const topic = await createTopic(selected.id, title)
       setSubjects((s) => s.map((x) => x.id === selected.id ? { ...x, topics: [...x.topics, topic] } : x))
       setTopicTitle('')
-    }, 'Impossibile aggiungere l\'argomento')
+    }, t('subjects.addTopicError'))
   }
 
   const toggleTopic = (subjectId: number, topicId: number, completed: boolean) =>
     run(async () => {
       const updated = await updateTopic(topicId, completed)
       setSubjects((s) => s.map((x) => x.id === subjectId ? { ...x, topics: x.topics.map((t) => t.id === topicId ? updated : t) } : x))
-    }, 'Impossibile aggiornare l\'argomento')
+    }, t('subjects.updateTopicError'))
 
   const removeTopic = (subjectId: number, topicId: number) =>
     run(async () => {
       await deleteTopic(topicId)
       setSubjects((s) => s.map((x) => x.id === subjectId ? { ...x, topics: x.topics.filter((t) => t.id !== topicId) } : x))
-    }, 'Impossibile eliminare l\'argomento')
+    }, t('subjects.deleteTopicError'))
 
   const removeSubject = (id: number) =>
     run(async () => {
@@ -101,7 +103,7 @@ function SubjectsPage() {
       const remaining = subjects.filter((x) => x.id !== id)
       setSubjects(remaining)
       setSelectedId(remaining[0]?.id ?? null)
-    }, 'Impossibile eliminare la materia')
+    }, t('subjects.deleteSubjectError'))
 
   const startSession = (subject: Subject) => {
     const config: StudySessionConfig = {
@@ -118,17 +120,17 @@ function SubjectsPage() {
 
   const addSubjectForm = (
     <form className="inline-form" onSubmit={addSubject}>
-      <label className="visually-hidden" htmlFor="new-subject">Nuova materia</label>
+      <label className="visually-hidden" htmlFor="new-subject">{t('subjects.newSubject')}</label>
       <input
         id="new-subject"
         className="input"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Nuova materia"
+        placeholder={t('subjects.newSubject')}
         maxLength={120}
       />
       <button className="btn btn-secondary" type="submit" disabled={saving || !name.trim()}>
-        <Plus aria-hidden="true" /> Aggiungi
+        <Plus aria-hidden="true" /> {t('common.add')}
       </button>
     </form>
   )
@@ -136,18 +138,18 @@ function SubjectsPage() {
   return (
     <div className="page subjects-page">
       <PageHeader
-        title="Materie"
-        description="Ogni materia raccoglie i suoi argomenti: spuntali man mano che li completi."
+        title={t('subjects.title')}
+        description={t('subjects.description')}
       />
 
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
 
       {loading ? (
-        <LoadingRows label="Caricamento materie" />
+        <LoadingRows label={t('subjects.loading')} />
       ) : subjects.length === 0 ? (
         <section className="panel subjects-empty">
-          <EmptyState title="Nessuna materia">
-            Crea la prima materia, poi aggiungi gli argomenti da studiare.
+          <EmptyState title={t('subjects.emptyTitle')}>
+            {t('subjects.emptyBody')}
           </EmptyState>
           {addSubjectForm}
         </section>
@@ -155,7 +157,7 @@ function SubjectsPage() {
         <div className="subjects-layout">
           <section className="panel subject-index" aria-labelledby="subject-index-title">
             <h2 id="subject-index-title" className="panel-title">
-              {subjects.length} {subjects.length === 1 ? 'materia' : 'materie'}
+              {subjects.length} {subjects.length === 1 ? t('subjects.countOne') : t('subjects.countMany')}
             </h2>
             <ul className="subject-nav">
               {subjects.map((subject) => {
@@ -171,10 +173,10 @@ function SubjectsPage() {
                     >
                       <span className="subject-nav-name">{subject.name}</span>
                       <span className="subject-nav-meta num">
-                        {subject.topics.length ? `${percent}%` : 'Nessun argomento'}
+                        {subject.topics.length ? `${percent}%` : t('subjects.noTopics')}
                         {minutes ? ` · ${formatMinutes(minutes)}` : ''}
                       </span>
-                      <ProgressBar percent={percent} label={`Avanzamento ${subject.name}`} />
+                      <ProgressBar percent={percent} label={t('subjects.progressLabel', { name: subject.name })} />
                     </button>
                   </li>
                 )
@@ -189,30 +191,30 @@ function SubjectsPage() {
                 <div>
                   <h2 id="subject-detail-title">{selected.name}</h2>
                   <p className="panel-meta num">
-                    {selected.topics.filter((t) => t.completed).length} di {selected.topics.length} argomenti completati
-                    {minutesBySubject[selected.name] ? ` · ${formatMinutes(minutesBySubject[selected.name])} studiati` : ''}
+                    {t('subjects.topicsCompleted', { done: selected.topics.filter((x) => x.completed).length, total: selected.topics.length })}
+                    {minutesBySubject[selected.name] ? t('subjects.studiedSuffix', { value: formatMinutes(minutesBySubject[selected.name]) }) : ''}
                   </p>
                 </div>
                 <div className="row-actions">
                   <button className="btn btn-primary" type="button" onClick={() => startSession(selected)}>
-                    <Play aria-hidden="true" /> Studia 25 min
+                    <Play aria-hidden="true" /> {t('subjects.study25')}
                   </button>
-                  <ConfirmButton label={`Elimina la materia ${selected.name} e i suoi argomenti`} onConfirm={() => removeSubject(selected.id)} />
+                  <ConfirmButton label={t('subjects.deleteSubjectLabel', { name: selected.name })} onConfirm={() => removeSubject(selected.id)} />
                 </div>
               </div>
 
               {selected.topics.length > 0 && (
-                <ProgressBar percent={progressOf(selected.topics)} label={`Avanzamento ${selected.name}`} />
+                <ProgressBar percent={progressOf(selected.topics)} label={t('subjects.progressLabel', { name: selected.name })} />
               )}
 
               <form className="inline-form" onSubmit={addTopic}>
-                <label className="visually-hidden" htmlFor="new-topic">Nuovo argomento per {selected.name}</label>
+                <label className="visually-hidden" htmlFor="new-topic">{t('subjects.newTopicFor', { name: selected.name })}</label>
                 <input
                   id="new-topic"
                   className="input"
                   value={topicTitle}
                   onChange={(e) => setTopicTitle(e.target.value)}
-                  placeholder="Aggiungi un argomento e premi Invio"
+                  placeholder={t('subjects.topicPlaceholder')}
                   maxLength={200}
                 />
                 <button className="btn btn-secondary" type="submit" disabled={!topicTitle.trim()}>
@@ -221,8 +223,8 @@ function SubjectsPage() {
               </form>
 
               {selected.topics.length === 0 ? (
-                <EmptyState compact title="Ancora nessun argomento">
-                  Dividi la materia in capitoli o temi: il progresso si calcola da qui.
+                <EmptyState compact title={t('subjects.noTopicsYetTitle')}>
+                  {t('subjects.noTopicsYetBody')}
                 </EmptyState>
               ) : (
                 <ul className="rows topic-rows">
@@ -238,7 +240,7 @@ function SubjectsPage() {
                         <span className={topic.completed ? 'is-done' : undefined}>{topic.title}</span>
                       </label>
                       <span className="row-reveal">
-                        <ConfirmButton label={`Elimina ${topic.title}`} onConfirm={() => removeTopic(selected.id, topic.id)} />
+                        <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
                       </span>
                     </li>
                   ))}

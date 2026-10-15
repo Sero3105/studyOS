@@ -7,9 +7,12 @@ import ProgressBar from '../components/ui/ProgressBar'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { getStatsSummary } from '../services/statsService'
 import type { NameMinutes, StatsSummary } from '../services/statsService'
-import { goalKindLabels } from '../services/goalService'
+import { useLanguage } from '../i18n/useLanguage'
+import type { TranslationKey } from '../i18n/translations'
+import type { GoalKind } from '../services/goalService'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+const goalKindKeys: Record<GoalKind, TranslationKey> = { weekly_minutes: 'goal.kind.weekly_minutes', total_minutes: 'goal.kind.total_minutes', tasks_done: 'goal.kind.tasks_done', topics_done: 'goal.kind.topics_done', sessions_count: 'goal.kind.sessions_count' }
 
 function percentOf(part: number, total: number): number {
   return total ? Math.round((part / total) * 100) : 0
@@ -43,6 +46,7 @@ function RankedBars({ items, label }: { items: NameMinutes[]; label: string }) {
  * gli obiettivi. Tutto viene da `/stats/summary`.
  */
 function StatisticsPage() {
+  const { t } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
 
@@ -50,7 +54,7 @@ function StatisticsPage() {
     setError('')
     getStatsSummary()
       .then(setStats)
-      .catch((e) => setError(errorMessage(e, 'Impossibile caricare le statistiche')))
+      .catch((e) => setError(errorMessage(e, t('stats.loadError'))))
   }
 
   useEffect(() => { queueMicrotask(load) }, [])
@@ -59,85 +63,85 @@ function StatisticsPage() {
 
   return (
     <div className="page stats-page">
-      <PageHeader title="Statistiche" description="Calcolate dalle tue sessioni, dai task e dagli argomenti." />
+      <PageHeader title={t('stats.title')} description={t('stats.description')} />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
-      {!stats && !error && <LoadingRows rows={4} label="Caricamento statistiche" />}
+      {!stats && !error && <LoadingRows rows={4} label={t('stats.loading')} />}
 
       {stats && (
         <>
-          <section className="panel figures" aria-label="Riepilogo">
+          <section className="panel figures" aria-label={t('stats.summary')}>
             <div className="figure figure-lead">
-              <span className="figure-label">Tempo totale</span>
+              <span className="figure-label">{t('stats.totalTime')}</span>
               <span className="figure-value num">{formatMinutes(stats.total_minutes)}</span>
             </div>
             <dl className="figure-grid">
-              <div className="figure"><dt className="figure-label">Questo mese</dt><dd className="figure-value num">{formatMinutes(stats.month_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">Questa settimana</dt><dd className="figure-value num">{formatMinutes(stats.week_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">Oggi</dt><dd className="figure-value num">{formatMinutes(stats.today_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">Sessioni</dt><dd className="figure-value num">{stats.sessions_count}</dd></div>
-              <div className="figure"><dt className="figure-label">Giorni di fila</dt><dd className="figure-value num">{stats.streak_days}</dd></div>
-              <div className="figure"><dt className="figure-label">Media sessione</dt><dd className="figure-value num">{stats.sessions_count ? formatMinutes(Math.round(stats.total_minutes / stats.sessions_count)) : '—'}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.thisMonth')}</dt><dd className="figure-value num">{formatMinutes(stats.month_minutes)}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.thisWeek')}</dt><dd className="figure-value num">{formatMinutes(stats.week_minutes)}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.today')}</dt><dd className="figure-value num">{formatMinutes(stats.today_minutes)}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.sessions')}</dt><dd className="figure-value num">{stats.sessions_count}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.streakDays')}</dt><dd className="figure-value num">{stats.streak_days}</dd></div>
+              <div className="figure"><dt className="figure-label">{t('stats.avgSession')}</dt><dd className="figure-value num">{stats.sessions_count ? formatMinutes(Math.round(stats.total_minutes / stats.sessions_count)) : '—'}</dd></div>
             </dl>
           </section>
 
           <div className="stats-split">
             <section className="panel" aria-labelledby="stats-week-title">
               <div className="panel-head">
-                <h2 id="stats-week-title" className="panel-title">Ultimi 7 giorni</h2>
+                <h2 id="stats-week-title" className="panel-title">{t('stats.last7Days')}</h2>
                 <span className="panel-meta num">
-                  {activeDays} {activeDays === 1 ? 'giorno attivo' : 'giorni attivi'} · media {formatMinutes(Math.round(stats.daily.reduce((s, d) => s + d.minutes, 0) / Math.max(1, stats.daily.length)))} al giorno
+                  {t('stats.activeDays', { count: activeDays, label: activeDays === 1 ? t('stats.activeDayOne') : t('stats.activeDayMany'), avg: formatMinutes(Math.round(stats.daily.reduce((s, d) => s + d.minutes, 0) / Math.max(1, stats.daily.length))) })}
                 </span>
               </div>
               <WeekChart daily={stats.daily} tall />
             </section>
 
             <section className="panel progress-panel" aria-labelledby="stats-progress-title">
-              <h2 id="stats-progress-title" className="panel-title">Avanzamento</h2>
+              <h2 id="stats-progress-title" className="panel-title">{t('stats.progress')}</h2>
               <div className="progress-stat">
                 <div className="progress-stat-line">
-                  <span>Task completati</span>
+                  <span>{t('stats.tasksCompleted')}</span>
                   <span className="num">{stats.tasks_done}/{stats.tasks_total}</span>
                 </div>
-                <ProgressBar percent={percentOf(stats.tasks_done, stats.tasks_total)} label="Task completati" />
+                <ProgressBar percent={percentOf(stats.tasks_done, stats.tasks_total)} label={t('stats.tasksCompleted')} />
               </div>
               <div className="progress-stat">
                 <div className="progress-stat-line">
-                  <span>Argomenti completati</span>
+                  <span>{t('stats.topicsCompleted')}</span>
                   <span className="num">{stats.topics_done}/{stats.topics_total}</span>
                 </div>
-                <ProgressBar percent={percentOf(stats.topics_done, stats.topics_total)} label="Argomenti completati" />
+                <ProgressBar percent={percentOf(stats.topics_done, stats.topics_total)} label={t('stats.topicsCompleted')} />
               </div>
             </section>
           </div>
 
           <div className="stats-pair">
             <section className="panel" aria-labelledby="stats-subject-title">
-              <h2 id="stats-subject-title" className="panel-title panel-head">Tempo per materia</h2>
+              <h2 id="stats-subject-title" className="panel-title panel-head">{t('stats.timeBySubject')}</h2>
               {stats.by_subject.length === 0 ? (
-                <EmptyState compact title="Nessun dato">Associa una materia alle sessioni per vedere dove va il tempo.</EmptyState>
+                <EmptyState compact title={t('stats.noData')}>{t('stats.noSubjectData')}</EmptyState>
               ) : (
-                <RankedBars items={stats.by_subject} label="Tempo per materia" />
+                <RankedBars items={stats.by_subject} label={t('stats.timeBySubject')} />
               )}
             </section>
             <section className="panel" aria-labelledby="stats-topic-title">
-              <h2 id="stats-topic-title" className="panel-title panel-head">Tempo per argomento</h2>
+              <h2 id="stats-topic-title" className="panel-title panel-head">{t('stats.timeByTopic')}</h2>
               {stats.by_topic.length === 0 ? (
-                <EmptyState compact title="Nessun dato">Scegli un argomento quando avvii una sessione.</EmptyState>
+                <EmptyState compact title={t('stats.noData')}>{t('stats.noTopicData')}</EmptyState>
               ) : (
-                <RankedBars items={stats.by_topic} label="Tempo per argomento" />
+                <RankedBars items={stats.by_topic} label={t('stats.timeByTopic')} />
               )}
             </section>
           </div>
 
           <section className="panel" aria-labelledby="stats-goals-title">
             <div className="panel-head">
-              <h2 id="stats-goals-title" className="panel-title">Obiettivi</h2>
-              <Link className="text-link" to="/goals">Gestisci <ArrowRight aria-hidden="true" /></Link>
+              <h2 id="stats-goals-title" className="panel-title">{t('stats.goals')}</h2>
+              <Link className="text-link" to="/goals">{t('stats.manage')} <ArrowRight aria-hidden="true" /></Link>
             </div>
             {stats.goals.length === 0 ? (
-              <EmptyState compact title="Nessun obiettivo" action={<Link className="text-link" to="/goals">Crea un obiettivo <ArrowRight aria-hidden="true" /></Link>}>
-                Un traguardo misurabile rende questi numeri più utili.
+              <EmptyState compact title={t('stats.noGoals')} action={<Link className="text-link" to="/goals">{t('stats.createGoal')} <ArrowRight aria-hidden="true" /></Link>}>
+                {t('stats.noGoalsBody')}
               </EmptyState>
             ) : (
               <ul className="rows">
@@ -145,7 +149,7 @@ function StatisticsPage() {
                   <li className="row goal-stat" key={goal.id}>
                     <span className="row-main">
                       <span className="row-title">{goal.title}</span>
-                      <span className="row-meta">{goalKindLabels[goal.kind]} · {goal.current} di {goal.target}</span>
+                      <span className="row-meta">{t('stats.ofTarget', { kind: t(goalKindKeys[goal.kind]), current: goal.current, target: goal.target })}</span>
                     </span>
                     <span className="goal-stat-bar"><ProgressBar percent={goal.percent} label={goal.title} /></span>
                     <span className="goal-stat-percent num">{goal.percent}%</span>

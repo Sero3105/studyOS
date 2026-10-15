@@ -4,8 +4,10 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout'
 import type { SyntheticEvent } from 'react'
 import { useAuth } from '../context/useAuth'
+import { useLanguage } from '../i18n/useLanguage'
 
 function LoginPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
   const justRegistered = (location.state as { registered?: boolean } | null)?.registered === true
@@ -22,7 +24,7 @@ function LoginPage() {
     const password = String(formData.get('password') ?? '')
 
     if (!email || !password) {
-      setError('Inserisci email e password.')
+      setError(t('auth.loginMissing'))
       return
     }
 
@@ -33,15 +35,15 @@ function LoginPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Si è verificato un errore durante il login.',
+          : t('auth.loginErrorFallback'),
       )
     }
   }
 
   return (
-    <AuthLayout title="Accedi" description="Bentornato. Riprendi da dove avevi lasciato.">
+    <AuthLayout title={t('auth.loginTitle')} description={t('auth.loginDescription')}>
       {justRegistered && !error && (
-        <p className="notice notice-success" role="status">Account creato. Accedi con le tue credenziali.</p>
+        <p className="notice notice-success" role="status">{t('auth.registeredNotice')}</p>
       )}
       <LoginForm onSubmit={handleLogin} error={error} />
     </AuthLayout>

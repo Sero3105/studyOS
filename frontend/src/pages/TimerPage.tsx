@@ -6,6 +6,7 @@ import PageHeader from '../components/ui/PageHeader'
 import SessionSetupForm from '../components/timer/SessionSetupForm'
 import type { StudySessionConfig } from '../components/timer/types'
 import { useTimer } from '../context/useTimer'
+import { useLanguage } from '../i18n/useLanguage'
 
 /**
  * Pagina dedicata al timer Pomodoro.
@@ -22,6 +23,7 @@ import { useTimer } from '../context/useTimer'
  * indietro o ricaricare non la reimposta.
  */
 function TimerPage() {
+  const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const incoming = location.state as StudySessionConfig | null
@@ -39,18 +41,18 @@ function TimerPage() {
     return (
       <div className="page timer-setup">
         <PageHeader
-          title="Nuova sessione"
-          description="Scegli quanto studiare e su cosa. Ogni blocco di studio completato finisce nello storico."
+          title={t('timer.newSession')}
+          description={t('timer.setupDescription')}
         />
-        <section className="panel timer-setup-panel" aria-label="Impostazioni della sessione">
+        <section className="panel timer-setup-panel" aria-label={t('timer.sessionSettings')}>
           <SessionSetupForm onSubmit={start} />
         </section>
       </div>
     )
   }
 
-  const title = sessionConfig.subject || 'Sessione libera'
-  const context = [sessionConfig.topic, `${sessionConfig.focusMinutes} min di studio, ${sessionConfig.breakMinutes} di pausa`]
+  const title = sessionConfig.subject || t('timer.freeSession')
+  const context = [sessionConfig.topic, t('timer.context', { focus: sessionConfig.focusMinutes, break: sessionConfig.breakMinutes })]
     .filter(Boolean)
     .join(' · ')
 
@@ -62,7 +64,7 @@ function TimerPage() {
         actions={
           <button className="btn btn-ghost" type="button" onClick={clear}>
             <ArrowLeft aria-hidden="true" />
-            Cambia sessione
+            {t('timer.changeSession')}
           </button>
         }
       />
@@ -73,12 +75,12 @@ function TimerPage() {
         {sessionConfig.notes && <p className="timer-note">{sessionConfig.notes}</p>}
         {saveState === 'saved' && (
           <p className="notice notice-success" role="status">
-            Blocco completato e salvato nello storico. <Link className="text-link" to="/history">Apri lo storico</Link>
+            {t('timer.savedNotice')} <Link className="text-link" to="/history">{t('timer.openHistory')}</Link>
           </p>
         )}
         {saveState === 'error' && (
           <p className="notice notice-error" role="alert">
-            Blocco completato, ma il salvataggio non è riuscito. Controlla la connessione.
+            {t('timer.saveErrorNotice')}
           </p>
         )}
       </div>

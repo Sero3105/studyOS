@@ -9,6 +9,7 @@ import { createExam, deleteExam, getExams, updateExam } from '../services/examSe
 import type { CreateExamPayload, Exam } from '../services/examService'
 import { daysUntil, relativeDay } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { useLanguage } from '../i18n/useLanguage'
 
 type ExamFilter = 'upcoming' | 'archive' | 'all'
 
@@ -18,6 +19,7 @@ function isUpcoming(exam: Exam): boolean {
 }
 
 function ExamsPage() {
+  const { t, locale } = useLanguage()
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -30,7 +32,7 @@ function ExamsPage() {
       setError('')
       setExams(await getExams())
     } catch (loadError) {
-      setError(errorMessage(loadError, 'Impossibile caricare gli esami'))
+      setError(errorMessage(loadError, t('exams.loadError')))
     } finally {
       setLoading(false)
     }
@@ -64,7 +66,7 @@ function ExamsPage() {
       await deleteExam(exam.id)
       setExams((currentExams) => currentExams.filter((x) => x.id !== exam.id))
     } catch (deleteError) {
-      setError(errorMessage(deleteError, 'Eliminazione non riuscita'))
+      setError(errorMessage(deleteError, t('exams.deleteError')))
     }
   }
 
@@ -77,20 +79,20 @@ function ExamsPage() {
   const [next, ...rest] = upcoming
 
   const description = loading
-    ? 'Le tue prove, in ordine di data.'
+    ? t('exams.descriptionLoading')
     : next
-      ? `${upcoming.length} in arrivo · il prossimo è ${relativeDay(next.exam_date).toLowerCase()}`
-      : 'Nessun esame in arrivo.'
+      ? t('exams.descriptionNext', { count: upcoming.length, when: relativeDay(next.exam_date, locale).toLowerCase() })
+      : t('exams.descriptionNone')
 
   return (
     <div className="page exams-page">
       <PageHeader
-        title="Esami"
+        title={t('exams.title')}
         description={description}
         actions={
           <button className="btn btn-primary" type="button" onClick={openCreate}>
             <Plus aria-hidden="true" />
-            Nuovo esame
+            {t('exams.newExam')}
           </button>
         }
       />
@@ -98,32 +100,32 @@ function ExamsPage() {
       {error && <ErrorNotice message={error} onRetry={exams.length ? undefined : () => void loadExams()} onDismiss={exams.length ? () => setError('') : undefined} />}
 
       {loading ? (
-        <LoadingRows label="Caricamento esami" />
+        <LoadingRows label={t('exams.loading')} />
       ) : exams.length === 0 && !error ? (
         <section className="panel">
           <EmptyState
-            title="Nessun esame salvato"
+            title={t('exams.emptyTitle')}
             action={
               <button className="btn btn-primary" type="button" onClick={openCreate}>
                 <Plus aria-hidden="true" />
-                Aggiungi il primo esame
+                {t('exams.addFirst')}
               </button>
             }
           >
-            Inserisci la prossima prova: vedrai quanti giorni mancano qui e nella dashboard.
+            {t('exams.emptyBody')}
           </EmptyState>
         </section>
       ) : exams.length > 0 && (
-        <section className="page-section" aria-label="Elenco esami">
+        <section className="page-section" aria-label={t('exams.listLabel')}>
           <div className="toolbar">
             <Segmented
-              label="Filtra esami"
+              label={t('exams.filter')}
               value={filter}
               onChange={setFilter}
               options={[
-                { value: 'upcoming', label: 'In arrivo', count: upcoming.length },
-                { value: 'archive', label: 'Archivio', count: archive.length },
-                { value: 'all', label: 'Tutti', count: exams.length },
+                { value: 'upcoming', label: t('exams.upcomingFilter'), count: upcoming.length },
+                { value: 'archive', label: t('exams.archiveFilter'), count: archive.length },
+                { value: 'all', label: t('exams.allFilter'), count: exams.length },
               ]}
             />
           </div>
@@ -134,15 +136,15 @@ function ExamsPage() {
                 <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} />
                 {rest.length > 0 && (
                   <div className="page-section">
-                    <h2 className="section-title">Più avanti</h2>
+                    <h2 className="section-title">{t('exams.comingLater')}</h2>
                     <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} />
                   </div>
                 )}
               </>
             ) : (
               <section className="panel">
-                <EmptyState title="Nessun esame in arrivo">
-                  Gli esami passati o già sostenuti sono nell'archivio.
+                <EmptyState title={t('exams.noUpcomingTitle')}>
+                  {t('exams.noUpcomingBody')}
                 </EmptyState>
               </section>
             )
@@ -150,8 +152,8 @@ function ExamsPage() {
             <ExamList exams={visible} onEdit={openEdit} onDelete={handleDelete} />
           ) : (
             <section className="panel">
-              <EmptyState title="L'archivio è vuoto">
-                Qui finiscono gli esami con data passata o con esito registrato.
+              <EmptyState title={t('exams.archiveEmptyTitle')}>
+                {t('exams.archiveEmptyBody')}
               </EmptyState>
             </section>
           )}

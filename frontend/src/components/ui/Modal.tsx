@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { useLanguage } from '../../i18n/useLanguage'
 
 interface ModalProps {
   title: string
@@ -20,6 +21,7 @@ interface ModalProps {
  * - blocca lo scroll della pagina sottostante.
  */
 function Modal({ title, description, onClose, children, wide = false }: ModalProps) {
+  const { t } = useLanguage()
   const dialogRef = useRef<HTMLElement>(null)
   const onCloseRef = useRef(onClose)
   const titleId = useId()
@@ -88,7 +90,7 @@ function Modal({ title, description, onClose, children, wide = false }: ModalPro
             <h2 id={titleId}>{title}</h2>
             {description && <p id={descriptionId}>{description}</p>}
           </div>
-          <button className="icon-btn" type="button" onClick={onClose} aria-label="Chiudi">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label={t('common.close')}>
             <X aria-hidden="true" />
           </button>
         </div>

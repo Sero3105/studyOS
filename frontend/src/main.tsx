@@ -14,6 +14,8 @@ import PlannerPage from './pages/PlannerPage'
 import HistoryPage from './pages/HistoryPage'
 import GoalsPage from './pages/GoalsPage'
 import StatisticsPage from './pages/StatisticsPage'
+import SettingsPage from './pages/SettingsPage'
+import { LanguageProvider } from './i18n/LanguageProvider'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import './styles/index.css'
@@ -65,6 +67,7 @@ const router = createBrowserRouter([
           { path: '/history', element: <HistoryPage /> },
           { path: '/goals', element: <GoalsPage /> },
           { path: '/statistics', element: <StatisticsPage /> },
+          { path: '/settings', element: <SettingsPage /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },
@@ -75,8 +78,10 @@ const router = createBrowserRouter([
 // Inizializzazione dell'applicazione React nel DOM.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </LanguageProvider>
   </StrictMode>,
 )

@@ -1,4 +1,13 @@
+import { LANGUAGE_STORAGE_KEY, isLanguage, translate } from '../i18n/translations'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+function currentLanguage() {
+  try {
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+    return isLanguage(stored) ? stored : 'it'
+  } catch { return 'it' as const }
+}
 
 let accessToken: string | null = null
 let csrfToken: string | null = null
@@ -61,12 +70,12 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, ret
   try {
     response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' })
   } catch {
-    throw new ApiError('Errore di rete. Controlla la connessione e riprova.')
+    throw new ApiError(translate(currentLanguage(), 'api.networkError'))
   }
   if (response.status === 401 && retryAfterRefresh && !path.startsWith('/auth/')) {
     if (await recoverSession()) return apiRequest<T>(path, options, false)
   }
   const data = await readResponse(response)
-  if (!response.ok) throw new ApiError(data?.detail ?? 'Si è verificato un errore', response.status)
+  if (!response.ok) throw new ApiError(data?.detail ?? translate(currentLanguage(), 'api.genericError'), response.status)
   return data as T
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLanguage } from '../../i18n/useLanguage'
 
 /**
  * Stati di contorno condivisi: vuoto, caricamento, errore.
@@ -40,17 +41,18 @@ interface ErrorNoticeProps {
 }
 
 export function ErrorNotice({ message, onRetry, onDismiss }: ErrorNoticeProps) {
+  const { t } = useLanguage()
   return (
     <div className="notice notice-error" role="alert">
       <span>{message}</span>
       {onRetry && (
         <button className="btn btn-secondary" type="button" onClick={onRetry}>
-          Riprova
+          {t('common.retry')}
         </button>
       )}
       {onDismiss && (
         <button className="btn btn-ghost" type="button" onClick={onDismiss}>
-          Chiudi
+          {t('common.close')}
         </button>
       )}
     </div>

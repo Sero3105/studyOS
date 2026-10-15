@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import { useTimer } from '../context/useTimer'
+import { useLanguage } from '../i18n/useLanguage'
 
 /**
  * Quadrante del timer Pomodoro.
@@ -16,6 +17,7 @@ import { useTimer } from '../context/useTimer'
  * pulsante principale più grande degli altri.
  */
 function PomodoroTimer() {
+  const { t } = useLanguage()
   const { config, mode, isRunning, remainingSeconds, totalSeconds, hasStarted, toggle, reset } = useTimer()
   const timer = config?.focusMinutes ?? 0
   const pause = config?.breakMinutes ?? 0
@@ -24,7 +26,7 @@ function PomodoroTimer() {
   const remainingSecondsPart = remainingSeconds % 60
   const percentage = totalSeconds ? remainingSeconds / totalSeconds : 0
   const clock = `${minutes}:${remainingSecondsPart.toString().padStart(2, '0')}`
-  const modeLabel = mode === 'Work' ? 'Studio' : 'Pausa'
+  const modeLabel = mode === 'Work' ? t('timer.modeWork') : t('timer.modeBreak')
 
   // Il titolo della scheda mostra il tempo rimasto: utile con la scheda in background.
   useEffect(() => {
@@ -36,10 +38,10 @@ function PomodoroTimer() {
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference * (1 - percentage)
 
-  const primaryLabel = isRunning ? 'Pausa' : hasStarted ? 'Riprendi' : 'Avvia'
+  const primaryLabel = isRunning ? t('timer.pause') : hasStarted ? t('timer.resume') : t('timer.start')
 
   return (
-    <section className={`timer-stage${mode === 'Break' ? ' is-break' : ''}`} aria-label="Timer Pomodoro">
+    <section className={`timer-stage${mode === 'Break' ? ' is-break' : ''}`} aria-label={t('timer.pomodoroLabel')}>
       <div className="timer-dial">
         <svg className="timer-svg" viewBox="0 0 240 240" aria-hidden="true">
           <circle className="ring-track" cx="120" cy="120" r={radius} fill="none" strokeWidth="6" />
@@ -61,12 +63,12 @@ function PomodoroTimer() {
           <span
             className="timer-time num"
             role="timer"
-            aria-label={`${minutes} minuti e ${remainingSecondsPart} secondi rimanenti, ${modeLabel.toLowerCase()}`}
+            aria-label={t('timer.remainingLabel', { minutes, seconds: remainingSecondsPart, mode: modeLabel.toLowerCase() })}
           >
             {clock}
           </span>
           <span className="timer-next">
-            {mode === 'Work' ? `Poi ${pause} min di pausa` : `Poi ${timer} min di studio`}
+            {mode === 'Work' ? t('timer.thenBreak', { minutes: pause }) : t('timer.thenStudy', { minutes: timer })}
           </span>
         </div>
       </div>
@@ -88,7 +90,7 @@ function PomodoroTimer() {
           onClick={reset}
         >
           <RotateCcw aria-hidden="true" />
-          Ricomincia
+          {t('timer.restart')}
         </button>
       </div>
     </section>

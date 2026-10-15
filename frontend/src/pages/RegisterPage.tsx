@@ -3,29 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout'
 import { RegisterForm } from '../components/AuthForm'
 import { register } from '../services/authService'
+import { useLanguage } from '../i18n/useLanguage'
+import type { Translate } from '../i18n/translations'
 import type { SyntheticEvent } from 'react'
 
-function validatePassword(password: string): string | null {
+function validatePassword(password: string, t: Translate): string | null {
   const rules = [
     {
       isInvalid: password.length < 8,
-      message: 'La password deve contenere almeno 8 caratteri.',
+      message: t('auth.pwMin'),
     },
     {
       isInvalid: !/[A-Z]/.test(password),
-      message: 'La password deve contenere almeno una lettera maiuscola.',
+      message: t('auth.pwUpper'),
     },
     {
       isInvalid: !/[a-z]/.test(password),
-      message: 'La password deve contenere almeno una lettera minuscola.',
+      message: t('auth.pwLower'),
     },
     {
       isInvalid: !/\d/.test(password),
-      message: 'La password deve contenere almeno un numero.',
+      message: t('auth.pwDigit'),
     },
     {
       isInvalid: !/[^A-Za-z0-9]/.test(password),
-      message: 'La password deve contenere almeno un carattere speciale.',
+      message: t('auth.pwSpecial'),
     },
   ]
 
@@ -33,6 +35,7 @@ function validatePassword(password: string): string | null {
 }
 
 function RegisterPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
@@ -49,16 +52,16 @@ function RegisterPage() {
     const confirmPassword = String(formData.get('confirmPassword') ?? '')
 
     if (!username || !email || !password) {
-      setError('Compila tutti i campi obbligatori.')
+      setError(t('auth.requiredFields'))
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Le password non coincidono.')
+      setError(t('auth.passwordMismatch'))
       return
     }
 
-    const passwordError = validatePassword(password)
+    const passwordError = validatePassword(password, t)
     if (passwordError) {
       setError(passwordError)
       return
@@ -77,13 +80,13 @@ function RegisterPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Si è verificato un errore durante la registrazione.',
+          : t('auth.registerErrorFallback'),
       )
     }
   }
 
   return (
-    <AuthLayout title="Crea il tuo account" description="Un unico spazio per sessioni, esami, task e progressi.">
+    <AuthLayout title={t('auth.registerTitle')} description={t('auth.registerDescription')}>
       <RegisterForm onSubmit={handleRegister} error={error} />
     </AuthLayout>
   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { CreateExamPayload } from '../../services/examService'
 import { errorMessage } from '../../utils/errors'
+import { useLanguage } from '../../i18n/useLanguage'
 
 interface ExamFormProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
@@ -15,6 +16,7 @@ interface ExamFormProps {
  * a destra, con Salva come unica azione primaria.
  */
 function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
+  const { t } = useLanguage()
   const [data, setData] = useState<CreateExamPayload>(initial ?? {
     title: '',
     subject: '',
@@ -41,7 +43,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
     try {
       await onSave(data)
     } catch (saveError) {
-      setError(errorMessage(saveError, 'Salvataggio non riuscito'))
+      setError(errorMessage(saveError, t('exams.saveError')))
     } finally {
       setSaving(false)
     }
@@ -50,26 +52,26 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
   return (
     <form className="stacked-form" onSubmit={handleSubmit}>
       <fieldset className="form-block">
-        <legend>Esame</legend>
+        <legend>{t('exams.formExam')}</legend>
         <div className="form-grid">
           <label className="field">
-            <span className="field-label">Nome esame</span>
+            <span className="field-label">{t('exams.formName')}</span>
             <input
               name="title"
               required
               maxLength={120}
-              placeholder="Es. Analisi 1"
+              placeholder={t('exams.formNamePlaceholder')}
               value={data.title}
               onChange={handleChange}
             />
           </label>
           <label className="field">
-            <span className="field-label">Materia</span>
+            <span className="field-label">{t('exams.formSubject')}</span>
             <input
               name="subject"
               required
               maxLength={120}
-              placeholder="Es. Matematica"
+              placeholder={t('exams.formSubjectPlaceholder')}
               value={data.subject}
               onChange={handleChange}
             />
@@ -78,10 +80,10 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
       </fieldset>
 
       <fieldset className="form-block">
-        <legend>Quando e dove</legend>
+        <legend>{t('exams.formWhenWhere')}</legend>
         <div className="form-grid form-grid-3">
           <label className="field">
-            <span className="field-label">Data</span>
+            <span className="field-label">{t('exams.formDate')}</span>
             <input
               name="exam_date"
               type="date"
@@ -91,7 +93,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             />
           </label>
           <label className="field">
-            <span className="field-label">Ora <em>opzionale</em></span>
+            <span className="field-label">{t('exams.formTime')} <em>{t('common.optional')}</em></span>
             <input
               name="exam_time"
               type="time"
@@ -100,11 +102,11 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             />
           </label>
           <label className="field">
-            <span className="field-label">Luogo <em>opzionale</em></span>
+            <span className="field-label">{t('exams.formLocation')} <em>{t('common.optional')}</em></span>
             <input
               name="location"
               maxLength={120}
-              placeholder="Es. Aula A2"
+              placeholder={t('exams.formLocationPlaceholder')}
               value={data.location ?? ''}
               onChange={handleChange}
             />
@@ -113,22 +115,22 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
       </fieldset>
 
       <fieldset className="form-block">
-        <legend>Preparazione</legend>
+        <legend>{t('exams.formPreparation')}</legend>
         <label className="field form-narrow">
-          <span className="field-label">Stato</span>
+          <span className="field-label">{t('exams.formStatus')}</span>
           <select name="status" value={data.status} onChange={handleChange}>
-            <option value="planned">Da preparare</option>
-            <option value="in_progress">In preparazione</option>
-            <option value="passed">Superato</option>
-            <option value="failed">Non superato</option>
+            <option value="planned">{t('exams.status.planned')}</option>
+            <option value="in_progress">{t('exams.status.in_progress')}</option>
+            <option value="passed">{t('exams.status.passed')}</option>
+            <option value="failed">{t('exams.status.failed')}</option>
           </select>
         </label>
         <label className="field">
-          <span className="field-label">Note <em>opzionale</em></span>
+          <span className="field-label">{t('exams.formNotes')} <em>{t('common.optional')}</em></span>
           <textarea
             name="notes"
             maxLength={2000}
-            placeholder="Capitoli da ripassare, materiale, obiettivo di voto…"
+            placeholder={t('exams.formNotesPlaceholder')}
             value={data.notes ?? ''}
             onChange={handleChange}
             rows={3}
@@ -140,10 +142,10 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
 
       <div className="form-actions">
         <button className="btn btn-ghost" type="button" onClick={onCancel}>
-          Annulla
+          {t('common.cancel')}
         </button>
         <button className="btn btn-primary" type="submit" disabled={saving}>
-          {saving ? 'Salvataggio…' : initial ? 'Salva modifiche' : 'Aggiungi esame'}
+          {saving ? t('common.saving') : initial ? t('exams.saveChanges') : t('exams.newExam')}
         </button>
       </div>
     </form>

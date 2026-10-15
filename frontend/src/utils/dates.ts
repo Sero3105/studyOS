@@ -25,32 +25,32 @@ export function daysUntil(isoDate: string): number {
   return Math.round((parseDay(isoDate).getTime() - today.getTime()) / DAY_MS)
 }
 
-export function relativeDay(isoDate: string): string {
-  const days = daysUntil(isoDate)
-  if (days === 0) return 'Oggi'
-  if (days === 1) return 'Domani'
-  if (days === -1) return 'Ieri'
-  if (days < 0) return `${-days} giorni fa`
-  return `Tra ${days} giorni`
+export function relativeDay(isoDate: string, locale = 'it-IT'): string {
+  const text = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(daysUntil(isoDate), 'day')
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-export function formatDay(isoDate: string, style: 'short' | 'long' | 'full' = 'short'): string {
+export function formatDay(isoDate: string, style: 'short' | 'long' | 'full' = 'short', locale = 'it-IT'): string {
   const options: Intl.DateTimeFormatOptions =
     style === 'short'
       ? { day: 'numeric', month: 'short' }
       : style === 'long'
         ? { day: 'numeric', month: 'long', year: 'numeric' }
         : { weekday: 'long', day: 'numeric', month: 'long' }
-  const text = new Intl.DateTimeFormat('it-IT', options).format(parseDay(isoDate))
+  const text = new Intl.DateTimeFormat(locale, options).format(parseDay(isoDate))
   return style === 'full' ? text.charAt(0).toUpperCase() + text.slice(1) : text
 }
 
-export function weekdayShort(isoDate: string): string {
-  return new Intl.DateTimeFormat('it-IT', { weekday: 'short' }).format(parseDay(isoDate))
+export function weekdayShort(isoDate: string, locale = 'it-IT'): string {
+  return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(parseDay(isoDate))
 }
 
-export function monthShort(isoDate: string): string {
-  return new Intl.DateTimeFormat('it-IT', { month: 'short' }).format(parseDay(isoDate))
+export function monthShort(isoDate: string, locale = 'it-IT'): string {
+  return new Intl.DateTimeFormat(locale, { month: 'short' }).format(parseDay(isoDate))
+}
+
+export function formatNumber(value: number, locale = 'it-IT'): string {
+  return new Intl.NumberFormat(locale).format(value)
 }
 
 /** Minuti in forma leggibile: "45 min", "2 h 05", "3 h". */

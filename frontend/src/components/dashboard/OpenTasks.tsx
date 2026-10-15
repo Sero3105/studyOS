@@ -7,8 +7,10 @@ import { updateTask } from '../../services/taskService'
 import type { Task } from '../../services/taskService'
 import { daysUntil, relativeDay } from '../../utils/dates'
 import { errorMessage } from '../../utils/errors'
+import { useLanguage } from '../../i18n/useLanguage'
+import type { TranslationKey } from '../../i18n/translations'
 
-const priorityLabels = { low: 'Bassa', medium: 'Media', high: 'Alta' }
+const priorityKeys: Record<string, TranslationKey> = { low: 'priority.low', medium: 'priority.medium', high: 'priority.high' }
 
 /**
  * Task aperti in ordine di scadenza, completabili direttamente dalla
@@ -16,6 +18,7 @@ const priorityLabels = { low: 'Bassa', medium: 'Media', high: 'Alta' }
  * Le scadenze passate sono segnate in rosso.
  */
 function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
+  const { t, locale } = useLanguage()
   const [tasks, setTasks] = useState(initialTasks)
   const [error, setError] = useState('')
 
@@ -25,16 +28,16 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
       await updateTask(task.id, { status: 'done' })
       setTasks((current) => current.filter((item) => item.id !== task.id))
     } catch (e) {
-      setError(errorMessage(e, 'Impossibile aggiornare il task'))
+      setError(errorMessage(e, t('dashboard.updateTaskError')))
     }
   }
 
   return (
     <section className="panel" aria-labelledby="dash-tasks-title">
       <div className="panel-head">
-        <h2 id="dash-tasks-title" className="panel-title">Da fare</h2>
+        <h2 id="dash-tasks-title" className="panel-title">{t('dashboard.toDo')}</h2>
         <Link className="text-link" to="/planner">
-          Planner <ArrowRight aria-hidden="true" />
+          {t('nav.planner')} <ArrowRight aria-hidden="true" />
         </Link>
       </div>
 
@@ -43,10 +46,10 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
       {tasks.length === 0 ? (
         <EmptyState
           compact
-          title="Niente in sospeso"
-          action={<Link className="text-link" to="/planner">Pianifica un task <ArrowRight aria-hidden="true" /></Link>}
+          title={t('dashboard.nothingPending')}
+          action={<Link className="text-link" to="/planner">{t('dashboard.planTask')} <ArrowRight aria-hidden="true" /></Link>}
         >
-          I task aperti del planner compariranno qui, in ordine di scadenza.
+          {t('dashboard.openTasksBody')}
         </EmptyState>
       ) : (
         <ul className="rows">
@@ -59,15 +62,15 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
                   type="checkbox"
                   checked={false}
                   onChange={() => void complete(task)}
-                  aria-label={`Segna come fatto: ${task.title}`}
+                  aria-label={t('dashboard.markDone', { title: task.title })}
                 />
                 <span className="row-main">
                   <span className="row-title">{task.title}</span>
                   <Meta
                     items={[
-                      <span className={`priority priority-${task.priority}`}>{priorityLabels[task.priority]}</span>,
+                      <span className={`priority priority-${task.priority}`}>{t(priorityKeys[task.priority])}</span>,
                       <span className={overdue ? 'text-danger' : undefined}>
-                        {task.due_date ? relativeDay(task.due_date) : 'Senza scadenza'}
+                        {task.due_date ? relativeDay(task.due_date, locale) : t('dashboard.noDeadline')}
                       </span>,
                     ]}
                   />

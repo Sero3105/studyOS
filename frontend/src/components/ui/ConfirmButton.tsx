@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { useLanguage } from '../../i18n/useLanguage'
 
 interface ConfirmButtonProps {
   label: string
@@ -14,6 +15,7 @@ interface ConfirmButtonProps {
  * così un clic accidentale non cancella mai dati.
  */
 function ConfirmButton({ label, onConfirm }: ConfirmButtonProps) {
+  const { t } = useLanguage()
   const [armed, setArmed] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -53,9 +55,9 @@ function ConfirmButton({ label, onConfirm }: ConfirmButtonProps) {
           setArmed(false)
         }
       }}
-      aria-label={`Conferma: ${label}`}
+      aria-label={t('common.confirmLabel', { label })}
     >
-      {busy ? 'Elimino…' : 'Conferma'}
+      {busy ? t('common.deleting') : t('common.confirm')}
     </button>
   )
 }

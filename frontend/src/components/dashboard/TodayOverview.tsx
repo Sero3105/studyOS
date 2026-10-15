@@ -3,6 +3,7 @@ import { Play } from 'lucide-react'
 import ProgressBar from '../ui/ProgressBar'
 import type { StatsSummary } from '../../services/statsService'
 import { formatMinutes, relativeDay } from '../../utils/dates'
+import { useLanguage } from '../../i18n/useLanguage'
 
 interface TodayOverviewProps {
   stats: StatsSummary
@@ -15,6 +16,7 @@ interface TodayOverviewProps {
  * l'elemento più grande della schermata; i dati di contorno stanno a lato.
  */
 function TodayOverview({ stats, onStartSession }: TodayOverviewProps) {
+  const { t, locale } = useLanguage()
   const weeklyGoal = stats.goals.find((goal) => goal.kind === 'weekly_minutes') ?? null
   const last = stats.last_session
   const hours = Math.floor(stats.today_minutes / 60)
@@ -23,7 +25,7 @@ function TodayOverview({ stats, onStartSession }: TodayOverviewProps) {
   return (
     <section className="panel today" aria-labelledby="today-title">
       <div className="today-main">
-        <h2 id="today-title" className="today-label">Studiato oggi</h2>
+        <h2 id="today-title" className="today-label">{t('dashboard.studiedToday')}</h2>
         <p className="today-value num">
           {hours > 0 && <>{hours}<span className="today-unit">h</span> </>}
           {hours > 0 ? String(minutes).padStart(2, '0') : minutes}
@@ -35,27 +37,27 @@ function TodayOverview({ stats, onStartSession }: TodayOverviewProps) {
             <div className="today-goal-line">
               <span>{weeklyGoal.title}</span>
               <span className="num">
-                {formatMinutes(weeklyGoal.current)} di {formatMinutes(weeklyGoal.target)}
+                {t('dashboard.of', { current: formatMinutes(weeklyGoal.current), target: formatMinutes(weeklyGoal.target) })}
               </span>
             </div>
             <ProgressBar percent={weeklyGoal.percent} label={`${weeklyGoal.title}: ${weeklyGoal.percent}%`} />
           </div>
         ) : (
           <p className="today-hint">
-            Nessun obiettivo settimanale. <Link className="text-link" to="/goals">Impostane uno</Link>
+            {t('dashboard.noWeeklyGoal')} <Link className="text-link" to="/goals">{t('dashboard.setOne')}</Link>
           </p>
         )}
 
         <div className="today-actions">
           <button className="btn btn-primary btn-lg" type="button" onClick={onStartSession}>
             <Play aria-hidden="true" />
-            {stats.sessions_count === 0 ? 'Inizia la prima sessione' : 'Inizia una sessione'}
+            {stats.sessions_count === 0 ? t('dashboard.startFirstSession') : t('dashboard.startSession')}
           </button>
           {last && (
             <p className="today-last">
-              Ultima: {last.subject ?? 'Sessione libera'}
+              {t('dashboard.lastSession', { subject: last.subject ?? t('dashboard.freeSession') })}
               {last.topic ? ` / ${last.topic}` : ''} · {formatMinutes(last.duration_minutes)} ·{' '}
-              {relativeDay(last.studied_on).toLowerCase()}
+              {relativeDay(last.studied_on, locale).toLowerCase()}
             </p>
           )}
         </div>
@@ -63,15 +65,15 @@ function TodayOverview({ stats, onStartSession }: TodayOverviewProps) {
 
       <dl className="today-figures">
         <div>
-          <dt>Questa settimana</dt>
+          <dt>{t('dashboard.thisWeek')}</dt>
           <dd className="num">{formatMinutes(stats.week_minutes)}</dd>
         </div>
         <div>
-          <dt>Giorni di fila</dt>
+          <dt>{t('dashboard.streakDays')}</dt>
           <dd className="num">{stats.streak_days}</dd>
         </div>
         <div>
-          <dt>Task completati</dt>
+          <dt>{t('dashboard.tasksCompleted')}</dt>
           <dd className="num">
             {stats.tasks_done}
             <span className="today-figure-total">/{stats.tasks_total}</span>

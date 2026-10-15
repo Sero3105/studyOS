@@ -6,13 +6,6 @@ export interface Goal {
   current: number; percent: number; created_at: string
 }
 
-export const goalKindLabels: Record<GoalKind, string> = {
-  weekly_minutes: 'Minuti questa settimana',
-  total_minutes: 'Minuti totali',
-  tasks_done: 'Task completati',
-  topics_done: 'Argomenti completati',
-  sessions_count: 'Sessioni di studio',
-}
 
 export const getGoals = () => apiRequest<Goal[]>('/goals')
 export const createGoal = (title: string, kind: GoalKind, target: number) =>
