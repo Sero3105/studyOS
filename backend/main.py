@@ -29,16 +29,20 @@ from routers.stats_router import router as stats_router
 from routers.data_router import router as data_router
 from routers.share_router import router as share_router
 import config
+from database import run_migrations
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     config.validate_security_settings()
+    run_migrations()
     yield
 
 
 # Istanza principale dell'applicazione.
-app = FastAPI(lifespan=lifespan)
+# In produzione niente Swagger/ReDoc; /openapi.json resta per l'healthcheck di Compose.
+_docs = config.APP_ENV != "production"
+app = FastAPI(lifespan=lifespan, docs_url="/docs" if _docs else None, redoc_url="/redoc" if _docs else None)
 
 # Configurazione CORS per consentire le richieste dal frontend React.
 app.add_middleware(
