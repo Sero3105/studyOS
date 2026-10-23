@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarPlus, Clock3, MapPin, Pencil } from 'lucide-react'
+import { CalendarClock, CalendarDays, CalendarPlus, Clock3, MapPin, Pencil } from 'lucide-react'
 import ConfirmButton from '../ui/ConfirmButton'
 import Meta from '../ui/Meta'
 import { isDated } from '../../services/examService'
@@ -108,7 +108,7 @@ function ExamList({ exams, onEdit, onDelete, onPlan }: ExamListProps) {
                   <span className="date-block-day num">{parseDay(date).getDate()}</span>
                   <span className="date-block-month">{monthShort(date, locale)}</span>
                 </>
-              ) : <span className="date-block-day">?</span>}
+              ) : <CalendarClock className="date-block-pending" />}
             </span>
             <span className="row-main">
               <span className="row-title">{exam.title}</span>
