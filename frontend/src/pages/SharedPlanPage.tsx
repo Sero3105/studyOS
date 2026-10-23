@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/ui/PageHeader'
 import ProgressBar from '../components/ui/ProgressBar'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
@@ -22,6 +22,10 @@ function SharedPlanPage() {
   return (
     <main className="content shared-page">
       <div className="content-inner page">
+        <Link to="/register" className="brand shared-brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-name">StudyOS</span>
+        </Link>
         <PageHeader title={t('shared.title')} description={t('shared.description')} />
         {failed ? <ErrorNotice message={t('shared.notFound')} /> : !plan ? <LoadingRows label={t('shared.loading')} /> : (
           <div className="shared-grid">

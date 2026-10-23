@@ -8,7 +8,9 @@
 }
 .settings-language-option.is-selected { border-color: var(--accent); font-weight: 600; }
 .settings-language-option:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-.settings-page .panel + .panel { margin-top: var(--space-5); }
+.settings-page { gap: var(--space-5); }
+.settings-description { max-width: 72ch; }
+.settings-language-option input { accent-color: var(--accent); }
 .settings-toggle { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .settings-actions label.btn { cursor: pointer; }

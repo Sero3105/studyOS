@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import { ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createTask, getTasks, updateTask } from '../services/taskService'
@@ -39,7 +39,17 @@ function CalendarPage() {
   }, [t])
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
+  // Su mobile i giorni sono in colonna: si parte da oggi, non da lunedì.
+  useEffect(() => {
+    if (!loading && window.matchMedia('(max-width: 1100px)').matches) {
+      document.querySelector('.calendar-day.is-today')?.scrollIntoView({ block: 'start' })
+    }
+  }, [loading, start])
+
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
+  const inWeek = (iso: string | null) => iso !== null && iso >= days[0] && iso <= days[6]
+  const weekMinutes = sessions.filter((s) => inWeek(s.studied_on)).reduce((sum, s) => sum + s.duration_minutes, 0)
+  const weekTasks = tasks.filter((x) => inWeek(x.due_date))
 
   const addTask = async (event: FormEvent, day: string) => {
     event.preventDefault()
@@ -63,7 +73,12 @@ function CalendarPage() {
     <div className="page calendar-page">
       <PageHeader
         title={t('calendar.title')}
-        description={t('calendar.weekOf', { from: formatDay(days[0], 'short', locale), to: formatDay(days[6], 'long', locale) })}
+        description={
+          <>
+            {t('calendar.weekOf', { from: formatDay(days[0], 'short', locale), to: formatDay(days[6], 'long', locale) })}
+            {!loading && ` · ${t('calendar.weekSummary', { studied: formatMinutes(weekMinutes), done: weekTasks.filter((x) => x.status === 'done').length, total: weekTasks.length })}`}
+          </>
+        }
         actions={
           <div className="calendar-nav">
             <button className="icon-btn" type="button" onClick={() => setStart(addDays(start, -7))} aria-label={t('calendar.prevWeek')}><ChevronLeft aria-hidden="true" /></button>
@@ -87,6 +102,7 @@ function CalendarPage() {
                 <h2 className="calendar-day-head">
                   <span className="calendar-weekday">{weekday}</span>
                   <span className="calendar-date num">{parseDay(day).getDate()}</span>
+                  {day === today && <span className="visually-hidden">{t('common.today')}</span>}
                   {minutes > 0 && <span className="tag tag-success num" title={t('calendar.studied')}>{formatMinutes(minutes)}</span>}
                 </h2>
                 <ul className="calendar-items">
@@ -114,7 +130,6 @@ function CalendarPage() {
                     placeholder={t('calendar.addPlaceholder')}
                     aria-label={t('calendar.addFor', { day: formatDay(day, 'full', locale) })}
                   />
-                  <button className="icon-btn" type="submit" aria-label={t('common.add')} disabled={!drafts[day]?.trim()}><Plus aria-hidden="true" /></button>
                 </form>
               </li>
             )
