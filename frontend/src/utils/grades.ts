@@ -13,17 +13,21 @@ export function gradeSummary(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[]) {
 /** CFU di una laurea triennale. shortcut: fisso a 180, rendilo un'impostazione se servono magistrali (120) o ciclo unico. */
 export const DEGREE_CFU = 180
 
-export interface GradePoint { id: number; title: string; date: string; grade: number; honors: boolean; cfu: number | null; average: number | null }
+export interface GradePoint { id: number; title: string; date: string; grade: number; honors: boolean; cfu: number | null; average: number | null; delta: number | null }
 
-/** Esami superati in ordine di data, con la media ponderata sui CFU dopo ciascuno (null finché nessuno ha CFU). */
+/** Esami superati in ordine di data, con la media ponderata sui CFU dopo ciascuno (null finché nessuno ha CFU) e quanto è cambiata. */
 export function gradeTrend(exams: Pick<Exam, 'id' | 'title' | 'status' | 'grade' | 'honors' | 'cfu' | 'exam_date'>[]): GradePoint[] {
   let points = 0
   let credits = 0
+  let previous: number | null = null
   return exams
     .filter((e) => e.status === 'passed' && e.grade && e.exam_date)
     .sort((a, b) => a.exam_date!.localeCompare(b.exam_date!) || a.id - b.id)
     .map((e) => {
       if (e.cfu) { points += e.grade! * e.cfu; credits += e.cfu }
-      return { id: e.id, title: e.title, date: e.exam_date!, grade: e.grade!, honors: e.honors, cfu: e.cfu, average: credits ? points / credits : null }
+      const average = credits ? points / credits : null
+      const delta = average !== null && previous !== null ? average - previous : null
+      previous = average ?? previous
+      return { id: e.id, title: e.title, date: e.exam_date!, grade: e.grade!, honors: e.honors, cfu: e.cfu, average, delta }
     })
 }

@@ -32,4 +32,5 @@ test('grade trend is chronological with a running weighted average', () => {
   ])
   assert.deepEqual(trend.map((p) => p.title), ['A', 'B', 'C'])
   assert.deepEqual(trend.map((p) => p.average), [30, 30, 28])
+  assert.deepEqual(trend.map((p) => p.delta), [null, 0, -2])
 })

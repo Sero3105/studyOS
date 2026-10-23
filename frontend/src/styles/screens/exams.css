@@ -205,41 +205,44 @@
 
 .grade-stats-of { margin-left: 2px; color: var(--text-muted); font-size: 1rem; font-weight: 500; }
 
-/* Andamento dei voti */
+/* Andamento dei voti (Recharts) */
 
 .grade-trend { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin: var(--space-5) 0 0; padding-top: var(--space-4); border-top: 1px solid var(--line); }
-.grade-trend-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--text-muted); font-size: var(--text-xs); }
-.grade-trend-legend > span { display: inline-flex; align-items: center; gap: var(--space-2); }
-.grade-trend-key.is-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); }
-.grade-trend-key.is-line { width: 16px; height: 2px; border-radius: 1px; background: var(--accent); }
-.grade-trend-plot { position: relative; width: 100%; min-width: 0; }
-.grade-trend-plot svg { display: block; overflow: visible; }
-.grade-trend-grid { stroke: var(--surface-3); stroke-width: 1; }
-.grade-trend-axis { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.grade-trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.grade-trend-end { fill: var(--text-strong); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.grade-trend-dot { fill: var(--text-muted); stroke: var(--surface); stroke-width: 2; transition: r var(--duration) var(--ease); }
-.grade-trend-dot.is-active { fill: var(--text-strong); }
-.grade-trend-hit { fill: transparent; outline: none; pointer-events: none; }
-.grade-trend-track { fill: transparent; cursor: crosshair; }
-.grade-trend-hit:focus-visible { stroke: var(--accent); stroke-width: 2; }
+.grade-trend-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.grade-trend-title { color: var(--text-strong); font-size: var(--text-sm); font-weight: 600; }
+.grade-trend-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: 0; padding: 0; list-style: none; color: var(--text-muted); font-size: var(--text-xs); }
+.grade-trend-legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.grade-trend-key { width: 10px; height: 10px; border-radius: 50%; }
+.grade-trend-key.is-up { background: var(--success); }
+.grade-trend-key.is-down { background: var(--danger); }
+.grade-trend-key.is-honors { border-radius: 2px; background: var(--accent); }
+.grade-trend-chart { display: grid; min-width: 0; gap: var(--space-1); }
+.grade-trend-axis-title { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--text-xs); }
+.grade-trend-axis-title .num { margin-left: var(--space-1); color: var(--text-strong); font-weight: 600; }
+.grade-trend-point { stroke: var(--surface); stroke-width: 2; fill: var(--text-muted); }
+.grade-trend-point.is-up { fill: var(--success); }
+.grade-trend-point.is-down { fill: var(--danger); }
+.grade-trend-chart .recharts-surface:focus { outline: none; }
 
 .grade-trend-tooltip {
-  position: absolute;
-  z-index: 2;
   display: grid;
   gap: 2px;
-  min-width: 170px;
+  min-width: 190px;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
   background: var(--surface-2);
   color: var(--text);
   font-size: var(--text-xs);
-  pointer-events: none;
-  transform: translate(-50%, -100%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
 }
 
 .grade-trend-tooltip strong { color: var(--text-strong); font-size: var(--text-sm); font-weight: 600; }
+.grade-trend-tooltip-avg { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.grade-trend-delta { display: inline-flex; align-items: center; gap: 3px; color: var(--text-muted); font-weight: 600; }
+.grade-trend-delta svg { width: 13px; height: 13px; }
+.grade-trend-delta.is-up { color: var(--success); }
+.grade-trend-delta.is-down { color: var(--danger); }
 .grade-trend-table summary { color: var(--text-muted); font-size: var(--text-xs); cursor: pointer; }
 .grade-trend-table table { margin-top: var(--space-2); }
+.grade-trend-skeleton { height: 420px; margin-top: var(--space-5); }

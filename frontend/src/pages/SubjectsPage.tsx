@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Download, GraduationCap, NotebookPen, Play, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
+import Modal from '../components/ui/Modal'
 import ProgressBar from '../components/ui/ProgressBar'
 import ConfirmButton from '../components/ui/ConfirmButton'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
@@ -42,6 +43,7 @@ function SubjectsPage() {
   const [topicTitle, setTopicTitle] = useState('')
   const [saving, setSaving] = useState(false)
   const [exams, setExams] = useState<Exam[]>([])
+  const [adding, setAdding] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -82,6 +84,7 @@ function SubjectsPage() {
       setSubjects((s) => [...s, created])
       setSelectedId(created.id)
       setName('')
+      setAdding(false)
     }, t('subjects.saveError'))
     setSaving(false)
   }
@@ -146,6 +149,7 @@ function SubjectsPage() {
       for (const examSubject of names) created.push(await createSubject(examSubject))
       setSubjects((s) => [...s, ...created].sort((a, b) => a.name.localeCompare(b.name)))
       setSelectedId(created[0]?.id ?? null)
+      setAdding(false)
     }, t('subjects.saveError'))
 
   const startSession = (subject: Subject, topic?: Topic) => {
@@ -184,20 +188,26 @@ function SubjectsPage() {
   )
 
   const addSubjectForm = (
-    <form className="inline-form" onSubmit={addSubject}>
+    <form className="inline-form new-subject-form" onSubmit={addSubject}>
       <label className="visually-hidden" htmlFor="new-subject">{t('subjects.newSubject')}</label>
       <input
         id="new-subject"
         className="input"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder={t('subjects.newSubject')}
+        placeholder={t('subjects.newSubjectPlaceholder')}
         maxLength={120}
       />
-      <button className="btn btn-secondary" type="submit" disabled={saving || !name.trim()}>
-        <Plus aria-hidden="true" /> {t('common.add')}
+      <button className="btn btn-primary" type="submit" disabled={saving || !name.trim()}>
+        <Plus aria-hidden="true" /> {t('subjects.create')}
       </button>
     </form>
+  )
+
+  const newSubjectButton = (
+    <button className="btn btn-primary" type="button" onClick={() => setAdding(true)}>
+      <Plus aria-hidden="true" /> {t('subjects.newSubject')}
+    </button>
   )
 
   return (
@@ -205,11 +215,16 @@ function SubjectsPage() {
       <PageHeader
         title={t('subjects.title')}
         description={t('subjects.description')}
-        actions={subjects.length > 0 && (
-          <button className="btn btn-secondary" type="button" onClick={() => void downloadVault()} title={t('subjects.vaultHint')}>
-            <Download aria-hidden="true" /> {t('subjects.vaultButton')}
-          </button>
-        )}
+        actions={
+          <>
+            {subjects.length > 0 && (
+              <button className="btn btn-secondary" type="button" onClick={() => void downloadVault()} title={t('subjects.vaultHint')}>
+                <Download aria-hidden="true" /> {t('subjects.vaultButton')}
+              </button>
+            )}
+            {newSubjectButton}
+          </>
+        }
       />
 
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
@@ -219,11 +234,10 @@ function SubjectsPage() {
         <LoadingRows label={t('subjects.loading')} />
       ) : subjects.length === 0 ? (
         <section className="panel subjects-empty">
-          <EmptyState title={t('subjects.emptyTitle')}>
+          <EmptyState title={t('subjects.emptyTitle')} action={newSubjectButton}>
             {t('subjects.emptyBody')}
           </EmptyState>
           {examSuggestions}
-          {addSubjectForm}
         </section>
       ) : (
         <div className="subjects-layout">
@@ -254,8 +268,11 @@ function SubjectsPage() {
                 )
               })}
             </ul>
-            {addSubjectForm}
-            {examSuggestions}
+            {examsWithoutSubject.length > 0 && (
+              <button className="btn btn-ghost subject-index-more" type="button" onClick={() => setAdding(true)}>
+                <Plus aria-hidden="true" /> {t('subjects.examsWithoutSubject', { count: examsWithoutSubject.length })}
+              </button>
+            )}
           </section>
 
           {selected && (
@@ -373,6 +390,12 @@ function SubjectsPage() {
             </section>
           )}
         </div>
+      )}
+      {adding && (
+        <Modal title={t('subjects.newSubject')} description={t('subjects.newSubjectHint')} onClose={() => setAdding(false)}>
+          {addSubjectForm}
+          {examSuggestions}
+        </Modal>
       )}
     </div>
   )

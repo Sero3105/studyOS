@@ -195,3 +195,9 @@
 .subject-exam > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--warning); }
 .subject-exam-main { display: grid; min-width: 0; flex: 1; }
 .subject-exam-title { color: var(--text-strong); font-weight: 600; }
+
+/* Nuova materia (nel dialog) */
+
+.new-subject-form .input { flex: 1; }
+.modal .exam-suggestions { margin-top: var(--space-5); }
+.subject-index-more { justify-self: start; margin-top: var(--space-2); color: var(--text-muted); }

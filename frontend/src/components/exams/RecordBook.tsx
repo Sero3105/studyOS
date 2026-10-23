@@ -1,6 +1,8 @@
+import { Suspense, lazy } from 'react'
 import type { Exam } from '../../services/examService'
 import { DEGREE_CFU, gradeSummary, gradeTrend } from '../../utils/grades'
-import GradeTrendChart from './GradeTrendChart'
+// Recharts è pesante: si scarica solo quando c'è un grafico da mostrare.
+const GradeTrendChart = lazy(() => import('./GradeTrendChart'))
 import { useLanguage } from '../../i18n/useLanguage'
 
 /**
@@ -33,7 +35,7 @@ function RecordBook({ exams, detailed = false }: { exams: Exam[]; detailed?: boo
         )}
       </dl>
       {grades.cfu === 0 && <p className="panel-meta">{t('exams.addCfuHint')}</p>}
-      {trend.length >= 2 && <GradeTrendChart points={trend} />}
+      {trend.length >= 2 && <Suspense fallback={<div className="skeleton grade-trend-skeleton" />}><GradeTrendChart points={trend} /></Suspense>}
     </section>
   )
 }
