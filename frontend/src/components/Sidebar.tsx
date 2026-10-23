@@ -82,9 +82,9 @@ function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile, onOp
         <span className="nav-text">{t('nav.newSession')}</span>
       </Link>
 
-      <button className="nav-item sidebar-search" type="button" onClick={onOpenPalette} data-label={t('palette.title')}>
+      <button className="nav-item sidebar-search" type="button" onClick={onOpenPalette} data-label={t('palette.title')} aria-label={t('palette.title')}>
         <Search className="nav-icon" aria-hidden="true" />
-        <span className="nav-text">{t('palette.title')}</span>
+        <span className="nav-text sidebar-search-label">{t('palette.search')}</span>
         <kbd className="nav-text sidebar-kbd">⌘K</kbd>
       </button>
 

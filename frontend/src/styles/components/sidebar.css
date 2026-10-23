@@ -323,7 +323,10 @@
   cursor: pointer;
 }
 
+.sidebar-search-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
 .sidebar-kbd {
+  flex: 0 0 auto;
   margin-left: auto;
   color: var(--text-muted);
   font-family: inherit;
