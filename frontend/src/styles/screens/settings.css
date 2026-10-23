@@ -11,9 +11,14 @@
 .settings-page { gap: var(--space-5); }
 .settings-description { max-width: 72ch; }
 .settings-language-option input { accent-color: var(--accent); }
-.settings-toggle { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; }
+.settings-toggle { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .settings-actions label.btn { cursor: pointer; }
 .settings-actions label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .settings-actions .is-disabled { opacity: 0.5; pointer-events: none; }
 .settings-link { flex: 1 1 320px; min-width: 0; }
+.settings-subtitle { margin: 0 0 var(--space-3); color: var(--text-strong); font-size: var(--text-sm); font-weight: 600; }
+.settings-form + .settings-form { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--line); }
+.settings-danger .settings-subtitle { color: var(--danger); }
+.settings-actions a.btn svg { width: 14px; height: 14px; }
+.settings-actions + .panel-meta { margin-top: var(--space-3); }

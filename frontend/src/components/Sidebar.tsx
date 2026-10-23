@@ -1,65 +1,16 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import {
-  BarChart3,
-  BookOpen,
-  CalendarCheck,
-  CalendarDays,
-  GraduationCap,
-  History,
-  LayoutDashboard,
-  LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Play,
-  Settings,
-  Target,
-  Timer,
-  X,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { LogOut, PanelLeftClose, PanelLeftOpen, Play, Search, X } from 'lucide-react'
 import { useAuth } from '../context/useAuth'
 import { useTimer } from '../context/useTimer'
 import { useLanguage } from '../i18n/useLanguage'
-import type { TranslationKey } from '../i18n/translations'
-
-interface NavEntry {
-  to: string
-  labelKey: TranslationKey
-  icon: LucideIcon
-}
-
-const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
-  {
-    items: [
-      { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-      { to: '/timer', labelKey: 'nav.timer', icon: Timer },
-      { to: '/planner', labelKey: 'nav.planner', icon: CalendarCheck },
-      { to: '/calendar', labelKey: 'nav.calendar', icon: CalendarDays },
-    ],
-  },
-  {
-    titleKey: 'nav.study',
-    items: [
-      { to: '/subjects', labelKey: 'nav.subjects', icon: BookOpen },
-      { to: '/exams', labelKey: 'nav.exams', icon: GraduationCap },
-      { to: '/goals', labelKey: 'nav.goals', icon: Target },
-    ],
-  },
-  {
-    titleKey: 'nav.analysis',
-    items: [
-      { to: '/statistics', labelKey: 'nav.statistics', icon: BarChart3 },
-      { to: '/history', labelKey: 'nav.history', icon: History },
-      { to: '/settings', labelKey: 'nav.settings', icon: Settings },
-    ],
-  },
-]
+import { navGroups } from './navigation'
 
 interface SidebarProps {
   collapsed: boolean
   mobileOpen: boolean
   onToggleCollapsed: () => void
   onCloseMobile: () => void
+  onOpenPalette: () => void
 }
 
 /**
@@ -73,7 +24,7 @@ interface SidebarProps {
  * In fondo ci sono l'account e l'uscita, così la sessione si chiude sempre
  * dallo stesso punto.
  */
-function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile }: SidebarProps) {
+function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile, onOpenPalette }: SidebarProps) {
   const { user, logout } = useAuth()
   const { t } = useLanguage()
   const timer = useTimer()
@@ -130,6 +81,12 @@ function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile }: Si
         <Play aria-hidden="true" />
         <span className="nav-text">{t('nav.newSession')}</span>
       </Link>
+
+      <button className="nav-item sidebar-search" type="button" onClick={onOpenPalette} data-label={t('palette.title')}>
+        <Search className="nav-icon" aria-hidden="true" />
+        <span className="nav-text">{t('palette.title')}</span>
+        <kbd className="nav-text sidebar-kbd">⌘K</kbd>
+      </button>
 
       <nav className="sidebar-nav">
         {navGroups.map((group, index) => (

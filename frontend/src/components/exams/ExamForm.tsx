@@ -40,8 +40,10 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
     setSaving(true)
     setError('')
 
+    const passed = data.status === 'passed'
+    const grade = passed && data.grade ? Number(data.grade) : null
     try {
-      await onSave(data)
+      await onSave({ ...data, cfu: data.cfu ? Number(data.cfu) : null, grade, honors: grade === 30 && Boolean(data.honors) })
     } catch (saveError) {
       setError(errorMessage(saveError, t('exams.saveError')))
     } finally {
@@ -125,6 +127,30 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
             <option value="failed">{t('exams.status.failed')}</option>
           </select>
         </label>
+        <div className="form-grid form-grid-3">
+          <label className="field">
+            <span className="field-label">{t('exams.formCfu')} <em>{t('common.optional')}</em></span>
+            <input name="cfu" type="number" min={1} max={30} inputMode="numeric" value={data.cfu ?? ''} onChange={handleChange} />
+          </label>
+          {data.status === 'passed' && (
+            <>
+              <label className="field">
+                <span className="field-label">{t('exams.formGrade')}</span>
+                <input name="grade" type="number" min={18} max={30} inputMode="numeric" value={data.grade ?? ''} onChange={handleChange} />
+              </label>
+              <label className="settings-toggle exam-honors">
+                <input
+                  className="check"
+                  type="checkbox"
+                  checked={Boolean(data.honors) && Number(data.grade) === 30}
+                  disabled={Number(data.grade) !== 30}
+                  onChange={(e) => setData((d) => ({ ...d, honors: e.target.checked }))}
+                />
+                <span>{t('exams.formHonors')}</span>
+              </label>
+            </>
+          )}
+        </div>
         <label className="field">
           <span className="field-label">{t('exams.formNotes')} <em>{t('common.optional')}</em></span>
           <textarea

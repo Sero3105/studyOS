@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowRight, ChevronDown, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
@@ -61,6 +61,8 @@ function PlannerPage() {
   const [subjectId, setSubjectId] = useState('')
   const [topicId, setTopicId] = useState('')
   const [saving, setSaving] = useState(false)
+  // Arrivati con "n" o dalla palette: il cursore è già nel campo del nuovo task.
+  const focusNewTask = Boolean((useLocation().state as { focusNewTask?: boolean } | null)?.focusNewTask)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -194,6 +196,7 @@ function PlannerPage() {
               <input
                 id="task-title"
                 className="input composer-title"
+                autoFocus={focusNewTask}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required

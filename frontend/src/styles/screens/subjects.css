@@ -143,3 +143,10 @@
     flex: 1;
   }
 }
+
+/* Note per argomento */
+
+.topic-row { flex-wrap: wrap; }
+.topic-row .has-notes { color: var(--accent); }
+.topic-notes { flex-basis: 100%; gap: var(--space-2); padding: 0 0 var(--space-2) calc(24px + var(--space-3)); }
+.topic-notes textarea { min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--text-sm); }

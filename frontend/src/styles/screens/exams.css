@@ -187,3 +187,16 @@
     flex: 1;
   }
 }
+
+/* Libretto */
+
+.grade-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-3) 0 0;
+}
+
+.grade-stats dt { color: var(--text-muted); font-size: var(--text-sm); }
+.grade-stats dd { margin: var(--space-1) 0 0; color: var(--text-strong); font-size: 1.5rem; font-weight: 600; }
+.exam-honors { align-self: end; }

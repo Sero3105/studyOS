@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Menu, Play } from 'lucide-react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, Play, Search } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
+import CommandPalette from '../components/CommandPalette'
+import { navItems } from '../components/navigation'
 import { TimerProvider } from '../context/TimerProvider'
 import { useLanguage } from '../i18n/useLanguage'
 import { runDeadlineReminders } from '../utils/reminders'
@@ -29,6 +31,8 @@ function AppLayout() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [lastPath, setLastPath] = useState(location.pathname)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const navigate = useNavigate()
 
   if (lastPath !== location.pathname) {
     setLastPath(location.pathname)
@@ -46,6 +50,29 @@ function AppLayout() {
     const id = window.setInterval(check, 3600000)
     return () => window.clearInterval(id)
   }, [t, locale])
+
+  // Scorciatoie: ⌘K / Ctrl+K / "/" / "?" palette, "g" + lettera per le pagine, "n" nuovo task.
+  useEffect(() => {
+    let pendingG = 0
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault(); setPaletteOpen((open) => !open); return
+      }
+      const target = event.target as HTMLElement
+      if (paletteOpen || event.metaKey || event.ctrlKey || event.altKey || target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+      if (pendingG && Date.now() - pendingG < 1500) {
+        pendingG = 0
+        const item = navItems.find((entry) => entry.key === event.key.toLowerCase())
+        if (item) { event.preventDefault(); navigate(item.to) }
+        return
+      }
+      if (event.key === 'g') pendingG = Date.now()
+      else if (event.key === '/' || event.key === '?') { event.preventDefault(); setPaletteOpen(true) }
+      else if (event.key === 'n') { event.preventDefault(); navigate('/planner', { state: { focusNewTask: true } }) }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [navigate, paletteOpen])
 
   useEffect(() => {
     if (!mobileOpen) return
@@ -76,6 +103,9 @@ function AppLayout() {
             <span className="brand-mark" aria-hidden="true" />
             <span className="brand-name">StudyOS</span>
           </Link>
+          <button className="icon-btn topbar-search" type="button" onClick={() => setPaletteOpen(true)} aria-label={t('palette.title')}>
+            <Search aria-hidden="true" />
+          </button>
           <Link to="/timer" className="icon-btn topbar-cta" aria-label={t('nav.newSession')}>
             <Play aria-hidden="true" />
           </Link>
@@ -86,7 +116,9 @@ function AppLayout() {
           mobileOpen={mobileOpen}
           onToggleCollapsed={() => setCollapsed((value) => !value)}
           onCloseMobile={() => setMobileOpen(false)}
+          onOpenPalette={() => setPaletteOpen(true)}
         />
+        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
         {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
 
         <main id="main-content" className="content" tabIndex={-1}>

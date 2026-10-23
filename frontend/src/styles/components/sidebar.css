@@ -311,3 +311,23 @@
     min-height: var(--target-min);
   }
 }
+
+/* Apertura della palette dei comandi */
+
+.sidebar-search {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.sidebar-kbd {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-xs);
+}
+
+.is-collapsed .sidebar-search { border-color: transparent; }

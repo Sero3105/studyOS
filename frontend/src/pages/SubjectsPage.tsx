@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Play, Plus } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Download, NotebookPen, Play, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import ProgressBar from '../components/ui/ProgressBar'
 import ConfirmButton from '../components/ui/ConfirmButton'
@@ -10,6 +10,9 @@ import type { StudySessionConfig } from '../components/timer/types'
 import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, updateTopic } from '../services/subjectService'
 import type { Subject, Topic } from '../services/subjectService'
 import { getStatsSummary } from '../services/statsService'
+import { exportNotesVault } from '../services/dataService'
+import { saveBlob } from '../utils/download'
+import { reviewsEnabled } from '../utils/preferences'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
@@ -25,11 +28,11 @@ function progressOf(topics: Topic[]): number {
  * per iniziare subito una sessione su quella materia.
  */
 function SubjectsPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const navigate = useNavigate()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [minutesBySubject, setMinutesBySubject] = useState<Record<string, number>>({})
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>((useLocation().state as { subjectId?: number } | null)?.subjectId ?? null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [name, setName] = useState('')
@@ -53,6 +56,10 @@ function SubjectsPage() {
       .catch(() => setMinutesBySubject({}))
   }, [t])
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
+
+  const [notice, setNotice] = useState('')
+  const [notesFor, setNotesFor] = useState<number | null>(null)
+  const [notesDraft, setNotesDraft] = useState('')
 
   const selected = subjects.find((subject) => subject.id === selectedId) ?? null
 
@@ -85,11 +92,28 @@ function SubjectsPage() {
     }, t('subjects.addTopicError'))
   }
 
+  const replaceTopic = (subjectId: number, updated: Topic) =>
+    setSubjects((s) => s.map((x) => x.id === subjectId ? { ...x, topics: x.topics.map((t) => t.id === updated.id ? updated : t) } : x))
+
   const toggleTopic = (subjectId: number, topicId: number, completed: boolean) =>
     run(async () => {
-      const updated = await updateTopic(topicId, completed)
-      setSubjects((s) => s.map((x) => x.id === subjectId ? { ...x, topics: x.topics.map((t) => t.id === topicId ? updated : t) } : x))
+      const scheduleReviews = completed && reviewsEnabled()
+      replaceTopic(subjectId, await updateTopic(topicId, { completed, schedule_reviews: scheduleReviews }))
+      setNotice(scheduleReviews ? t('subjects.reviewsScheduled') : '')
     }, t('subjects.updateTopicError'))
+
+  const openNotes = (topic: Topic) => {
+    setNotesFor(notesFor === topic.id ? null : topic.id)
+    setNotesDraft(topic.notes ?? '')
+  }
+
+  const saveNotes = (subjectId: number, topic: Topic) => {
+    if (notesDraft === (topic.notes ?? '')) return
+    void run(async () => replaceTopic(subjectId, await updateTopic(topic.id, { notes: notesDraft })), t('subjects.notesError'))
+  }
+
+  const downloadVault = () =>
+    run(async () => saveBlob(await exportNotesVault(language), 'studyos-notes.zip'), t('subjects.vaultError'))
 
   const removeTopic = (subjectId: number, topicId: number) =>
     run(async () => {
@@ -140,9 +164,15 @@ function SubjectsPage() {
       <PageHeader
         title={t('subjects.title')}
         description={t('subjects.description')}
+        actions={subjects.length > 0 && (
+          <button className="btn btn-secondary" type="button" onClick={() => void downloadVault()} title={t('subjects.vaultHint')}>
+            <Download aria-hidden="true" /> {t('subjects.vaultButton')}
+          </button>
+        )}
       />
 
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
+      {notice && <div className="notice notice-success" role="status">{notice}<button className="btn btn-ghost" type="button" onClick={() => setNotice('')}>{t('common.close')}</button></div>}
 
       {loading ? (
         <LoadingRows label={t('subjects.loading')} />
@@ -218,7 +248,7 @@ function SubjectsPage() {
                   maxLength={200}
                 />
                 <button className="btn btn-secondary" type="submit" disabled={!topicTitle.trim()}>
-                  <Plus aria-hidden="true" /> Aggiungi
+                  <Plus aria-hidden="true" /> {t('common.add')}
                 </button>
               </form>
 
@@ -229,7 +259,7 @@ function SubjectsPage() {
               ) : (
                 <ul className="rows topic-rows">
                   {selected.topics.map((topic) => (
-                    <li className="row" key={topic.id}>
+                    <li className="row topic-row" key={topic.id}>
                       <label className="topic-label">
                         <input
                           className="check"
@@ -239,9 +269,37 @@ function SubjectsPage() {
                         />
                         <span className={topic.completed ? 'is-done' : undefined}>{topic.title}</span>
                       </label>
-                      <span className="row-reveal">
-                        <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
+                      <span className="row-actions">
+                        <button
+                          className={`icon-btn${topic.notes ? ' has-notes' : ' row-reveal'}`}
+                          type="button"
+                          onClick={() => openNotes(topic)}
+                          aria-expanded={notesFor === topic.id}
+                          aria-controls={`notes-${topic.id}`}
+                          aria-label={t('subjects.notesLabel', { title: topic.title })}
+                          title={t('subjects.notes')}
+                        >
+                          <NotebookPen aria-hidden="true" />
+                        </button>
+                        <span className="row-reveal">
+                          <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
+                        </span>
                       </span>
+                      {notesFor === topic.id && (
+                        <label className="field topic-notes" id={`notes-${topic.id}`}>
+                          <span className="visually-hidden">{t('subjects.notesLabel', { title: topic.title })}</span>
+                          <textarea
+                            value={notesDraft}
+                            onChange={(e) => setNotesDraft(e.target.value)}
+                            onBlur={() => saveNotes(selected.id, topic)}
+                            rows={6}
+                            maxLength={20000}
+                            placeholder={t('subjects.notesPlaceholder')}
+                            autoFocus
+                          />
+                          <span className="panel-meta">{t('subjects.notesHint')}</span>
+                        </label>
+                      )}
                     </li>
                   ))}
                 </ul>

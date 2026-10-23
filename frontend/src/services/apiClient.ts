@@ -30,6 +30,11 @@ export class ApiError extends Error {
   }
 }
 
+/** URL assoluto di un endpoint, per link usati fuori dall'app (es. feed iCal). */
+export function apiUrl(path: string): string {
+  return new URL(`${API_BASE_URL}${path}`, window.location.origin).href
+}
+
 export function setAuthTokens(nextAccessToken: string | null, nextCsrfToken: string | null) {
   accessToken = nextAccessToken
   csrfToken = nextCsrfToken
@@ -39,10 +44,14 @@ export function setRefreshHandler(handler: (() => Promise<boolean>) | null) {
   refreshHandler = handler
 }
 
-/** Le DELETE rispondono 204 con content-type JSON ma corpo vuoto: niente da leggere. */
+/**
+ * Le DELETE rispondono 204 con content-type JSON ma corpo vuoto: niente da leggere.
+ * Le risposte riuscite non JSON (zip, .ics) arrivano come Blob.
+ */
 async function readResponse(response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
-  if (response.status === 204 || !contentType.includes('application/json')) return null
+  if (response.status === 204) return null
+  if (!contentType.includes('application/json')) return response.ok ? response.blob() : null
   const body = await response.text()
   return body ? JSON.parse(body) : null
 }

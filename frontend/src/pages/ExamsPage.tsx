@@ -5,10 +5,13 @@ import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
 import ExamList, { NextExam } from '../components/exams/ExamList'
-import { createExam, deleteExam, getExams, updateExam } from '../services/examService'
+import { createExam, deleteExam, getExams, planExam, updateExam } from '../services/examService'
 import type { CreateExamPayload, Exam } from '../services/examService'
 import { daysUntil, relativeDay } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { gradeSummary } from '../utils/grades'
+import { ApiError } from '../services/apiClient'
+import type { TranslationKey } from '../i18n/translations'
 import { useLanguage } from '../i18n/useLanguage'
 
 type ExamFilter = 'upcoming' | 'archive' | 'all'
@@ -26,6 +29,7 @@ function ExamsPage() {
   const [editingExam, setEditingExam] = useState<Exam | null>(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<ExamFilter>('upcoming')
+  const [notice, setNotice] = useState('')
 
   const loadExams = useCallback(async () => {
     try {
@@ -70,6 +74,17 @@ function ExamsPage() {
     }
   }
 
+  const handlePlan = async (exam: Exam) => {
+    setError(''); setNotice('')
+    try {
+      const tasks = await planExam(exam.id)
+      setNotice(tasks.length ? t('exams.planDone', { count: tasks.length, title: exam.title }) : t('exams.planNothing'))
+    } catch (planError) {
+      const code = planError instanceof ApiError && planError.status === 422 ? planError.message : ''
+      setError(code === 'no_subject' || code === 'too_close' ? t(`exams.plan.${code}` as TranslationKey, { subject: exam.subject }) : errorMessage(planError, t('exams.planError')))
+    }
+  }
+
   const openCreate = () => { setEditingExam(null); setIsModalOpen(true) }
   const openEdit = (exam: Exam) => { setEditingExam(exam); setIsModalOpen(true) }
 
@@ -77,6 +92,7 @@ function ExamsPage() {
   const archive = sortExams(exams.filter((exam) => !isUpcoming(exam))).reverse()
   const visible = filter === 'upcoming' ? upcoming : filter === 'archive' ? archive : sortExams(exams)
   const [next, ...rest] = upcoming
+  const grades = gradeSummary(exams)
 
   const description = loading
     ? t('exams.descriptionLoading')
@@ -98,6 +114,21 @@ function ExamsPage() {
       />
 
       {error && <ErrorNotice message={error} onRetry={exams.length ? undefined : () => void loadExams()} onDismiss={exams.length ? () => setError('') : undefined} />}
+
+      {notice && <div className="notice notice-success" role="status">{notice}</div>}
+
+      {grades.count > 0 && (
+        <section className="panel grade-summary" aria-labelledby="grade-summary-title">
+          <h2 id="grade-summary-title" className="panel-title">{t('exams.gradesTitle')}</h2>
+          <dl className="grade-stats">
+            <div><dt>{t('exams.weightedAverage')}</dt><dd className="num">{grades.cfu ? grades.weightedAverage.toFixed(2) : '—'}</dd></div>
+            <div><dt>{t('exams.average')}</dt><dd className="num">{grades.average.toFixed(2)}</dd></div>
+            <div><dt>{t('exams.graduationBase')}</dt><dd className="num">{grades.cfu ? `${grades.graduationBase.toFixed(1)}/110` : '—'}</dd></div>
+            <div><dt>{t('exams.cfuTotal')}</dt><dd className="num">{grades.cfu}</dd></div>
+          </dl>
+          {grades.cfu === 0 && <p className="panel-meta">{t('exams.addCfuHint')}</p>}
+        </section>
+      )}
 
       {loading ? (
         <LoadingRows label={t('exams.loading')} />
@@ -133,11 +164,11 @@ function ExamsPage() {
           {filter === 'upcoming' ? (
             next ? (
               <>
-                <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} />
+                <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />
                 {rest.length > 0 && (
                   <div className="page-section">
                     <h2 className="section-title">{t('exams.comingLater')}</h2>
-                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} />
+                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />
                   </div>
                 )}
               </>
@@ -172,6 +203,9 @@ function ExamsPage() {
             location: editingExam.location ?? undefined,
             notes: editingExam.notes ?? undefined,
             status: editingExam.status,
+            cfu: editingExam.cfu,
+            grade: editingExam.grade,
+            honors: editingExam.honors,
           } : undefined}
         />
       )}

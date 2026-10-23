@@ -6,11 +6,19 @@ import WeekChart from '../components/ui/WeekChart'
 import ProgressBar from '../components/ui/ProgressBar'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { getStatsSummary } from '../services/statsService'
+import { getSessions } from '../services/sessionService'
+import type { StudySession } from '../services/sessionService'
+import { getTasks } from '../services/taskService'
+import type { Task } from '../services/taskService'
+import { getSubjects } from '../services/subjectService'
+import type { Subject } from '../services/subjectService'
+import StudyHeatmap from '../components/stats/StudyHeatmap'
+import { buildHeatmap, planVsActual } from '../utils/studyStats'
 import type { NameMinutes, StatsSummary } from '../services/statsService'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
 import type { GoalKind } from '../services/goalService'
-import { formatMinutes } from '../utils/dates'
+import { formatMinutes, todayIso } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 const goalKindKeys: Record<GoalKind, TranslationKey> = { weekly_minutes: 'goal.kind.weekly_minutes', total_minutes: 'goal.kind.total_minutes', tasks_done: 'goal.kind.tasks_done', topics_done: 'goal.kind.topics_done', sessions_count: 'goal.kind.sessions_count' }
 
@@ -49,13 +57,20 @@ function StatisticsPage() {
   const { t } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
+  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[] } | null>(null)
 
   const load = useCallback(() => {
     setError('')
     getStatsSummary()
       .then(setStats)
       .catch((e) => setError(errorMessage(e, t('stats.loadError'))))
+    // Heatmap e piano vs realtà sono di contorno: se falliscono, il resto della pagina resta.
+    Promise.all([getSessions(), getTasks(), getSubjects()])
+      .then(([sessions, tasks, subjects]) => setDetail({ sessions, tasks, subjects }))
+      .catch(() => setDetail(null))
   }, [t])
+  const today = todayIso()
+  const planRows = detail ? planVsActual(detail.subjects, detail.tasks, detail.sessions, today) : []
 
   useEffect(() => { queueMicrotask(load) }, [load])
 
@@ -133,6 +148,42 @@ function StatisticsPage() {
               )}
             </section>
           </div>
+
+          {detail && (
+            <section className="panel" aria-labelledby="stats-heatmap-title">
+              <h2 id="stats-heatmap-title" className="panel-title panel-head">{t('stats.heatmapTitle')}</h2>
+              <StudyHeatmap weeks={buildHeatmap(detail.sessions, today)} />
+            </section>
+          )}
+
+          {planRows.length > 0 && (
+            <section className="panel" aria-labelledby="stats-plan-title">
+              <div className="panel-head">
+                <h2 id="stats-plan-title" className="panel-title">{t('stats.planTitle')}</h2>
+                <span className="panel-meta">{t('stats.planWindow')}</span>
+              </div>
+              <table className="plan-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{t('planner.subject')}</th>
+                    <th scope="col">{t('stats.planPlanned')}</th>
+                    <th scope="col" className="plan-bar-col"><span className="visually-hidden">{t('stats.progress')}</span></th>
+                    <th scope="col">{t('stats.planStudied')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {planRows.map((row) => (
+                    <tr key={row.subjectId}>
+                      <th scope="row">{row.name}</th>
+                      <td className="num">{row.planned ? `${row.done}/${row.planned}` : '—'}</td>
+                      <td className="plan-bar-col">{row.planned > 0 && <ProgressBar percent={percentOf(row.done, row.planned)} label={t('stats.planProgress', { name: row.name })} />}</td>
+                      <td className="num">{row.minutes ? formatMinutes(row.minutes) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
           <section className="panel" aria-labelledby="stats-goals-title">
             <div className="panel-head">
