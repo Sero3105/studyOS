@@ -137,6 +137,7 @@ export function RegisterForm({ onSubmit, error }: AuthFormProps) {
             name="username"
             type="text"
             autoComplete="username"
+            maxLength={50}
             placeholder={t('auth.usernamePlaceholder')}
             required
           />

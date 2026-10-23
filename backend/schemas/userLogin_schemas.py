@@ -1,6 +1,6 @@
 """Schemi per la validazione dei dati di login dell'utente."""
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class UserLogin(BaseModel):
     """Schema per la validazione dei dati di login dell'utente.
@@ -11,4 +11,4 @@ class UserLogin(BaseModel):
     """
 
     email: EmailStr
-    password: str
+    password: str = Field(max_length=128)

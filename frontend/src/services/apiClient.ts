@@ -76,6 +76,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, ret
     if (await recoverSession()) return apiRequest<T>(path, options, false)
   }
   const data = await readResponse(response)
-  if (!response.ok) throw new ApiError(data?.detail ?? translate(currentLanguage(), 'api.genericError'), response.status)
+  // Gli errori di validazione FastAPI (422) hanno `detail` come lista: si mostra il primo messaggio.
+  const detail = Array.isArray(data?.detail) ? data.detail[0]?.msg : data?.detail
+  if (!response.ok) throw new ApiError(detail ?? translate(currentLanguage(), 'api.genericError'), response.status)
   return data as T
 }

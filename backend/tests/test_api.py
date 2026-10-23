@@ -68,3 +68,10 @@ def test_refresh_rotates_and_logout_revokes(client):
 def test_refresh_without_csrf_is_403(client):
     register_and_login(client, "f@example.com")
     assert client.post("/auth/refresh").status_code == 403
+
+
+def test_register_rejects_weak_or_malformed_input(client):
+    base = {"username": "weak", "email": "weak@example.com", "password": "password123"}
+    assert client.post("/auth/register", json=base | {"password": "short"}).status_code == 422
+    assert client.post("/auth/register", json=base | {"email": "not-an-email"}).status_code == 422
+    assert client.post("/auth/register", json=base | {"username": "<script>"}).status_code == 422

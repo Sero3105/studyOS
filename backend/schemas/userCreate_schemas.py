@@ -9,7 +9,7 @@ Per un endpoint di registrazione, questo schema fa in modo che un client non
 possa inviare valori malformati o campi mancanti.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -19,7 +19,8 @@ class UserCreate(BaseModel):
     creare l'hash da salvare nel database.
     """
 
-    username: str
-    email: str
-    full_name: str | None = None
-    password: str
+    # Limiti anche lato server: la validazione del frontend si può aggirare.
+    username: str = Field(min_length=1, max_length=50, pattern=r"^[A-Za-z0-9._-]+$")
+    email: EmailStr
+    full_name: str | None = Field(default=None, max_length=120)
+    password: str = Field(min_length=8, max_length=128)
