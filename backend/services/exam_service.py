@@ -23,11 +23,12 @@ def update_exam(exam_id:int, data, user_id:int, db:Session)->Exam:
 def delete_exam(exam_id:int, user_id:int, db:Session)->None:
     exam=_owned_exam(exam_id,user_id,db); db.delete(exam); db.commit()
 def list_user_exams(user_id:int, db:Session)->list[Exam]:
-    return list(db.scalars(select(Exam).where(Exam.user_id==user_id).order_by(Exam.exam_date, case((Exam.exam_time.is_(None),1),else_=0), Exam.exam_time, Exam.id)))
+    return list(db.scalars(select(Exam).where(Exam.user_id==user_id).order_by(case((Exam.exam_date.is_(None),1),else_=0), Exam.exam_date, case((Exam.exam_time.is_(None),1),else_=0), Exam.exam_time, Exam.id)))
 
 def plan_exam(exam_id:int, user_id:int, db:Session)->list[Task]:
     """Spreads the subject's open topics as tasks from tomorrow to the day before the exam."""
     exam=_owned_exam(exam_id,user_id,db)
+    if exam.exam_date is None: raise ValueError('no_date')
     subject=db.scalar(select(Subject).where(Subject.user_id==user_id, func.lower(Subject.name)==exam.subject.lower()))
     if subject is None: raise ValueError('no_subject')
     days=(exam.exam_date-date.today()).days-1

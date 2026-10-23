@@ -1,5 +1,5 @@
 import { getTasks } from '../services/taskService'
-import { getExams } from '../services/examService'
+import { getExams, isDated } from '../services/examService'
 import { daysUntil, relativeDay, todayIso } from './dates'
 import type { Translate, TranslationKey } from '../i18n/translations'
 
@@ -33,7 +33,7 @@ export async function runDeadlineReminders(t: Translate, locale: string): Promis
     [open.filter((d) => d === 1).length, 'reminders.dueTomorrow'],
   ]
   const lines = counts.filter(([count]) => count > 0).map(([count, key]) => t(key, { count }))
-  for (const exam of exams) {
+  for (const exam of exams.filter(isDated)) {
     if ((exam.status === 'planned' || exam.status === 'in_progress') && EXAM_MILESTONES.includes(daysUntil(exam.exam_date))) {
       lines.push(t('reminders.exam', { title: exam.title, when: relativeDay(exam.exam_date, locale).toLowerCase() }))
     }

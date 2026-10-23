@@ -39,7 +39,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     Promise.all([getTasks(), getExams(), getSubjects()]).then(([tasks, exams, subjects]) => setData([
       ...tasks.map((task) => ({ id: `task-${task.id}`, label: task.title, hint: task.due_date ? formatDay(task.due_date, 'short', locale) : t('palette.task'), icon: CheckSquare, run: go('/planner') })),
-      ...exams.map((exam) => ({ id: `exam-${exam.id}`, label: exam.title, hint: formatDay(exam.exam_date, 'short', locale), icon: GraduationCap, run: go('/exams') })),
+      ...exams.map((exam) => ({ id: `exam-${exam.id}`, label: exam.title, hint: exam.exam_date ? formatDay(exam.exam_date, 'short', locale) : t('exams.noDate'), icon: GraduationCap, run: go('/exams') })),
       ...subjects.flatMap((subject) => [
         { id: `subject-${subject.id}`, label: subject.name, hint: t('palette.subject'), icon: BookOpen, run: go('/subjects', { subjectId: subject.id }) },
         ...subject.topics.map((topic) => ({ id: `topic-${topic.id}`, label: topic.title, hint: subject.name, icon: BookOpen, run: go('/subjects', { subjectId: subject.id }) })),

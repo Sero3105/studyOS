@@ -10,7 +10,7 @@ class Exam(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     title = Column(String(120), nullable=False)
     subject = Column(String(120), nullable=False)
-    exam_date = Column(Date, nullable=False, index=True)
+    exam_date = Column(Date, nullable=True, index=True)  # NULL = appello non ancora fissato
     exam_time = Column(Time, nullable=True)
     location = Column(String(120), nullable=True)
     notes = Column(Text, nullable=True)

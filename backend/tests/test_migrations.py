@@ -21,5 +21,5 @@ def test_pre_alembic_database_is_stamped_and_upgraded(tmp_path, monkeypatch):
     assert {"share_links", "calendar_feeds"} <= set(inspect(legacy).get_table_names())
     assert "notes" in {c["name"] for c in inspect(legacy).get_columns("topics")}
     with legacy.connect() as conn:
-        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0003"
+        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0004"
         assert conn.execute(text("SELECT count(*) FROM users")).scalar() == 1

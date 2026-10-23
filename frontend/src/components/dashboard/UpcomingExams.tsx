@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { EmptyState } from '../ui/Feedback'
 import Meta from '../ui/Meta'
-import type { Exam } from '../../services/examService'
+import type { DatedExam } from '../../services/examService'
 import { daysUntil, formatDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 
@@ -10,7 +10,7 @@ import { useLanguage } from '../../i18n/useLanguage'
  * Prossimi esami con il conto alla rovescia in evidenza: il numero di giorni
  * è la prima cosa che si legge, colorato in base all'urgenza.
  */
-function UpcomingExams({ exams }: { exams: Exam[] }) {
+function UpcomingExams({ exams }: { exams: DatedExam[] }) {
   const { t, locale } = useLanguage()
   return (
     <section className="panel" aria-labelledby="dash-exams-title">

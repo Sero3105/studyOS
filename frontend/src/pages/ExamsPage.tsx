@@ -5,7 +5,7 @@ import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
 import ExamList, { NextExam } from '../components/exams/ExamList'
-import { createExam, deleteExam, getExams, planExam, updateExam } from '../services/examService'
+import { createExam, deleteExam, getExams, isDated, planExam, updateExam } from '../services/examService'
 import type { CreateExamPayload, Exam } from '../services/examService'
 import { daysUntil, relativeDay } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
@@ -16,9 +16,9 @@ import { useLanguage } from '../i18n/useLanguage'
 
 type ExamFilter = 'upcoming' | 'archive' | 'all'
 
-/** In arrivo: non ancora sostenuto e con data da oggi in poi. */
+/** In arrivo: non ancora sostenuto e con data da oggi in poi, oppure data ancora da fissare. */
 function isUpcoming(exam: Exam): boolean {
-  return (exam.status === 'planned' || exam.status === 'in_progress') && daysUntil(exam.exam_date) >= 0
+  return (exam.status === 'planned' || exam.status === 'in_progress') && (!isDated(exam) || daysUntil(exam.exam_date) >= 0)
 }
 
 function ExamsPage() {
@@ -49,7 +49,7 @@ function ExamsPage() {
   const sortExams = (list: Exam[]) =>
     [...list].sort(
       (first, second) =>
-        first.exam_date.localeCompare(second.exam_date) ||
+        (first.exam_date ?? '9999').localeCompare(second.exam_date ?? '9999') ||
         (first.exam_time ?? '99:99').localeCompare(second.exam_time ?? '99:99'),
     )
 
@@ -91,7 +91,9 @@ function ExamsPage() {
   const upcoming = sortExams(exams.filter(isUpcoming))
   const archive = sortExams(exams.filter((exam) => !isUpcoming(exam))).reverse()
   const visible = filter === 'upcoming' ? upcoming : filter === 'archive' ? archive : sortExams(exams)
-  const [next, ...rest] = upcoming
+  // Il blocco grande col conto alla rovescia è per il primo esame con data; quelli senza data restano in lista.
+  const next = upcoming.find(isDated)
+  const rest = upcoming.filter((exam) => exam !== next)
   const grades = gradeSummary(exams)
 
   const description = loading
@@ -162,12 +164,12 @@ function ExamsPage() {
           </div>
 
           {filter === 'upcoming' ? (
-            next ? (
+            upcoming.length > 0 ? (
               <>
-                <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />
+                {next && <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />}
                 {rest.length > 0 && (
                   <div className="page-section">
-                    <h2 className="section-title">{t('exams.comingLater')}</h2>
+                    {next && <h2 className="section-title">{t('exams.comingLater')}</h2>}
                     <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />
                   </div>
                 )}
@@ -198,7 +200,7 @@ function ExamsPage() {
           initial={editingExam ? {
             title: editingExam.title,
             subject: editingExam.subject,
-            exam_date: editingExam.exam_date,
+            exam_date: editingExam.exam_date ?? undefined,
             exam_time: editingExam.exam_time ?? undefined,
             location: editingExam.location ?? undefined,
             notes: editingExam.notes ?? undefined,

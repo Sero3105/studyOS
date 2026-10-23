@@ -12,6 +12,7 @@ import type { Task, TaskPriority, TaskStatus } from '../services/taskService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import { getExams } from '../services/examService'
+import { isDated } from '../services/examService'
 import type { Exam } from '../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
@@ -112,6 +113,7 @@ function PlannerPage() {
   const subjectName = (id: number | null) => subjects.find((s) => s.id === id)?.name
   const topicName = (task: Task) => subjects.find((s) => s.id === task.subject_id)?.topics.find((t) => t.id === task.topic_id)?.title
   const upcomingExams = exams
+    .filter(isDated)
     .filter((e) => (e.status === 'planned' || e.status === 'in_progress') && daysUntil(e.exam_date) >= 0)
     .slice(0, 5)
 

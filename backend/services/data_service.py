@@ -103,7 +103,7 @@ def build_notes_vault(user_id: int, lang: str, db: Session) -> bytes:
         index = [f"# {L['index']}", '', f"## {L['topics']}"] + [f'- [[{name}]]' for _, name in subject_notes]
         if exams:
             index += ['', f"## {L['exams']}"] + [
-                f"- {e.exam_date.isoformat()} · {e.title}" + (f' · {e.grade}{"L" if e.honors else ""}/30' if e.grade else '') for e in exams]
+                f"- {e.exam_date.isoformat() if e.exam_date else '—'} · {e.title}" + (f' · {e.grade}{"L" if e.honors else ""}/30' if e.grade else '') for e in exams]
         vault.writestr(f"StudyOS/{L['index']}.md", '\n'.join(index) + '\n')
         for subject, subject_note in subject_notes:
             tag = _tag(subject.name)

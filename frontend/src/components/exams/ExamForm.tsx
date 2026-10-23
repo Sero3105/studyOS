@@ -20,7 +20,6 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
   const [data, setData] = useState<CreateExamPayload>(initial ?? {
     title: '',
     subject: '',
-    exam_date: '',
     status: 'planned',
   })
   const [saving, setSaving] = useState(false)
@@ -43,7 +42,7 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
     const passed = data.status === 'passed'
     const grade = passed && data.grade ? Number(data.grade) : null
     try {
-      await onSave({ ...data, cfu: data.cfu ? Number(data.cfu) : null, grade, honors: grade === 30 && Boolean(data.honors) })
+      await onSave({ ...data, exam_date: data.exam_date || null, cfu: data.cfu ? Number(data.cfu) : null, grade, honors: grade === 30 && Boolean(data.honors) })
     } catch (saveError) {
       setError(errorMessage(saveError, t('exams.saveError')))
     } finally {
@@ -85,12 +84,11 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
         <legend>{t('exams.formWhenWhere')}</legend>
         <div className="form-grid form-grid-3">
           <label className="field">
-            <span className="field-label">{t('exams.formDate')}</span>
+            <span className="field-label">{t('exams.formDate')} <em>{t('exams.formDateHint')}</em></span>
             <input
               name="exam_date"
               type="date"
-              required
-              value={data.exam_date}
+              value={data.exam_date ?? ''}
               onChange={handleChange}
             />
           </label>

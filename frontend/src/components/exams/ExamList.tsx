@@ -1,7 +1,8 @@
 import { CalendarDays, CalendarPlus, Clock3, MapPin, Pencil } from 'lucide-react'
 import ConfirmButton from '../ui/ConfirmButton'
 import Meta from '../ui/Meta'
-import type { Exam, ExamStatus } from '../../services/examService'
+import { isDated } from '../../services/examService'
+import type { DatedExam, Exam, ExamStatus } from '../../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 import type { TranslationKey } from '../../i18n/translations'
@@ -29,7 +30,7 @@ interface ExamActionsProps {
 
 function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
   const { t } = useLanguage()
-  const canPlan = onPlan && (exam.status === 'planned' || exam.status === 'in_progress') && daysUntil(exam.exam_date) > 1
+  const canPlan = onPlan && isDated(exam) && (exam.status === 'planned' || exam.status === 'in_progress') && daysUntil(exam.exam_date) > 1
   return (
     <div className="row-actions">
       {canPlan && (
@@ -55,7 +56,7 @@ function StatusTag({ exam }: { exam: Exam }) {
  * Il prossimo esame, in grande: il numero di giorni mancanti è l'elemento
  * dominante, i dettagli pratici (data, ora, luogo) stanno in una riga sola.
  */
-export function NextExam({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
+export function NextExam({ exam, onEdit, onDelete, onPlan }: ExamActionsProps & { exam: DatedExam }) {
   const { t, locale } = useLanguage()
   const days = daysUntil(exam.exam_date)
   return (
@@ -93,25 +94,29 @@ interface ExamListProps {
 
 /** Elenco compatto: blocco data a sinistra, dettagli al centro, azioni a destra. */
 function ExamList({ exams, onEdit, onDelete, onPlan }: ExamListProps) {
-  const { locale } = useLanguage()
+  const { t, locale } = useLanguage()
   return (
     <ul className="panel rows exam-rows">
       {exams.map((exam) => {
-        const days = daysUntil(exam.exam_date)
-        const isPast = days < 0
+        const date = exam.exam_date
+        const days = date ? daysUntil(date) : null
         return (
           <li className="row exam-row" key={exam.id}>
             <span className="date-block" aria-hidden="true">
-              <span className="date-block-day num">{parseDay(exam.exam_date).getDate()}</span>
-              <span className="date-block-month">{monthShort(exam.exam_date, locale)}</span>
+              {date ? (
+                <>
+                  <span className="date-block-day num">{parseDay(date).getDate()}</span>
+                  <span className="date-block-month">{monthShort(date, locale)}</span>
+                </>
+              ) : <span className="date-block-day">?</span>}
             </span>
             <span className="row-main">
               <span className="row-title">{exam.title}</span>
               <Meta
                 items={[
                   <>
-                    {exam.subject}
-                    <span className="visually-hidden">, {formatDay(exam.exam_date, 'long', locale)}</span>
+                    {exam.subject !== exam.title && exam.subject}
+                    <span className="visually-hidden">, {date ? formatDay(date, 'long', locale) : t('exams.noDate')}</span>
                   </>,
                   exam.exam_time?.slice(0, 5),
                   exam.location,
@@ -119,7 +124,8 @@ function ExamList({ exams, onEdit, onDelete, onPlan }: ExamListProps) {
               />
             </span>
             <span className="exam-row-status">
-              {!isPast && <span className={`exam-row-days num ${urgencyClass(days)}`}>{relativeDay(exam.exam_date, locale)}</span>}
+              {date === null ? <span className="exam-row-days">{t('exams.noDate')}</span>
+                : days! >= 0 && <span className={`exam-row-days num ${urgencyClass(days!)}`}>{relativeDay(date, locale)}</span>}
               <StatusTag exam={exam} />
             </span>
             <ExamActions exam={exam} onEdit={onEdit} onDelete={onDelete} onPlan={onPlan} />

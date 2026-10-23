@@ -36,7 +36,7 @@ def summary(user_id: int, db: Session) -> dict:
 
     daily = [{'date': (today - timedelta(days=offset)).isoformat(), 'minutes': by_day.get(today - timedelta(days=offset), 0)} for offset in range(6, -1, -1)]
     open_tasks = sorted([t for t in tasks if t.status != 'done'], key=lambda t: (t.due_date is None, t.due_date or date.max, t.id))[:5]
-    exams = [e for e in exam_service.list_user_exams(user_id, db) if e.status in ('planned', 'in_progress') and e.exam_date >= today][:5]
+    exams = [e for e in exam_service.list_user_exams(user_id, db) if e.status in ('planned', 'in_progress') and e.exam_date is not None and e.exam_date >= today][:5]
     last = max(sessions, key=lambda s: (s.studied_on, s.id), default=None)
     goals = list(db.scalars(select(Goal).where(Goal.user_id == user_id).order_by(Goal.id)))
 
