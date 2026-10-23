@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -50,14 +50,14 @@ function StatisticsPage() {
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
 
-  const load = () => {
+  const load = useCallback(() => {
     setError('')
     getStatsSummary()
       .then(setStats)
       .catch((e) => setError(errorMessage(e, t('stats.loadError'))))
-  }
+  }, [t])
 
-  useEffect(() => { queueMicrotask(load) }, [])
+  useEffect(() => { queueMicrotask(load) }, [load])
 
   const activeDays = stats?.daily.filter((day) => day.minutes > 0).length ?? 0
 

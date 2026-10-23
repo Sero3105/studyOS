@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -59,12 +59,12 @@ function GoalsPage() {
   const [target, setTarget] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try { setError(''); setGoals(await getGoals()) }
     catch (e) { setError(errorMessage(e, t('goals.loadError'))) }
     finally { setLoading(false) }
-  }
-  useEffect(() => { queueMicrotask(() => { void load() }) }, [])
+  }, [t])
+  useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const addGoal = async (event: FormEvent) => {
     event.preventDefault()

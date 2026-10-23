@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
@@ -27,7 +27,7 @@ function ExamsPage() {
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<ExamFilter>('upcoming')
 
-  const loadExams = async () => {
+  const loadExams = useCallback(async () => {
     try {
       setError('')
       setExams(await getExams())
@@ -36,11 +36,11 @@ function ExamsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
   useEffect(() => {
     queueMicrotask(() => { void loadExams() })
-  }, [])
+  }, [loadExams])
 
   const sortExams = (list: Exam[]) =>
     [...list].sort(

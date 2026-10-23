@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -39,14 +39,14 @@ function DashboardPage() {
   const [error, setError] = useState('')
   const firstName = (user?.full_name?.split(' ')[0] || user?.username) ?? t('nav.studentFallback')
 
-  const load = () => {
+  const load = useCallback(() => {
     setError('')
     getStatsSummary()
       .then(setStats)
       .catch((e) => setError(errorMessage(e, t('dashboard.loadError'))))
-  }
+  }, [t])
 
-  useEffect(() => { queueMicrotask(load) }, [])
+  useEffect(() => { queueMicrotask(load) }, [load])
 
   const today = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 

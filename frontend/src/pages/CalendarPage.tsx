@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -29,15 +29,15 @@ function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       setError('')
       const [taskList, examList, sessionList] = await Promise.all([getTasks(), getExams(), getSessions()])
       setTasks(taskList); setExams(examList); setSessions(sessionList)
     } catch (e) { setError(errorMessage(e, t('calendar.loadError'))) }
     finally { setLoading(false) }
-  }
-  useEffect(() => { queueMicrotask(() => { void load() }) }, [])
+  }, [t])
+  useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
 

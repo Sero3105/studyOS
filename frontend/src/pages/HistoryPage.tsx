@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -25,15 +25,15 @@ function HistoryPage() {
   const [error, setError] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('all')
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       setError('')
       const [sessionList, subjectList] = await Promise.all([getSessions(), getSubjects()])
       setSessions(sessionList); setSubjects(subjectList)
     } catch (e) { setError(errorMessage(e, t('history.loadError'))) }
     finally { setLoading(false) }
-  }
-  useEffect(() => { queueMicrotask(() => { void load() }) }, [])
+  }, [t])
+  useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const remove = async (id: number) => {
     try {

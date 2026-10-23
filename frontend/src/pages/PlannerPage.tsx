@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronDown, Plus } from 'lucide-react'
@@ -62,15 +62,15 @@ function PlannerPage() {
   const [topicId, setTopicId] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       setError('')
       const [taskList, subjectList, examList] = await Promise.all([getTasks(), getSubjects(), getExams()])
       setTasks(taskList); setSubjects(subjectList); setExams(examList)
     } catch (e) { setError(errorMessage(e, t('planner.loadError'))) }
     finally { setLoading(false) }
-  }
-  useEffect(() => { queueMicrotask(() => { void load() }) }, [])
+  }, [t])
+  useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const selectedSubject = subjects.find((s) => s.id === Number(subjectId))
 

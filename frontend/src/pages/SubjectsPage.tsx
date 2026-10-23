@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Play, Plus } from 'lucide-react'
@@ -36,7 +36,7 @@ function SubjectsPage() {
   const [topicTitle, setTopicTitle] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       setError('')
       const list = await getSubjects()
@@ -51,8 +51,8 @@ function SubjectsPage() {
     getStatsSummary()
       .then((stats) => setMinutesBySubject(Object.fromEntries(stats.by_subject.map((x) => [x.name, x.minutes]))))
       .catch(() => setMinutesBySubject({}))
-  }
-  useEffect(() => { queueMicrotask(() => { void load() }) }, [])
+  }, [t])
+  useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const selected = subjects.find((subject) => subject.id === selectedId) ?? null
 
