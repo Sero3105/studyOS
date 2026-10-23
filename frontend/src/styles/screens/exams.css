@@ -202,3 +202,44 @@
 .exam-honors { align-self: end; }
 
 .date-block-pending { width: 18px; height: 18px; margin: auto; color: var(--text-muted); }
+
+.grade-stats-of { margin-left: 2px; color: var(--text-muted); font-size: 1rem; font-weight: 500; }
+
+/* Andamento dei voti */
+
+.grade-trend { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin: var(--space-5) 0 0; padding-top: var(--space-4); border-top: 1px solid var(--line); }
+.grade-trend-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--text-muted); font-size: var(--text-xs); }
+.grade-trend-legend > span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.grade-trend-key.is-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); }
+.grade-trend-key.is-line { width: 16px; height: 2px; border-radius: 1px; background: var(--accent); }
+.grade-trend-plot { position: relative; width: 100%; min-width: 0; }
+.grade-trend-plot svg { display: block; overflow: visible; }
+.grade-trend-grid { stroke: var(--surface-3); stroke-width: 1; }
+.grade-trend-axis { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.grade-trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.grade-trend-end { fill: var(--text-strong); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.grade-trend-dot { fill: var(--text-muted); stroke: var(--surface); stroke-width: 2; transition: r var(--duration) var(--ease); }
+.grade-trend-dot.is-active { fill: var(--text-strong); }
+.grade-trend-hit { fill: transparent; outline: none; pointer-events: none; }
+.grade-trend-track { fill: transparent; cursor: crosshair; }
+.grade-trend-hit:focus-visible { stroke: var(--accent); stroke-width: 2; }
+
+.grade-trend-tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  min-width: 170px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+.grade-trend-tooltip strong { color: var(--text-strong); font-size: var(--text-sm); font-weight: 600; }
+.grade-trend-table summary { color: var(--text-muted); font-size: var(--text-xs); cursor: pointer; }
+.grade-trend-table table { margin-top: var(--space-2); }

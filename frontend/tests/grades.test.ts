@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { gradeSummary } from '../src/utils/grades.ts'
+import { gradeSummary, gradeTrend } from '../src/utils/grades.ts'
 
 test('weighted average uses CFU, ignores ungraded and unpassed exams', () => {
   const s = gradeSummary([
@@ -20,4 +20,16 @@ test('weighted average uses CFU, ignores ungraded and unpassed exams', () => {
 
 test('empty record book', () => {
   assert.deepEqual(gradeSummary([]), { count: 0, cfu: 0, average: 0, weightedAverage: 0, graduationBase: 0 })
+})
+
+test('grade trend is chronological with a running weighted average', () => {
+  const trend = gradeTrend([
+    { id: 3, title: 'C', status: 'passed', grade: 24, honors: false, cfu: 6, exam_date: '2026-02-01' },
+    { id: 1, title: 'A', status: 'passed', grade: 30, honors: true, cfu: 12, exam_date: '2025-01-10' },
+    { id: 2, title: 'B', status: 'passed', grade: 27, honors: false, cfu: null, exam_date: '2025-06-01' },
+    { id: 4, title: 'D', status: 'planned', grade: null, honors: false, cfu: 6, exam_date: '2026-06-01' },
+    { id: 5, title: 'E', status: 'passed', grade: 26, honors: false, cfu: 6, exam_date: null },
+  ])
+  assert.deepEqual(trend.map((p) => p.title), ['A', 'B', 'C'])
+  assert.deepEqual(trend.map((p) => p.average), [30, 30, 28])
 })

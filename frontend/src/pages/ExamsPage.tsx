@@ -9,7 +9,8 @@ import { createExam, deleteExam, getExams, isDated, planExam, updateExam } from 
 import type { CreateExamPayload, Exam } from '../services/examService'
 import { daysUntil, relativeDay } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
-import { gradeSummary } from '../utils/grades'
+import { DEGREE_CFU, gradeSummary, gradeTrend } from '../utils/grades'
+import GradeTrendChart from '../components/exams/GradeTrendChart'
 import { ApiError } from '../services/apiClient'
 import type { TranslationKey } from '../i18n/translations'
 import { useLanguage } from '../i18n/useLanguage'
@@ -95,12 +96,15 @@ function ExamsPage() {
   const next = upcoming.find(isDated)
   const rest = upcoming.filter((exam) => exam !== next)
   const grades = gradeSummary(exams)
+  const trend = gradeTrend(exams)
 
   const description = loading
     ? t('exams.descriptionLoading')
     : next
       ? t('exams.descriptionNext', { count: upcoming.length, when: relativeDay(next.exam_date, locale).toLowerCase() })
-      : t('exams.descriptionNone')
+      : upcoming.length
+        ? t('exams.descriptionUndated', { count: upcoming.length })
+        : t('exams.descriptionNone')
 
   return (
     <div className="page exams-page">
@@ -126,9 +130,10 @@ function ExamsPage() {
             <div><dt>{t('exams.weightedAverage')}</dt><dd className="num">{grades.cfu ? grades.weightedAverage.toFixed(2) : '—'}</dd></div>
             <div><dt>{t('exams.average')}</dt><dd className="num">{grades.average.toFixed(2)}</dd></div>
             <div><dt>{t('exams.graduationBase')}</dt><dd className="num">{grades.cfu ? `${grades.graduationBase.toFixed(1)}/110` : '—'}</dd></div>
-            <div><dt>{t('exams.cfuTotal')}</dt><dd className="num">{grades.cfu}</dd></div>
+            <div><dt>{t('exams.cfuTotal')}</dt><dd className="num">{grades.cfu}<span className="grade-stats-of">/{DEGREE_CFU}</span></dd></div>
           </dl>
           {grades.cfu === 0 && <p className="panel-meta">{t('exams.addCfuHint')}</p>}
+          {trend.length >= 2 && <GradeTrendChart points={trend} />}
         </section>
       )}
 
