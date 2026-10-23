@@ -4,15 +4,12 @@ Questo modulo è il punto centrale per la connessione al database.
 Qui:
 - viene costruito il motore SQLAlchemy (`engine`),
 - viene dichiarata la classe base per tutti i modelli,
-- vengono create le tabelle definite nel progetto.
+- `run_migrations()` porta lo schema all'ultima migrazione Alembic
+  (`migrations/versions/`), chiamata all'avvio dell'app.
 
 La variabile `Base` serve come base condivisa per tutti i modelli ORM.
-Ogni modello che eredita da `Base` può essere trasformato automaticamente in
-una tabella tramite SQLAlchemy.
-
-Il `create_all(engine)` genera le tabelle, ma solo per i modelli caricati
-nel contesto dell'applicazione. Per far sì che SQLAlchemy trovi anche il
-modello `User`, qui è fatto l'import esplicito.
+I modelli vanno importati qui sotto: Alembic li legge da `Base.metadata`
+per generare le migrazioni (`alembic revision --autogenerate`).
 """
 
 from sqlalchemy import create_engine
@@ -35,8 +32,8 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
 )
 
-# IMPORT NECESSARIO: senza questo import, SQLAlchemy non rileverebbe il modello
-# `User` e quindi non sarebbe in grado di creare la tabella corrispondente.
+# IMPORT NECESSARIO: senza questi import i modelli non sarebbero in
+# `Base.metadata` e Alembic non vedrebbe le loro tabelle.
 from models.user_models import User
 from models.auth_session_models import AuthSession
 from models.exam_models import Exam
@@ -47,5 +44,16 @@ from models.goal_models import Goal
 from models.share_models import ShareLink
 
 
-# Crea tutte le tabelle definite dai modelli che ereditano da `Base`.
-Base.metadata.create_all(engine)
+def run_migrations() -> None:
+    """Porta lo schema all'ultima migrazione Alembic (chiamata all'avvio dell'app)."""
+    from pathlib import Path
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import inspect
+
+    cfg = Config(str(Path(__file__).with_name("alembic.ini")))
+    tables = inspect(engine).get_table_names()
+    # Database creati prima di Alembic (con create_all): hanno già lo schema iniziale.
+    if "users" in tables and "alembic_version" not in tables:
+        command.stamp(cfg, "0001")
+    command.upgrade(cfg, "head")

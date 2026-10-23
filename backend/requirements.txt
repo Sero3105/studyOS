@@ -10,3 +10,5 @@ python-dotenv==1.2.3
 pwdlib[argon2]==0.3.1
 PyJWT==2.15.1
 uvicorn==0.53.0
+# Migrazioni dello schema (eseguite all'avvio, vedi database.run_migrations).
+alembic==1.20.1
