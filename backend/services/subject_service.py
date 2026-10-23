@@ -1,6 +1,8 @@
+from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 from models.subject_models import Subject, Topic
+from models.task_models import Task
 from schemas.subject_schemas import SubjectCreate, TopicCreate, TopicUpdate
 
 def list_subjects(user_id: int, db: Session) -> list[Subject]:
@@ -31,10 +33,19 @@ def _owned_topic(topic_id: int, user_id: int, db: Session) -> Topic:
     if topic is None: raise LookupError('Topic not found')
     return topic
 
+# Ripetizione dilazionata: ripassi a distanza crescente dal completamento.
+REVIEW_DAYS = (1, 3, 7, 21)
+
 def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) -> Topic:
     topic = _owned_topic(topic_id, user_id, db)
-    for field, value in data.model_dump(exclude_unset=True).items():
+    values = data.model_dump(exclude_unset=True, exclude={'schedule_reviews'})
+    newly_completed = values.get('completed') is True and not topic.completed
+    for field, value in values.items():
         if value is not None: setattr(topic, field, value)
+    if newly_completed and data.schedule_reviews:
+        today = date.today()
+        db.add_all(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=today + timedelta(days=d),
+                        priority='medium', subject_id=topic.subject_id, topic_id=topic.id) for d in REVIEW_DAYS)
     db.commit(); db.refresh(topic)
     return topic
 

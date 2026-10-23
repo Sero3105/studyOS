@@ -1,6 +1,6 @@
 """Subjects and their topics, owned by a user."""
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -21,5 +21,6 @@ class Topic(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False, index=True)
     title = Column(String(200), nullable=False)
     completed = Column(Boolean, nullable=False, default=False)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     subject = relationship('Subject', back_populates='topics')

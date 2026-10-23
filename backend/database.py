@@ -41,7 +41,7 @@ from models.subject_models import Subject, Topic
 from models.task_models import Task
 from models.session_models import StudySession
 from models.goal_models import Goal
-from models.share_models import ShareLink
+from models.share_models import CalendarFeed, ShareLink
 
 
 def run_migrations() -> None:

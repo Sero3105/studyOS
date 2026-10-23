@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Text, Time
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, false
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -15,6 +15,9 @@ class Exam(Base):
     location = Column(String(120), nullable=True)
     notes = Column(Text, nullable=True)
     status = Column(String(20), nullable=False, default='planned')
+    cfu = Column(Integer, nullable=True)
+    grade = Column(Integer, nullable=True)
+    honors = Column(Boolean, nullable=False, default=False, server_default=false())
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     user = relationship('User', back_populates='exams')

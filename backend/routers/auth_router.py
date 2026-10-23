@@ -7,9 +7,11 @@ import config
 from dependencies.auth_dependency import get_current_user
 from dependencies.database_dependency import get_db
 from models.user_models import User
+from schemas.account_schemas import AccountDelete, PasswordChange
 from schemas.auth_schemas import TokenResponse
 from schemas.userLogin_schemas import UserLogin
 from schemas.users_schemas import UserResponse
+from services.account_service import change_password, delete_account
 from services.authenticateUser import authenticate_user
 from services.token_service import (
     create_access_token,
@@ -129,3 +131,33 @@ def logout(
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+def update_password(
+    data: PasswordChange,
+    refresh_token: str | None = Cookie(default=None, alias=REFRESH_COOKIE_NAME),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    try:
+        change_password(current_user, data.current_password, data.new_password, refresh_token, db)
+    except PermissionError as error:
+        # 400, non 401: il frontend tratta 401 come sessione scaduta.
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def remove_account(
+    data: AccountDelete,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        delete_account(current_user, data.password, db)
+    except PermissionError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    _clear_refresh_cookie(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response

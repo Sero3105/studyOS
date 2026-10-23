@@ -10,6 +10,7 @@ from schemas.task_schemas import TaskCreate
 class TopicData(TopicCreate):
     id: int | None = None
     completed: bool = False
+    notes: str | None = Field(default=None, max_length=20000)
 
 class SubjectData(SubjectCreate):
     id: int | None = None
