@@ -13,6 +13,9 @@
 [![React](https://img.shields.io/badge/frontend-React_19-61DAFB?logo=react&logoColor=black)](./frontend)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](./frontend)
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?logo=sqlite&logoColor=white)](./database)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
+**English** · [Italiano](./README.it.md)
 
 [🚀 Quickstart](#-quickstart-3-minutes) · [✨ Features](#-features) · [🖼️ Screenshots](#️-screenshots) · [🛠️ Tech Stack](#️-tech-stack) · [📦 Project Structure](#-project-structure)
 
@@ -125,6 +128,8 @@ There is no database container: SQLite is a file in the `studyos-data` volume (`
 - **Docker:** volume `studyos_studyos-data`, mounted at `/data/studyos.db` in `api`. It survives `down`, restarts, and rebuilds.
 - **Local development:** `database/studyos.db` in the repository. Docker never touches it.
 
+The easiest backup is **Settings → Download backup** in the app. To copy the whole database file:
+
 ```bash
 # Back up the Docker database
 docker compose exec -T api python -c "import sqlite3; sqlite3.connect('/data/studyos.db').backup(sqlite3.connect('/tmp/backup.db'))"
@@ -146,7 +151,7 @@ docker compose up -d
 | Variable | Default | Notes |
 |---|---|---|
 | `SECRET_KEY` | — (required) | At least 32 random characters, unique to each installation |
-| `APP_ENV` | `development` | `production` = `Secure` cookies, HTTPS only |
+| `APP_ENV` | `development` | `production` = `Secure` cookies, HTTPS only, no `/docs` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` / `REFRESH_TOKEN_EXPIRE_DAYS` | `30` / `7` | |
 | `STUDYOS_PORT` | `8080` | Bound to 127.0.0.1 |
 | `STUDYOS_ORIGIN` | `http://localhost:<port>` | Public origin if different |
@@ -166,11 +171,11 @@ docker compose up -d
 | Layer | Technologies |
 |---|---|
 | **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · vanilla CSS with design tokens |
-| **Backend** | FastAPI · SQLAlchemy · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
+| **Backend** | FastAPI · SQLAlchemy · Alembic · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
 | **Database** | SQLite (file in the Docker volume, `database/studyos.db` locally) |
 | **Deployment** | Docker Compose · nginx (static files + `/api` proxy) · multi-stage images |
 
-**Design:** dark-first, near-black surfaces, a single purple accent, flat (no gradients), 160 ms transitions, `prefers-reduced-motion` respected, 44 px touch targets, 700/900 px breakpoints. Tokens are in `frontend/src/styles/base/tokens.css`.
+**Design:** dark-first, near-black surfaces, a single lime accent, flat (no gradients), 160 ms transitions, `prefers-reduced-motion` respected, 44 px touch targets, 700/900 px breakpoints. Tokens are in `frontend/src/styles/base/tokens.css`.
 
 ---
 
@@ -187,15 +192,16 @@ StudyOS/
 │   ├── schemas/          # Pydantic validation
 │   ├── services/         # business logic
 │   ├── routers/          # HTTP endpoints (orchestration only)
+│   ├── migrations/       # Alembic schema migrations
 │   └── tests/            # pytest with temporary SQLite database
 ├── frontend/
 │   └── src/
-│       ├── pages/        # dashboard, timer, planner, subjects, exams, goals, history, statistics
+│       ├── pages/        # dashboard, timer, planner, calendar, subjects, exams, goals, history, statistics, settings, shared plan
 │       ├── components/   # sidebar, Pomodoro, forms, UI kit
 │       ├── context/      # auth + persistent timer
 │       └── styles/       # base / layout / components / screens
 ├── database/             # local studyos.db (never touched by Docker)
-└── docs/media/           # screenshots + demo
+└── docs/                 # screenshots, demo, design notes
 ```
 
 **Golden rule:** routers orchestrate, services handle logic, schemas validate. See [`DEVELOPMENT_GUIDE.md`](./DEVELOPMENT_GUIDE.md) for details.
@@ -218,6 +224,13 @@ npm run dev
 
 Backend tests: `python -m pytest backend/tests/ -q`
 
+**Database migrations (Alembic).** The API applies pending migrations on startup, including on databases created before Alembic was added. After changing a model in `backend/models/`:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe the change"   # review the generated file in migrations/versions/
+```
+
 ---
 
 ## 🗺️ Roadmap
@@ -227,6 +240,14 @@ Backend tests: `python -m pytest backend/tests/ -q`
 - [x] Data import/export and one-click backups
 - [x] Deadline notifications and smart reminders
 - [x] Study plan sharing
+
+---
+
+## 🔒 Security & license
+
+Found a vulnerability? Please report it privately — see [`SECURITY.md`](./SECURITY.md).
+
+StudyOS is released under the [MIT License](./LICENSE).
 
 ---
 
