@@ -44,16 +44,18 @@
 |---|---|---|
 | 📅 | **Planner** | Tasks with subject, topic, priority, deadlines, and status |
 | ⏱️ | **Pomodoro Timer** | Keeps running across pages and saves the session when a focus block ends |
-| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy connected to sessions and progress |
-| 📝 | **Exams** | Full CRUD with deadlines and countdowns |
+| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy with Markdown notes per topic and automatic spaced reviews (+1/3/7/21 days) |
+| 📝 | **Exams** | Countdowns, one-click study plan up to the exam, grades and CFU with weighted average and graduation base |
 | 🎯 | **Goals** | Weekly/total minutes, tasks, topics, sessions — progress calculated from real data |
-| 📊 | **Statistics** | Total time, time by subject/topic, daily/weekly/monthly activity, streaks |
+| 📊 | **Statistics** | Totals, time by subject/topic, streaks, one-year heatmap, planned vs studied per subject |
 | 🕘 | **History** | Sessions grouped by day with totals |
-| 🗓️ | **Calendar** | Weekly view of exams, task deadlines and minutes studied; add tasks straight to a day |
+| 🗓️ | **Calendar** | Weekly view of exams, deadlines and minutes studied; iCal feed for Apple/Google Calendar and Outlook |
 | 💾 | **Backups** | One-click JSON export of all your data; import adds a backup back in |
 | 🔔 | **Reminders** | Daily browser notification for overdue/upcoming tasks and exams at 7/3/1/0 days |
 | 🔗 | **Sharing** | Revocable read-only link to your study plan (no notes, locations or email) |
-| 🔐 | **Auth** | Registration/login, cookie-based refresh, session restored on page reload |
+| ⌨️ | **Command palette** | `⌘K` / `Ctrl+K` to search tasks, exams and topics; `g` + letter to jump between pages, `n` for a new task |
+| 🧠 | **Synapse notes** | Export topic notes as a linked Markdown vault for [Synapse](https://github.com/Sero3105/Synapse) |
+| 🔐 | **Account** | Registration/login, cookie-based refresh, password change, account deletion |
 
 ### 🔄 The StudyOS cycle
 
@@ -75,17 +77,25 @@ Each part feeds the next: a task leads to a session, the session powers the stat
 
 ## 🖼️ Screenshots
 
-| Pomodoro Timer | Statistics | Subjects |
+| Pomodoro Timer | Calendar | Subjects & notes |
 |---|---|---|
-| ![Timer](./docs/media/timer.jpg) | ![Statistics](./docs/media/statistics.jpg) | ![Subjects](./docs/media/subjects.jpg) |
+| ![Timer](./docs/media/timer.jpg) | ![Calendar](./docs/media/calendar.jpg) | ![Subjects](./docs/media/subjects.jpg) |
 
-| Planner | Exams | Goals |
+| Exams & record book | Statistics | One-year heatmap |
 |---|---|---|
-| ![Planner](./docs/media/planner.jpg) | ![Exams](./docs/media/exams.jpg) | ![Goals](./docs/media/goals.jpg) |
+| ![Exams](./docs/media/exams.jpg) | ![Statistics](./docs/media/statistics.jpg) | ![Heatmap](./docs/media/heatmap.jpg) |
 
-| History | Login | Mobile |
+| Planner | Command palette | Goals |
 |---|---|---|
-| ![History](./docs/media/history.jpg) | ![Login](./docs/media/login.jpg) | ![Mobile](./docs/media/mobile-dashboard.jpg) |
+| ![Planner](./docs/media/planner.jpg) | ![Command palette](./docs/media/palette.jpg) | ![Goals](./docs/media/goals.jpg) |
+
+| History | Settings | Login |
+|---|---|---|
+| ![History](./docs/media/history.jpg) | ![Settings](./docs/media/settings.jpg) | ![Login](./docs/media/login.jpg) |
+
+| Mobile dashboard | Mobile timer |
+|---|---|
+| ![Mobile dashboard](./docs/media/mobile-dashboard.jpg) | ![Mobile timer](./docs/media/mobile-timer.jpg) |
 
 > 📁 All images are in [`docs/media/`](./docs/media). Demo video: [`demo.mp4`](./docs/media/demo.mp4).
 
@@ -240,6 +250,12 @@ alembic revision --autogenerate -m "describe the change"   # review the generate
 - [x] Data import/export and one-click backups
 - [x] Deadline notifications and smart reminders
 - [x] Study plan sharing
+- [x] iCal feed, spaced reviews, exam study plans
+- [x] Command palette and keyboard shortcuts
+- [x] Grades, CFU and graduation base
+- [x] Topic notes with Synapse export
+- [x] Yearly heatmap and planned vs studied
+- [x] Password change and account deletion
 
 ---
 

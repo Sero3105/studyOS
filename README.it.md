@@ -44,16 +44,18 @@
 |---|---|---|
 | 📅 | **Planner** | Task con materia, argomento, priorità, scadenza e stato |
 | ⏱️ | **Timer Pomodoro** | Continua a girare tra le pagine e salva la sessione a fine blocco |
-| 📚 | **Materie e argomenti** | Gerarchia `Materia → Argomento` collegata a sessioni e progressi |
-| 📝 | **Esami** | Gestione completa con date e conto alla rovescia |
+| 📚 | **Materie e argomenti** | Gerarchia `Materia → Argomento` con note Markdown per argomento e ripassi automatici (+1/3/7/21 giorni) |
+| 📝 | **Esami** | Conto alla rovescia, piano di studio fino all'esame con un clic, voti e CFU con media ponderata e base di laurea |
 | 🎯 | **Obiettivi** | Minuti settimanali/totali, task, argomenti, sessioni — progresso calcolato dai dati reali |
-| 📊 | **Statistiche** | Tempo totale, per materia/argomento, attività giornaliera/settimanale/mensile, giorni di fila |
+| 📊 | **Statistiche** | Totali, tempo per materia/argomento, giorni di fila, heatmap annuale, pianificato vs studiato per materia |
 | 🕘 | **Storico** | Sessioni raggruppate per giorno con i totali |
-| 🗓️ | **Calendario** | Vista settimanale di esami, scadenze e minuti studiati; aggiungi task direttamente a un giorno |
+| 🗓️ | **Calendario** | Vista settimanale di esami, scadenze e minuti studiati; feed iCal per Apple/Google Calendar e Outlook |
 | 💾 | **Backup** | Export JSON di tutti i dati con un clic; l'import aggiunge un backup ai dati esistenti |
 | 🔔 | **Promemoria** | Notifica giornaliera del browser per task in ritardo/in scadenza ed esami a 7/3/1/0 giorni |
 | 🔗 | **Condivisione** | Link in sola lettura e revocabile al tuo piano di studio (niente note, luoghi o email) |
-| 🔐 | **Autenticazione** | Registrazione/login, refresh via cookie, sessione ripristinata al ricaricamento |
+| ⌨️ | **Palette dei comandi** | `⌘K` / `Ctrl+K` per cercare task, esami e argomenti; `g` + lettera per cambiare pagina, `n` per un nuovo task |
+| 🧠 | **Note in Synapse** | Esporta le note degli argomenti come vault Markdown collegato per [Synapse](https://github.com/Sero3105/Synapse) |
+| 🔐 | **Account** | Registrazione/login, refresh via cookie, cambio password, cancellazione dell'account |
 
 ### 🔄 Il ciclo di StudyOS
 
@@ -75,17 +77,25 @@ Ogni parte alimenta la successiva: un task porta a una sessione, la sessione ali
 
 ## 🖼️ Screenshot
 
-| Timer Pomodoro | Statistiche | Materie |
+| Timer Pomodoro | Calendario | Materie e note |
 |---|---|---|
-| ![Timer](./docs/media/timer.jpg) | ![Statistiche](./docs/media/statistics.jpg) | ![Materie](./docs/media/subjects.jpg) |
+| ![Timer](./docs/media/timer.jpg) | ![Calendario](./docs/media/calendar.jpg) | ![Materie](./docs/media/subjects.jpg) |
 
-| Planner | Esami | Obiettivi |
+| Esami e libretto | Statistiche | Heatmap annuale |
 |---|---|---|
-| ![Planner](./docs/media/planner.jpg) | ![Esami](./docs/media/exams.jpg) | ![Obiettivi](./docs/media/goals.jpg) |
+| ![Esami](./docs/media/exams.jpg) | ![Statistiche](./docs/media/statistics.jpg) | ![Heatmap](./docs/media/heatmap.jpg) |
 
-| Storico | Login | Mobile |
+| Planner | Palette dei comandi | Obiettivi |
 |---|---|---|
-| ![Storico](./docs/media/history.jpg) | ![Login](./docs/media/login.jpg) | ![Mobile](./docs/media/mobile-dashboard.jpg) |
+| ![Planner](./docs/media/planner.jpg) | ![Palette](./docs/media/palette.jpg) | ![Obiettivi](./docs/media/goals.jpg) |
+
+| Storico | Impostazioni | Login |
+|---|---|---|
+| ![Storico](./docs/media/history.jpg) | ![Impostazioni](./docs/media/settings.jpg) | ![Login](./docs/media/login.jpg) |
+
+| Dashboard mobile | Timer mobile |
+|---|---|
+| ![Dashboard mobile](./docs/media/mobile-dashboard.jpg) | ![Timer mobile](./docs/media/mobile-timer.jpg) |
 
 > 📁 Tutte le immagini sono in [`docs/media/`](./docs/media). Video demo: [`demo.mp4`](./docs/media/demo.mp4).
 
@@ -240,6 +250,12 @@ alembic revision --autogenerate -m "descrivi la modifica"   # controlla il file 
 - [x] Import/export dei dati e backup con un clic
 - [x] Notifiche delle scadenze e promemoria intelligenti
 - [x] Condivisione del piano di studio
+- [x] Feed iCal, ripassi a intervalli, piani di studio per gli esami
+- [x] Palette dei comandi e scorciatoie da tastiera
+- [x] Voti, CFU e base di laurea
+- [x] Note per argomento con export per Synapse
+- [x] Heatmap annuale e pianificato vs studiato
+- [x] Cambio password e cancellazione dell'account
 
 ---
 
