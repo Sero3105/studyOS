@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarCheck,
+  CalendarDays,
   GraduationCap,
   History,
   LayoutDashboard,
@@ -33,6 +34,7 @@ const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
       { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
       { to: '/timer', labelKey: 'nav.timer', icon: Timer },
       { to: '/planner', labelKey: 'nav.planner', icon: CalendarCheck },
+      { to: '/calendar', labelKey: 'nav.calendar', icon: CalendarDays },
     ],
   },
   {

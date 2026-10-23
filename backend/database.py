@@ -44,6 +44,7 @@ from models.subject_models import Subject, Topic
 from models.task_models import Task
 from models.session_models import StudySession
 from models.goal_models import Goal
+from models.share_models import ShareLink
 
 
 # Crea tutte le tabelle definite dai modelli che ereditano da `Base`.

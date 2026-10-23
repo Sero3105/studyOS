@@ -46,6 +46,10 @@
 | 🎯 | **Goals** | Weekly/total minutes, tasks, topics, sessions — progress calculated from real data |
 | 📊 | **Statistics** | Total time, time by subject/topic, daily/weekly/monthly activity, streaks |
 | 🕘 | **History** | Sessions grouped by day with totals |
+| 🗓️ | **Calendar** | Weekly view of exams, task deadlines and minutes studied; add tasks straight to a day |
+| 💾 | **Backups** | One-click JSON export of all your data; import adds a backup back in |
+| 🔔 | **Reminders** | Daily browser notification for overdue/upcoming tasks and exams at 7/3/1/0 days |
+| 🔗 | **Sharing** | Revocable read-only link to your study plan (no notes, locations or email) |
 | 🔐 | **Auth** | Registration/login, cookie-based refresh, session restored on page reload |
 
 ### 🔄 The StudyOS cycle
@@ -149,6 +153,8 @@ docker compose up -d
 | `API_MEMORY_LIMIT` / `API_CPUS` | `256M` / `1.0` | Container limits |
 | `WEB_MEMORY_LIMIT` / `WEB_CPUS` | `64M` / `0.5` | Container limits |
 
+**Security:** nginx rate-limits `/api/auth/login` and `/api/auth/register` (10/min per IP). Share links are random 256-bit tokens stored only as hashes; regenerating or disabling a link invalidates the old one.
+
 **HTTPS:** The default setup uses HTTP on localhost. In production, put a TLS proxy in front, set `APP_ENV=production`, and configure `STUDYOS_ORIGIN=https://…`.
 
 </details>
@@ -217,10 +223,10 @@ Backend tests: `python -m pytest backend/tests/ -q`
 ## 🗺️ Roadmap
 
 - [x] Auth, subjects/topics, tasks, exams, sessions, goals, statistics
-- [ ] Integrated calendar and weekly planning
-- [ ] Data import/export and one-click backups
-- [ ] Deadline notifications and smart reminders
-- [ ] Study plan sharing
+- [x] Integrated calendar and weekly planning
+- [x] Data import/export and one-click backups
+- [x] Deadline notifications and smart reminders
+- [x] Study plan sharing
 
 ---
 

@@ -67,3 +67,15 @@ export function urgencyClass(days: number): string {
   if (days <= 7) return 'is-soon'
   return ''
 }
+
+/** Data ISO spostata di `days` giorni, sempre nel calendario locale. */
+export function addDays(isoDate: string, days: number): string {
+  const d = parseDay(isoDate)
+  d.setDate(d.getDate() + days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Lunedì della settimana che contiene la data. */
+export function weekStart(isoDate: string): string {
+  return addDays(isoDate, -((parseDay(isoDate).getDay() + 6) % 7))
+}

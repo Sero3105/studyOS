@@ -15,6 +15,8 @@ import HistoryPage from './pages/HistoryPage'
 import GoalsPage from './pages/GoalsPage'
 import StatisticsPage from './pages/StatisticsPage'
 import SettingsPage from './pages/SettingsPage'
+import CalendarPage from './pages/CalendarPage'
+import SharedPlanPage from './pages/SharedPlanPage'
 import { LanguageProvider } from './i18n/LanguageProvider'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -50,6 +52,7 @@ const router = createBrowserRouter([
         path: '/register',
         element: <RegisterPage />,
       },
+      { path: '/shared/:token', element: <SharedPlanPage /> },
       {
         element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
         children: [
@@ -64,6 +67,7 @@ const router = createBrowserRouter([
           { path: '/exams', element: <ExamsPage /> },
           { path: '/subjects', element: <SubjectsPage /> },
           { path: '/planner', element: <PlannerPage /> },
+          { path: '/calendar', element: <CalendarPage /> },
           { path: '/history', element: <HistoryPage /> },
           { path: '/goals', element: <GoalsPage /> },
           { path: '/statistics', element: <StatisticsPage /> },

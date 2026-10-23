@@ -4,6 +4,7 @@ import { Menu, Play } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
 import { TimerProvider } from '../context/TimerProvider'
 import { useLanguage } from '../i18n/useLanguage'
+import { runDeadlineReminders } from '../utils/reminders'
 
 const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
@@ -23,7 +24,7 @@ const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
  * il pannello mobile si chiude a ogni cambio di pagina e con Escape.
  */
 function AppLayout() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -37,6 +38,14 @@ function AppLayout() {
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
   }, [collapsed])
+
+  // Controllo all'apertura e ogni ora: la notifica parte al massimo una volta al giorno.
+  useEffect(() => {
+    const check = () => { void runDeadlineReminders(t, locale).catch(() => {}) }
+    check()
+    const id = window.setInterval(check, 3600000)
+    return () => window.clearInterval(id)
+  }, [t, locale])
 
   useEffect(() => {
     if (!mobileOpen) return
