@@ -13,6 +13,9 @@ import type { Task } from '../services/taskService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import StudyHeatmap from '../components/stats/StudyHeatmap'
+import RecordBook from '../components/exams/RecordBook'
+import { getExams } from '../services/examService'
+import type { Exam } from '../services/examService'
 import { buildHeatmap, planVsActual } from '../utils/studyStats'
 import type { NameMinutes, StatsSummary } from '../services/statsService'
 import { useLanguage } from '../i18n/useLanguage'
@@ -57,7 +60,7 @@ function StatisticsPage() {
   const { t } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
-  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[] } | null>(null)
+  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[] } | null>(null)
 
   const load = useCallback(() => {
     setError('')
@@ -65,8 +68,8 @@ function StatisticsPage() {
       .then(setStats)
       .catch((e) => setError(errorMessage(e, t('stats.loadError'))))
     // Heatmap e piano vs realtà sono di contorno: se falliscono, il resto della pagina resta.
-    Promise.all([getSessions(), getTasks(), getSubjects()])
-      .then(([sessions, tasks, subjects]) => setDetail({ sessions, tasks, subjects }))
+    Promise.all([getSessions(), getTasks(), getSubjects(), getExams()])
+      .then(([sessions, tasks, subjects, exams]) => setDetail({ sessions, tasks, subjects, exams }))
       .catch(() => setDetail(null))
   }, [t])
   const today = todayIso()
@@ -148,6 +151,8 @@ function StatisticsPage() {
               )}
             </section>
           </div>
+
+          {detail && <RecordBook exams={detail.exams} detailed />}
 
           {detail && (
             <section className="panel" aria-labelledby="stats-heatmap-title">

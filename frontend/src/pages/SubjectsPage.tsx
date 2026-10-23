@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Download, NotebookPen, Play, Plus } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowRight, Download, GraduationCap, NotebookPen, Play, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import ProgressBar from '../components/ui/ProgressBar'
 import ConfirmButton from '../components/ui/ConfirmButton'
@@ -11,6 +11,9 @@ import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, up
 import type { Subject, Topic } from '../services/subjectService'
 import { getStatsSummary } from '../services/statsService'
 import { exportNotesVault } from '../services/dataService'
+import { getExams } from '../services/examService'
+import type { Exam } from '../services/examService'
+import { formatDay, relativeDay } from '../utils/dates'
 import { saveBlob } from '../utils/download'
 import { reviewsEnabled } from '../utils/preferences'
 import { formatMinutes } from '../utils/dates'
@@ -28,7 +31,7 @@ function progressOf(topics: Topic[]): number {
  * per iniziare subito una sessione su quella materia.
  */
 function SubjectsPage() {
-  const { t, language } = useLanguage()
+  const { t, language, locale } = useLanguage()
   const navigate = useNavigate()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [minutesBySubject, setMinutesBySubject] = useState<Record<string, number>>({})
@@ -38,6 +41,7 @@ function SubjectsPage() {
   const [name, setName] = useState('')
   const [topicTitle, setTopicTitle] = useState('')
   const [saving, setSaving] = useState(false)
+  const [exams, setExams] = useState<Exam[]>([])
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -50,7 +54,8 @@ function SubjectsPage() {
     } finally {
       setLoading(false)
     }
-    // Il tempo per materia è un dato di contorno: se non arriva, la pagina funziona lo stesso.
+    // Esami e tempo per materia sono di contorno: se non arrivano, la pagina funziona lo stesso.
+    getExams().then(setExams).catch(() => setExams([]))
     getStatsSummary()
       .then((stats) => setMinutesBySubject(Object.fromEntries(stats.by_subject.map((x) => [x.name, x.minutes]))))
       .catch(() => setMinutesBySubject({}))
@@ -129,18 +134,54 @@ function SubjectsPage() {
       setSelectedId(remaining[0]?.id ?? null)
     }, t('subjects.deleteSubjectError'))
 
-  const startSession = (subject: Subject) => {
+  // Materia ed esame sono collegati per nome (lo stesso criterio di "Pianifica lo studio").
+  const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+  const examFor = (subject: Subject) => exams.find((e) => e.status !== 'passed' && e.status !== 'failed' && sameName(e.subject, subject.name))
+  const examsWithoutSubject = exams.filter((e) => (e.status === 'planned' || e.status === 'in_progress') && !subjects.some((s) => sameName(s.name, e.subject)))
+
+  const createFromExams = (list: Exam[]) =>
+    run(async () => {
+      const names = [...new Set(list.map((e) => e.subject.trim()))]
+      const created: Subject[] = []
+      for (const examSubject of names) created.push(await createSubject(examSubject))
+      setSubjects((s) => [...s, ...created].sort((a, b) => a.name.localeCompare(b.name)))
+      setSelectedId(created[0]?.id ?? null)
+    }, t('subjects.saveError'))
+
+  const startSession = (subject: Subject, topic?: Topic) => {
     const config: StudySessionConfig = {
       focusMinutes: 25,
       breakMinutes: 5,
       notes: '',
       subjectId: subject.id,
-      topicId: null,
+      topicId: topic?.id ?? null,
       subject: subject.name,
-      topic: '',
+      topic: topic?.title ?? '',
     }
     navigate('/timer', { state: config })
   }
+
+  const examSuggestions = examsWithoutSubject.length > 0 && (
+    <div className="exam-suggestions">
+      <div className="exam-suggestions-head">
+        <h3 className="settings-subtitle">{t('subjects.fromExams')}</h3>
+        {examsWithoutSubject.length > 1 && (
+          <button className="btn btn-ghost" type="button" onClick={() => void createFromExams(examsWithoutSubject)}>{t('subjects.fromExamsAll')}</button>
+        )}
+      </div>
+      <ul className="exam-suggestion-list">
+        {examsWithoutSubject.map((exam) => (
+          <li key={exam.id}>
+            <button className="exam-suggestion" type="button" onClick={() => void createFromExams([exam])} aria-label={t('subjects.fromExamLabel', { name: exam.subject })}>
+              <Plus aria-hidden="true" />
+              <span>{exam.subject}</span>
+              {exam.cfu && <span className="exam-suggestion-meta num">{exam.cfu} CFU</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 
   const addSubjectForm = (
     <form className="inline-form" onSubmit={addSubject}>
@@ -181,6 +222,7 @@ function SubjectsPage() {
           <EmptyState title={t('subjects.emptyTitle')}>
             {t('subjects.emptyBody')}
           </EmptyState>
+          {examSuggestions}
           {addSubjectForm}
         </section>
       ) : (
@@ -213,6 +255,7 @@ function SubjectsPage() {
               })}
             </ul>
             {addSubjectForm}
+            {examSuggestions}
           </section>
 
           {selected && (
@@ -236,6 +279,24 @@ function SubjectsPage() {
               {selected.topics.length > 0 && (
                 <ProgressBar percent={progressOf(selected.topics)} label={t('subjects.progressLabel', { name: selected.name })} />
               )}
+
+              {(() => {
+                const exam = examFor(selected)
+                if (!exam) return null
+                return (
+                  <div className="subject-exam">
+                    <GraduationCap aria-hidden="true" />
+                    <span className="subject-exam-main">
+                      <span className="subject-exam-title">{exam.title}</span>
+                      <span className="panel-meta">
+                        {exam.exam_date ? `${formatDay(exam.exam_date, 'long', locale)} · ${relativeDay(exam.exam_date, locale)}` : t('exams.noDate')}
+                        {exam.cfu ? ` · ${exam.cfu} CFU` : ''}
+                      </span>
+                    </span>
+                    <Link className="text-link" to="/exams">{t('subjects.examLink')} <ArrowRight aria-hidden="true" /></Link>
+                  </div>
+                )
+              })()}
 
               <form className="inline-form" onSubmit={addTopic}>
                 <label className="visually-hidden" htmlFor="new-topic">{t('subjects.newTopicFor', { name: selected.name })}</label>
@@ -270,6 +331,11 @@ function SubjectsPage() {
                         <span className={topic.completed ? 'is-done' : undefined}>{topic.title}</span>
                       </label>
                       <span className="row-actions">
+                        {!topic.completed && (
+                          <button className="icon-btn row-reveal" type="button" onClick={() => startSession(selected, topic)} aria-label={t('subjects.studyTopic', { title: topic.title })} title={t('subjects.studyTopicTitle')}>
+                            <Play aria-hidden="true" />
+                          </button>
+                        )}
                         <button
                           className={`icon-btn${topic.notes ? ' has-notes' : ' row-reveal'}`}
                           type="button"

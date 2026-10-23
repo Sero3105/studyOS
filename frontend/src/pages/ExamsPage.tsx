@@ -9,8 +9,7 @@ import { createExam, deleteExam, getExams, isDated, planExam, updateExam } from 
 import type { CreateExamPayload, Exam } from '../services/examService'
 import { daysUntil, relativeDay } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
-import { DEGREE_CFU, gradeSummary, gradeTrend } from '../utils/grades'
-import GradeTrendChart from '../components/exams/GradeTrendChart'
+import RecordBook from '../components/exams/RecordBook'
 import { ApiError } from '../services/apiClient'
 import type { TranslationKey } from '../i18n/translations'
 import { useLanguage } from '../i18n/useLanguage'
@@ -95,8 +94,6 @@ function ExamsPage() {
   // Il blocco grande col conto alla rovescia è per il primo esame con data; quelli senza data restano in lista.
   const next = upcoming.find(isDated)
   const rest = upcoming.filter((exam) => exam !== next)
-  const grades = gradeSummary(exams)
-  const trend = gradeTrend(exams)
 
   const description = loading
     ? t('exams.descriptionLoading')
@@ -123,19 +120,7 @@ function ExamsPage() {
 
       {notice && <div className="notice notice-success" role="status">{notice}</div>}
 
-      {grades.count > 0 && (
-        <section className="panel grade-summary" aria-labelledby="grade-summary-title">
-          <h2 id="grade-summary-title" className="panel-title">{t('exams.gradesTitle')}</h2>
-          <dl className="grade-stats">
-            <div><dt>{t('exams.weightedAverage')}</dt><dd className="num">{grades.cfu ? grades.weightedAverage.toFixed(2) : '—'}</dd></div>
-            <div><dt>{t('exams.average')}</dt><dd className="num">{grades.average.toFixed(2)}</dd></div>
-            <div><dt>{t('exams.graduationBase')}</dt><dd className="num">{grades.cfu ? `${grades.graduationBase.toFixed(1)}/110` : '—'}</dd></div>
-            <div><dt>{t('exams.cfuTotal')}</dt><dd className="num">{grades.cfu}<span className="grade-stats-of">/{DEGREE_CFU}</span></dd></div>
-          </dl>
-          {grades.cfu === 0 && <p className="panel-meta">{t('exams.addCfuHint')}</p>}
-          {trend.length >= 2 && <GradeTrendChart points={trend} />}
-        </section>
-      )}
+      <RecordBook exams={exams} />
 
       {loading ? (
         <LoadingRows label={t('exams.loading')} />
