@@ -57,3 +57,20 @@ def test_goal_per_subject_with_deadline(client):
                                     "subject_id": fis["id"], "deadline": (today + timedelta(days=1)).isoformat()}, headers=h).json()
     assert (g["current"], g["percent"], g["subject_id"]) == (60, 50, fis["id"])
     assert client.post("/goals", json={"title": "x", "kind": "total_minutes", "target": 1, "subject_id": 9999}, headers=h).status_code == 422
+
+
+def test_import_replace_restores_without_duplicates(client):
+    h = _h(client, "restore@example.com")
+    s = client.post("/subjects", json={"name": "Chimica", "color": "green"}, headers=h).json()
+    client.post("/goals", json={"title": "g", "kind": "topics_done", "target": 3, "subject_id": s["id"]}, headers=h)
+    client.post("/tasks", json={"title": "t", "subject_id": s["id"], "recurrence": "weekly:2"}, headers=h)
+    backup = client.get("/data/export", headers=h).json()
+    client.post("/subjects", json={"name": "Da buttare"}, headers=h)
+
+    assert client.post("/data/import?replace=true", json=backup, headers=h).status_code == 200
+    assert client.post("/data/import?replace=true", json=backup, headers=h).status_code == 200
+    subjects = client.get("/subjects", headers=h).json()
+    assert [(x["name"], x["color"]) for x in subjects] == [("Chimica", "green")]
+    assert len(client.get("/tasks", headers=h).json()) == 1
+    assert client.get("/tasks", headers=h).json()[0]["recurrence"] == "weekly:2"
+    assert client.get("/goals", headers=h).json()[0]["subject_id"] == subjects[0]["id"]

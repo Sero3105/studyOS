@@ -15,8 +15,8 @@ def export_data(response: Response, user: User = Depends(get_current_user), db: 
     return export_user_data(user.id, db)
 
 @router.post('/import', response_model=ImportResult)
-def import_data(data: StudyData, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return import_user_data(data, user.id, db)
+def import_data(data: StudyData, replace: bool = False, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return import_user_data(data, user.id, db, replace)
 
 @router.get('/notes-vault')
 def notes_vault(lang: Literal['it', 'en'] = 'en', user: User = Depends(get_current_user), db: Session = Depends(get_db)):

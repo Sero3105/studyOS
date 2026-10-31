@@ -2,7 +2,7 @@
 import io
 import re
 import zipfile
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from models.exam_models import Exam
@@ -31,12 +31,20 @@ def export_user_data(user_id: int, db: Session) -> StudyData:
         sessions=rows(StudySession, SessionCreate), goals=rows(Goal, GoalCreate),
     )
 
-def import_user_data(data: StudyData, user_id: int, db: Session) -> ImportResult:
-    """Adds everything as new records in one transaction; ids from the file only relink rows."""
+def _delete_user_data(user_id: int, db: Session) -> None:
+    owned_subjects = select(Subject.id).where(Subject.user_id == user_id)
+    db.execute(delete(Topic).where(Topic.subject_id.in_(owned_subjects)))
+    for model in (Task, StudySession, Exam, Goal, Subject):
+        db.execute(delete(model).where(model.user_id == user_id))
+
+def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool = False) -> ImportResult:
+    """Adds everything as new records in one transaction; ids from the file only relink rows.
+    With replace, the user's current study data is deleted first, in the same transaction."""
     subject_ids: dict[int, Subject] = {}
     topic_ids: dict[int, Topic] = {}
     topics = 0
     try:
+        if replace: _delete_user_data(user_id, db)
         for s in data.subjects:
             subject = Subject(user_id=user_id, name=s.name, color=s.color)
             db.add(subject)

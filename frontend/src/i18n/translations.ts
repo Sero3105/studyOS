@@ -210,7 +210,7 @@ const it = {
   'settings.remindersOn': 'Promemoria attivati.',
   'settings.remindersOff': 'Promemoria disattivati.',
   'settings.dataTitle': 'Dati e backup',
-  'settings.dataDescription': 'Scarica un backup JSON di materie, task, esami, sessioni e obiettivi. L’import aggiunge i dati del file a quelli esistenti, senza cancellare nulla.',
+  'settings.dataDescription': 'Scarica un backup JSON di materie, task, esami, sessioni e obiettivi. “Importa” aggiunge i dati del file a quelli esistenti; “Ripristina” sostituisce tutti i dati attuali con quelli del file.',
   'settings.exportButton': 'Scarica backup',
   'settings.importButton': 'Importa backup',
   'settings.exportDone': 'Backup scaricato.',
@@ -562,6 +562,8 @@ const it = {
   'goals.allSubjects': 'Tutte le materie',
   'goals.deadline': 'Scadenza',
   'goals.deadlineMeta': 'entro il {when}',
+  'settings.restoreButton': 'Ripristina backup',
+  'settings.restoreConfirm': 'Tutti i dati attuali (materie, task, esami, sessioni, obiettivi) verranno CANCELLATI e sostituiti con quelli del file: {tasks} task, {exams} esami, {sessions} sessioni, {subjects} materie. Non si può annullare. Continuare?',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -760,7 +762,7 @@ const en: Record<TranslationKey, string> = {
   'settings.remindersOn': 'Reminders enabled.',
   'settings.remindersOff': 'Reminders disabled.',
   'settings.dataTitle': 'Data and backups',
-  'settings.dataDescription': 'Download a JSON backup of subjects, tasks, exams, sessions and goals. Import adds the file’s data to what you already have, without deleting anything.',
+  'settings.dataDescription': 'Download a JSON backup of subjects, tasks, exams, sessions and goals. “Import” adds the file’s data to what you already have; “Restore” replaces all your current data with the file’s.',
   'settings.exportButton': 'Download backup',
   'settings.importButton': 'Import backup',
   'settings.exportDone': 'Backup downloaded.',
@@ -957,6 +959,8 @@ const en: Record<TranslationKey, string> = {
   'goals.allSubjects': 'All subjects',
   'goals.deadline': 'Deadline',
   'goals.deadlineMeta': 'by {when}',
+  'settings.restoreButton': 'Restore backup',
+  'settings.restoreConfirm': 'All your current data (subjects, tasks, exams, sessions, goals) will be DELETED and replaced with the file’s: {tasks} tasks, {exams} exams, {sessions} sessions, {subjects} subjects. This cannot be undone. Continue?',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

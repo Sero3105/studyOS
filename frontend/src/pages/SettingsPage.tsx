@@ -174,17 +174,18 @@ function SettingsPage() {
     return t('settings.vaultDone')
   }, t('subjects.vaultError'))
 
-  const uploadBackup = (event: ChangeEvent<HTMLInputElement>) => {
+  const uploadBackup = (event: ChangeEvent<HTMLInputElement>, replace: boolean) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
     void run(async () => {
       let data: unknown
       try { data = JSON.parse(await file.text()) } catch { throw new Error(t('settings.importInvalid')) }
-      // L'import aggiunge sempre: conferma per non duplicare tutto con un doppio import.
+      // Aggiungi duplica con un doppio import, sostituisci cancella i dati attuali: in entrambi i casi si conferma.
       const count = (key: string) => { const v = (data as Record<string, unknown> | null)?.[key]; return Array.isArray(v) ? v.length : 0 }
-      if (!window.confirm(t('settings.importConfirm', { tasks: count('tasks'), exams: count('exams'), sessions: count('sessions'), subjects: count('subjects') }))) return ''
-      const r = await importData(data)
+      const counts = { tasks: count('tasks'), exams: count('exams'), sessions: count('sessions'), subjects: count('subjects') }
+      if (!window.confirm(t(replace ? 'settings.restoreConfirm' : 'settings.importConfirm', counts))) return ''
+      const r = await importData(data, replace)
       return t('settings.importDone', { tasks: r.tasks, exams: r.exams, sessions: r.sessions, subjects: r.subjects })
     }, t('settings.importError'))
   }
@@ -266,7 +267,11 @@ function SettingsPage() {
           <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void downloadBackup()}>{t('settings.exportButton')}</button>
           <label className={`btn btn-secondary${busy ? ' is-disabled' : ''}`}>
             {t('settings.importButton')}
-            <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={uploadBackup} />
+            <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={(e) => uploadBackup(e, false)} />
+          </label>
+          <label className={`btn btn-ghost${busy ? ' is-disabled' : ''}`}>
+            {t('settings.restoreButton')}
+            <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={(e) => uploadBackup(e, true)} />
           </label>
         </div>
       </Section>
