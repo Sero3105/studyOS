@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ArrowRight, ChevronDown, Plus } from 'lucide-react'
+import { ArrowRight, ChevronDown, Plus, Repeat } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
 import ConfirmButton from '../components/ui/ConfirmButton'
@@ -14,7 +14,7 @@ import type { Subject } from '../services/subjectService'
 import { getExams } from '../services/examService'
 import { isDated } from '../services/examService'
 import type { Exam } from '../services/examService'
-import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../utils/dates'
+import { addDays, daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass, weekdayShort } from '../utils/dates'
 import SubjectDot from '../components/ui/SubjectDot'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
@@ -24,6 +24,10 @@ const priorityKeys: Record<TaskPriority, TranslationKey> = { low: 'priority.low'
 const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 }
 
 type TaskFilter = 'open' | 'done' | 'all'
+
+const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
+/** Nome breve del giorno ISO (1 = lunedì): il 2 novembre 2026 è un lunedì. */
+const isoWeekdayName = (day: number, locale: string) => weekdayShort(addDays('2026-11-02', day - 1), locale)
 
 /** Gruppi per scadenza, nell'ordine in cui vanno affrontati. */
 const groups: { id: string; titleKey: TranslationKey; test: (d: number | null) => boolean }[] = [
@@ -62,6 +66,8 @@ function PlannerPage() {
   const [priority, setPriority] = useState<TaskPriority>('medium')
   const [subjectId, setSubjectId] = useState('')
   const [topicId, setTopicId] = useState('')
+  const [repeat, setRepeat] = useState<'' | 'daily' | 'weekly'>('')
+  const [weekdays, setWeekdays] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   // Arrivati con "n" o dalla palette: il cursore è già nel campo del nuovo task.
   const focusNewTask = Boolean((useLocation().state as { focusNewTask?: boolean } | null)?.focusNewTask)
@@ -90,9 +96,10 @@ function PlannerPage() {
         priority,
         subject_id: subjectId ? Number(subjectId) : undefined,
         topic_id: topicId ? Number(topicId) : undefined,
+        recurrence: repeat === 'daily' ? 'daily' : repeat === 'weekly' && weekdays.length ? `weekly:${[...weekdays].sort().join(',')}` : undefined,
       })
       setTasks((t) => [...t, created])
-      setTitle(''); setDescription(''); setDueDate(''); setTopicId('')
+      setTitle(''); setDescription(''); setDueDate(''); setTopicId(''); setRepeat(''); setWeekdays([])
     } catch (e) { setError(errorMessage(e, t('planner.saveError'))) }
     finally { setSaving(false) }
   }
@@ -100,7 +107,9 @@ function PlannerPage() {
   const changeStatus = async (task: Task, status: TaskStatus) => {
     try {
       const updated = await updateTask(task.id, { status })
-      setTasks((t) => t.map((x) => x.id === task.id ? updated : x))
+      // Un task ricorrente completato crea il successivo sul backend: si ricarica la lista.
+      if (status === 'done' && task.recurrence) setTasks(await getTasks())
+      else setTasks((t) => t.map((x) => x.id === task.id ? updated : x))
     } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
   }
 
@@ -112,6 +121,9 @@ function PlannerPage() {
   }
 
   const subjectOf = (id: number | null) => subjects.find((s) => s.id === id)
+  const recurrenceLabel = (recurrence: string) => recurrence === 'daily'
+    ? t('planner.repeatDaily')
+    : t('planner.repeatOn', { days: recurrence.replace('weekly:', '').split(',').map((d) => isoWeekdayName(Number(d), locale)).join(', ') })
   const topicName = (task: Task) => subjects.find((s) => s.id === task.subject_id)?.topics.find((t) => t.id === task.topic_id)?.title
   const upcomingExams = exams
     .filter(isDated)
@@ -149,6 +161,7 @@ function PlannerPage() {
                 </span>
               ),
               subject && <><SubjectDot subject={subject} />{subject.name}{topic ? ` / ${topic}` : ''}</>,
+              task.recurrence && <span className="task-repeat"><Repeat aria-hidden="true" /> {recurrenceLabel(task.recurrence)}</span>,
             ]}
           />
         </span>
@@ -216,7 +229,7 @@ function PlannerPage() {
                   {(Object.keys(priorityKeys) as TaskPriority[]).map((v) => <option key={v} value={v}>{t('planner.priorityOption', { label: t(priorityKeys[v]).toLowerCase() })}</option>)}
                 </select>
               </label>
-              <button className="btn btn-primary" type="submit" disabled={saving || !title.trim()}>
+              <button className="btn btn-primary" type="submit" disabled={saving || !title.trim() || (repeat === 'weekly' && weekdays.length === 0)}>
                 <Plus aria-hidden="true" /> {t('common.add')}
               </button>
             </div>
@@ -253,6 +266,34 @@ function PlannerPage() {
                       {selectedSubject?.topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
                     </select>
                   </label>
+                </div>
+                <div className="form-grid">
+                  <label className="field">
+                    <span className="field-label">{t('planner.repeat')}</span>
+                    <select value={repeat} onChange={(e) => setRepeat(e.target.value as '' | 'daily' | 'weekly')}>
+                      <option value="">{t('planner.repeatNever')}</option>
+                      <option value="daily">{t('planner.repeatDaily')}</option>
+                      <option value="weekly">{t('planner.repeatWeekly')}</option>
+                    </select>
+                  </label>
+                  {repeat === 'weekly' && (
+                    <fieldset className="field weekday-picker">
+                      <legend className="field-label">{t('planner.repeatDays')}</legend>
+                      <div className="weekday-options">
+                        {ISO_WEEKDAYS.map((day) => (
+                          <label key={day} className="weekday-option">
+                            <input
+                              type="checkbox"
+                              className="check"
+                              checked={weekdays.includes(day)}
+                              onChange={(e) => setWeekdays((list) => e.target.checked ? [...list, day] : list.filter((d) => d !== day))}
+                            />
+                            <span>{isoWeekdayName(day, locale)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
                 </div>
               </div>
             )}

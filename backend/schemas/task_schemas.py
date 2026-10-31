@@ -13,6 +13,9 @@ class TaskPriority(str, Enum):
 class TaskStatus(str, Enum):
     TODO = 'todo'; IN_PROGRESS = 'in_progress'; DONE = 'done'
 
+# 'daily' oppure 'weekly:' + giorni ISO (1 = lunedì ... 7 = domenica), es. 'weekly:1,3'.
+RECURRENCE = r'^(daily|weekly:[1-7](,[1-7]){0,6})$'
+
 class TaskCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=2000)
@@ -21,6 +24,7 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     subject_id: int | None = None
     topic_id: int | None = None
+    recurrence: str | None = Field(default=None, pattern=RECURRENCE)
     @field_validator('title', 'description', mode='before')
     @classmethod
     def trim(cls, value): return _trim(value)
@@ -33,6 +37,7 @@ class TaskUpdate(BaseModel):
     status: TaskStatus | None = None
     subject_id: int | None = None
     topic_id: int | None = None
+    recurrence: str | None = Field(default=None, pattern=RECURRENCE)
     @field_validator('title', 'description', mode='before')
     @classmethod
     def trim(cls, value): return _trim(value)
@@ -46,5 +51,5 @@ class TaskUpdate(BaseModel):
 class TaskResponse(BaseModel):
     id: int; user_id: int; title: str; description: str | None; due_date: date | None
     priority: TaskPriority; status: TaskStatus; subject_id: int | None; topic_id: int | None
-    created_at: datetime; updated_at: datetime
+    recurrence: str | None = None; created_at: datetime; updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

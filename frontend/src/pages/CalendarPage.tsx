@@ -98,7 +98,9 @@ function CalendarPage() {
   const toggle = async (task: Task) => {
     try {
       const updated = await updateTask(task.id, { status: task.status === 'done' ? 'todo' : 'done' })
-      setTasks((list) => list.map((x) => (x.id === task.id ? updated : x)))
+      // Un task ricorrente completato crea il successivo sul backend: si ricarica la lista.
+      if (updated.status === 'done' && task.recurrence) setTasks(await getTasks())
+      else setTasks((list) => list.map((x) => (x.id === task.id ? updated : x)))
     } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
   }
 

@@ -134,3 +134,10 @@
     width: 100%;
   }
 }
+
+/* Task ricorrenti */
+.task-repeat { display: inline-flex; align-items: center; gap: var(--space-1); }
+.task-repeat svg { width: 12px; height: 12px; }
+.weekday-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
+.weekday-options { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding-top: var(--space-2); }
+.weekday-option { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); }

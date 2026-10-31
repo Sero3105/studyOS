@@ -553,6 +553,12 @@ const it = {
   'settings.themeDark': 'Scuro',
   'settings.themeLight': 'Chiaro',
   'settings.themeSystem': 'Come il sistema',
+  'planner.repeat': 'Ripeti',
+  'planner.repeatNever': 'Mai',
+  'planner.repeatDaily': 'Ogni giorno',
+  'planner.repeatWeekly': 'Ogni settimana',
+  'planner.repeatDays': 'Giorni',
+  'planner.repeatOn': 'Ogni {days}',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -939,6 +945,12 @@ const en: Record<TranslationKey, string> = {
   'settings.themeDark': 'Dark',
   'settings.themeLight': 'Light',
   'settings.themeSystem': 'System',
+  'planner.repeat': 'Repeat',
+  'planner.repeatNever': 'Never',
+  'planner.repeatDaily': 'Every day',
+  'planner.repeatWeekly': 'Every week',
+  'planner.repeatDays': 'Days',
+  'planner.repeatOn': 'Every {days}',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

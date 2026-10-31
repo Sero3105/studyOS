@@ -5,11 +5,12 @@ export type TaskStatus = 'todo' | 'in_progress' | 'done'
 export interface Task {
   id: number; user_id: number; title: string; description: string | null; due_date: string | null
   priority: TaskPriority; status: TaskStatus; subject_id: number | null; topic_id: number | null
-  created_at: string; updated_at: string
+  /** 'daily' o 'weekly:1,3' (1 = lunedì). */
+  recurrence: string | null; created_at: string; updated_at: string
 }
 export interface CreateTaskPayload {
   title: string; description?: string; due_date?: string; priority: TaskPriority
-  subject_id?: number; topic_id?: number
+  subject_id?: number; topic_id?: number; recurrence?: string
 }
 
 export const getTasks = () => apiRequest<Task[]>('/tasks')
