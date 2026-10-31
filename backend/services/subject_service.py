@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session, selectinload
 from models.exam_models import Exam
+from models.goal_models import Goal
 from models.subject_models import Subject, Topic
 from models.session_models import StudySession
 from models.task_models import Task
@@ -47,7 +48,8 @@ def delete_subject(subject_id: int, user_id: int, db: Session) -> None:
     subject = get_owned_subject(subject_id, user_id, db)
     _unlink(user_id, db, 'subject_id', [subject.id])
     _unlink(user_id, db, 'topic_id', [t.id for t in subject.topics])
-    db.execute(update(Exam).where(Exam.user_id == user_id, Exam.subject_id == subject.id).values(subject_id=None))
+    for model in (Exam, Goal):
+        db.execute(update(model).where(model.user_id == user_id, model.subject_id == subject.id).values(subject_id=None))
     db.delete(subject); db.commit()
 
 def create_topic(subject_id: int, data: TopicCreate, user_id: int, db: Session) -> Topic:

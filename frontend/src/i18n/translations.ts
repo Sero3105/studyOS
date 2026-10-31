@@ -559,6 +559,9 @@ const it = {
   'planner.repeatWeekly': 'Ogni settimana',
   'planner.repeatDays': 'Giorni',
   'planner.repeatOn': 'Ogni {days}',
+  'goals.allSubjects': 'Tutte le materie',
+  'goals.deadline': 'Scadenza',
+  'goals.deadlineMeta': 'entro il {when}',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -951,6 +954,9 @@ const en: Record<TranslationKey, string> = {
   'planner.repeatWeekly': 'Every week',
   'planner.repeatDays': 'Days',
   'planner.repeatOn': 'Every {days}',
+  'goals.allSubjects': 'All subjects',
+  'goals.deadline': 'Deadline',
+  'goals.deadlineMeta': 'by {when}',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

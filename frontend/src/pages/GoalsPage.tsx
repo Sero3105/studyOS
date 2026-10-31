@@ -10,6 +10,10 @@ import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
 import type { Goal, GoalKind } from '../services/goalService'
 import { errorMessage } from '../utils/errors'
+import { getSubjects } from '../services/subjectService'
+import type { Subject } from '../services/subjectService'
+import SubjectDot from '../components/ui/SubjectDot'
+import { formatDay, relativeDay } from '../utils/dates'
 
 /** Unità di misura di ogni tipo di obiettivo, per i campi e per le righe. */
 const goalKindKeys: Record<GoalKind, TranslationKey> = {
@@ -19,8 +23,8 @@ const goalUnitKeys: Record<GoalKind, TranslationKey> = {
   weekly_minutes: 'goals.unit.weekly_minutes', total_minutes: 'goals.unit.total_minutes', tasks_done: 'goals.unit.tasks_done', topics_done: 'goals.unit.topics_done', sessions_count: 'goals.unit.sessions_count',
 }
 
-function GoalRow({ goal, onDelete }: { goal: Goal; onDelete: (id: number) => Promise<void> }) {
-  const { t } = useLanguage()
+function GoalRow({ goal, subject, onDelete }: { goal: Goal; subject?: Subject; onDelete: (id: number) => Promise<void> }) {
+  const { t, locale } = useLanguage()
   const remaining = Math.max(0, goal.target - goal.current)
   const reached = goal.percent >= 100
   return (
@@ -30,7 +34,11 @@ function GoalRow({ goal, onDelete }: { goal: Goal; onDelete: (id: number) => Pro
         <div className="goal-head">
           <div className="row-main">
             <h3 className="goal-title">{goal.title}</h3>
-            <span className="row-meta">{t(goalKindKeys[goal.kind])}</span>
+            <span className="row-meta">
+              {subject && <><SubjectDot subject={subject} />{subject.name} · </>}
+              {t(goalKindKeys[goal.kind])}
+              {goal.deadline && <span title={relativeDay(goal.deadline, locale)}> · {t('goals.deadlineMeta', { when: formatDay(goal.deadline, 'short', locale) })}</span>}
+            </span>
           </div>
           <ConfirmButton label={t('goals.deleteLabel', { title: goal.title })} onConfirm={() => onDelete(goal.id)} />
         </div>
@@ -57,6 +65,9 @@ function GoalsPage() {
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<GoalKind>('weekly_minutes')
   const [target, setTarget] = useState('')
+  const [subjectId, setSubjectId] = useState('')
+  const [deadline, setDeadline] = useState('')
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
@@ -65,14 +76,19 @@ function GoalsPage() {
     finally { setLoading(false) }
   }, [t])
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
+  // Materie solo per il filtro e i nomi: se non arrivano, gli obiettivi restano globali.
+  useEffect(() => { getSubjects().then(setSubjects).catch(() => setSubjects([])) }, [])
 
   const addGoal = async (event: FormEvent) => {
     event.preventDefault()
     setSaving(true)
     try {
-      const created = await createGoal(title.trim(), kind, Number(target))
+      const created = await createGoal({
+        title: title.trim(), kind, target: Number(target),
+        subject_id: subjectId ? Number(subjectId) : undefined, deadline: deadline || undefined,
+      })
       setGoals((g) => [...g, created])
-      setTitle(''); setTarget(''); setShowForm(false)
+      setTitle(''); setTarget(''); setSubjectId(''); setDeadline(''); setShowForm(false)
     } catch (e) { setError(errorMessage(e, t('goals.saveError'))) }
     finally { setSaving(false) }
   }
@@ -126,6 +142,19 @@ function GoalsPage() {
               <input type="number" inputMode="numeric" min="1" step="1" value={target} onChange={(e) => setTarget(e.target.value)} required placeholder={t('goals.targetPlaceholder')} />
             </label>
           </div>
+          <div className="form-grid">
+            <label className="field">
+              <span className="field-label">{t('planner.subject')} <em>{t('common.optional')}</em></span>
+              <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+                <option value="">{t('goals.allSubjects')}</option>
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="field-label">{t('goals.deadline')} <em>{t('common.optional')}</em></span>
+              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            </label>
+          </div>
           <div className="form-actions">
             <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>
             <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? t('common.saving') : t('goals.create')}</button>
@@ -151,13 +180,13 @@ function GoalsPage() {
           {active.length > 0 && (
             <section className="page-section" aria-labelledby="goals-active-title">
               <h2 id="goals-active-title" className="section-title">{t('goals.inProgress')}</h2>
-              <ul className="goal-list">{active.map((goal) => <GoalRow key={goal.id} goal={goal} onDelete={removeGoal} />)}</ul>
+              <ul className="goal-list">{active.map((goal) => <GoalRow key={goal.id} goal={goal} subject={subjects.find((s) => s.id === goal.subject_id)} onDelete={removeGoal} />)}</ul>
             </section>
           )}
           {reached.length > 0 && (
             <section className="page-section" aria-labelledby="goals-reached-title">
               <h2 id="goals-reached-title" className="section-title">{t('goals.reachedTitle')}</h2>
-              <ul className="goal-list">{reached.map((goal) => <GoalRow key={goal.id} goal={goal} onDelete={removeGoal} />)}</ul>
+              <ul className="goal-list">{reached.map((goal) => <GoalRow key={goal.id} goal={goal} subject={subjects.find((s) => s.id === goal.subject_id)} onDelete={removeGoal} />)}</ul>
             </section>
           )}
         </>

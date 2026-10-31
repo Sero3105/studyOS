@@ -64,7 +64,8 @@ def import_user_data(data: StudyData, user_id: int, db: Session) -> ImportResult
             link_subject(exam, db)
             db.add(exam)
         for g in data.goals:
-            db.add(Goal(user_id=user_id, **g.model_dump()))
+            subject = subject_ids.get(g.subject_id)
+            db.add(Goal(user_id=user_id, **(g.model_dump() | {'subject_id': subject.id if subject else None})))
         db.commit()
     except SQLAlchemyError:
         db.rollback(); raise

@@ -9,31 +9,39 @@ from schemas.goal_schemas import GoalCreate, GoalKind
 
 def goal_progress(goal: Goal, db: Session) -> int:
     user_id = goal.user_id
+    sessions = [StudySession.user_id == user_id]
+    if goal.subject_id is not None: sessions.append(StudySession.subject_id == goal.subject_id)
+    # La scadenza ferma solo il conteggio dello studio: task e argomenti non hanno una data di completamento.
+    if goal.deadline is not None: sessions.append(StudySession.studied_on <= goal.deadline)
+    minutes = select(func.coalesce(func.sum(StudySession.duration_minutes), 0)).where(*sessions)
     if goal.kind == GoalKind.WEEKLY_MINUTES:
         monday = date.today() - timedelta(days=date.today().weekday())
-        return int(db.scalar(select(func.coalesce(func.sum(StudySession.duration_minutes), 0)).where(
-            StudySession.user_id == user_id, StudySession.studied_on >= monday)) or 0)
+        return int(db.scalar(minutes.where(StudySession.studied_on >= monday)) or 0)
     if goal.kind == GoalKind.TOTAL_MINUTES:
-        return int(db.scalar(select(func.coalesce(func.sum(StudySession.duration_minutes), 0)).where(
-            StudySession.user_id == user_id)) or 0)
+        return int(db.scalar(minutes) or 0)
     if goal.kind == GoalKind.TASKS_DONE:
-        return int(db.scalar(select(func.count(Task.id)).where(Task.user_id == user_id, Task.status == 'done')) or 0)
+        tasks = select(func.count(Task.id)).where(Task.user_id == user_id, Task.status == 'done')
+        if goal.subject_id is not None: tasks = tasks.where(Task.subject_id == goal.subject_id)
+        return int(db.scalar(tasks) or 0)
     if goal.kind == GoalKind.TOPICS_DONE:
-        return int(db.scalar(select(func.count(Topic.id)).join(Subject).where(
-            Subject.user_id == user_id, Topic.completed.is_(True))) or 0)
-    return int(db.scalar(select(func.count(StudySession.id)).where(StudySession.user_id == user_id)) or 0)
+        topics = select(func.count(Topic.id)).join(Subject).where(Subject.user_id == user_id, Topic.completed.is_(True))
+        if goal.subject_id is not None: topics = topics.where(Topic.subject_id == goal.subject_id)
+        return int(db.scalar(topics) or 0)
+    return int(db.scalar(select(func.count(StudySession.id)).where(*sessions)) or 0)
 
 def with_progress(goal: Goal, db: Session) -> dict:
     current = goal_progress(goal, db)
     return {
         'id': goal.id, 'user_id': goal.user_id, 'title': goal.title, 'kind': goal.kind,
-        'target': goal.target, 'current': current,
+        'target': goal.target, 'subject_id': goal.subject_id, 'deadline': goal.deadline, 'current': current,
         'percent': min(100, round(current * 100 / goal.target)) if goal.target else 0,
         'created_at': goal.created_at,
     }
 
 def create_goal(data: GoalCreate, user_id: int, db: Session) -> dict:
-    goal = Goal(user_id=user_id, title=data.title, kind=data.kind.value, target=data.target)
+    if data.subject_id is not None and db.scalar(select(Subject.id).where(Subject.id == data.subject_id, Subject.user_id == user_id)) is None:
+        raise ValueError('Subject not found')
+    goal = Goal(user_id=user_id, title=data.title, kind=data.kind.value, target=data.target, subject_id=data.subject_id, deadline=data.deadline)
     db.add(goal); db.commit(); db.refresh(goal)
     return with_progress(goal, db)
 

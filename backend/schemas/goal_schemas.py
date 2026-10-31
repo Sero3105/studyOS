@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -13,6 +13,8 @@ class GoalCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     kind: GoalKind
     target: int = Field(gt=0, le=100000)
+    subject_id: int | None = None  # None = tutte le materie
+    deadline: date | None = None
     @field_validator('title', mode='before')
     @classmethod
     def trim(cls, value):
@@ -22,5 +24,6 @@ class GoalCreate(BaseModel):
 
 class GoalResponse(BaseModel):
     id: int; user_id: int; title: str; kind: GoalKind; target: int
+    subject_id: int | None = None; deadline: date | None = None
     current: int; percent: int; created_at: datetime
     model_config = ConfigDict(from_attributes=True)

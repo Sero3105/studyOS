@@ -10,7 +10,8 @@ router = APIRouter(prefix='/goals', tags=['Goals'])
 
 @router.post('', response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
 def create_goal(data: GoalCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return goal_service.create_goal(data, user.id, db)
+    try: return goal_service.create_goal(data, user.id, db)
+    except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
 
 @router.get('', response_model=list[GoalResponse])
 def list_goals(user: User = Depends(get_current_user), db: Session = Depends(get_db)):

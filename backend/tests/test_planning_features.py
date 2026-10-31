@@ -44,3 +44,16 @@ def test_next_due():
     assert next_due("daily", date(2026, 10, 20), wed) == wed  # in ritardo: oggi, non nel passato
     assert next_due("weekly:1,3", wed, wed) == date(2026, 11, 2)  # mercoledì → lunedì dopo
     assert next_due("weekly:5", None, wed) == date(2026, 10, 30)
+
+
+def test_goal_per_subject_with_deadline(client):
+    h = _h(client, "goalsub@example.com")
+    fis = client.post("/subjects", json={"name": "Fisica"}, headers=h).json()
+    other = client.post("/subjects", json={"name": "Storia"}, headers=h).json()
+    today = date.today()
+    for sid, day, minutes in [(fis["id"], today, 60), (other["id"], today, 30), (fis["id"], today + timedelta(days=5), 45)]:
+        client.post("/sessions", json={"subject_id": sid, "duration_minutes": minutes, "studied_on": day.isoformat()}, headers=h)
+    g = client.post("/goals", json={"title": "Fisica", "kind": "total_minutes", "target": 120,
+                                    "subject_id": fis["id"], "deadline": (today + timedelta(days=1)).isoformat()}, headers=h).json()
+    assert (g["current"], g["percent"], g["subject_id"]) == (60, 50, fis["id"])
+    assert client.post("/goals", json={"title": "x", "kind": "total_minutes", "target": 1, "subject_id": 9999}, headers=h).status_code == 422
