@@ -10,6 +10,9 @@ import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
 import { getSessions } from '../services/sessionService'
 import type { StudySession } from '../services/sessionService'
+import { getSubjects } from '../services/subjectService'
+import type { Subject } from '../services/subjectService'
+import SubjectDot from '../components/ui/SubjectDot'
 import { addDays, formatDay, formatMinutes, parseDay, todayIso, weekStart } from '../utils/dates'
 import { heatLevel } from '../utils/studyStats'
 import { errorMessage } from '../utils/errors'
@@ -38,6 +41,7 @@ function CalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [exams, setExams] = useState<Exam[]>([])
   const [sessions, setSessions] = useState<StudySession[]>([])
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -47,6 +51,8 @@ function CalendarPage() {
       setError('')
       const [taskList, examList, sessionList] = await Promise.all([getTasks(), getExams(), getSessions()])
       setTasks(taskList); setExams(examList); setSessions(sessionList)
+      // Solo per i colori delle materie: senza, il calendario funziona lo stesso.
+      getSubjects().then(setSubjects).catch(() => setSubjects([]))
     } catch (e) { setError(errorMessage(e, t('calendar.loadError'))) }
     finally { setLoading(false) }
   }, [t])
@@ -165,7 +171,7 @@ function CalendarPage() {
                         <label className={`calendar-task${task.status === 'done' ? ' is-done' : ''}`}>
                           <input className="check" type="checkbox" checked={task.status === 'done'} onChange={() => void toggle(task)} />
                           <span className={`priority priority-${task.priority}`} aria-hidden="true" />
-                          <span className="calendar-task-title">{task.title}</span>
+                          <span className="calendar-task-title"><SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />{task.title}</span>
                         </label>
                       </li>
                     ))}

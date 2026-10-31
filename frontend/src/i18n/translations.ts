@@ -539,6 +539,15 @@ const it = {
   'subjects.save': 'Salva',
   'subjects.rename': 'Rinomina',
   'subjects.renameTopicLabel': 'Rinomina l’argomento {title}',
+  'subjects.color': 'Colore',
+  'color.yellow': 'Giallo',
+  'color.green': 'Verde',
+  'color.teal': 'Verde acqua',
+  'color.blue': 'Blu',
+  'color.violet': 'Viola',
+  'color.pink': 'Rosa',
+  'color.red': 'Rosso',
+  'color.orange': 'Arancione',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -911,6 +920,15 @@ const en: Record<TranslationKey, string> = {
   'subjects.save': 'Save',
   'subjects.rename': 'Rename',
   'subjects.renameTopicLabel': 'Rename topic {title}',
+  'subjects.color': 'Color',
+  'color.yellow': 'Yellow',
+  'color.green': 'Green',
+  'color.teal': 'Teal',
+  'color.blue': 'Blue',
+  'color.violet': 'Violet',
+  'color.pink': 'Pink',
+  'color.red': 'Red',
+  'color.orange': 'Orange',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

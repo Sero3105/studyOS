@@ -25,7 +25,7 @@ def _owned(model, user_id: int, db: Session):
 def export_user_data(user_id: int, db: Session) -> StudyData:
     rows = lambda model, schema: [schema.model_validate(r, from_attributes=True) for r in _owned(model, user_id, db)]
     return StudyData(
-        subjects=[{'id': s.id, 'name': s.name, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes} for t in s.topics]}
+        subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes} for t in s.topics]}
                   for s in list_subjects(user_id, db)],
         tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamCreate),
         sessions=rows(StudySession, SessionCreate), goals=rows(Goal, GoalCreate),
@@ -38,7 +38,7 @@ def import_user_data(data: StudyData, user_id: int, db: Session) -> ImportResult
     topics = 0
     try:
         for s in data.subjects:
-            subject = Subject(user_id=user_id, name=s.name)
+            subject = Subject(user_id=user_id, name=s.name, color=s.color)
             db.add(subject)
             if s.id is not None: subject_ids[s.id] = subject
             for t in s.topics:

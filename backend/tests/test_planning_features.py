@@ -15,9 +15,10 @@ def test_rename_subject_keeps_exam_link(client):
     s = client.post("/subjects", json={"name": "analisi i"}, headers=h).json()  # adotta l'esame con lo stesso nome
     assert client.get("/exams", headers=h).json()[0]["subject_id"] == s["id"]
 
-    r = client.patch(f"/subjects/{s['id']}", json={"name": "Analisi 1"}, headers=h)
-    assert r.status_code == 200 and r.json()["name"] == "Analisi 1"
+    r = client.patch(f"/subjects/{s['id']}", json={"name": "Analisi 1", "color": "blue"}, headers=h)
+    assert r.status_code == 200 and r.json()["name"] == "Analisi 1" and r.json()["color"] == "blue"
     assert client.get("/exams", headers=h).json()[0]["subject"] == "Analisi 1"
+    assert client.patch(f"/subjects/{s['id']}", json={"color": "magenta"}, headers=h).status_code == 422
     assert client.patch(f"/subjects/{s['id']}", json={"name": None}, headers=h).status_code == 422
 
     client.delete(f"/subjects/{s['id']}", headers=h)

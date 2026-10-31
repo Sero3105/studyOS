@@ -201,4 +201,27 @@
 .new-subject-form .input { flex: 1; }
 .modal .exam-suggestions { margin-top: var(--space-5); }
 .subject-index-more { justify-self: start; margin-top: var(--space-2); color: var(--text-muted); }
+
+/* Modifica materia: colori come pallini selezionabili */
+.color-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
+.color-options { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-2); }
+.color-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+.color-option::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--subject-color);
+}
+.color-option input { position: absolute; opacity: 0; pointer-events: none; }
+.color-option:has(input:checked) { box-shadow: inset 0 0 0 2px var(--text-strong); }
+.color-option:has(input:focus-visible) { box-shadow: var(--focus-ring); }
 .topic-rename { flex: 1; min-width: 0; }

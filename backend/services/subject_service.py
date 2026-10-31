@@ -16,7 +16,7 @@ def _adopt_exams(subject: Subject, db: Session) -> None:
                                   func.lower(func.trim(Exam.subject)) == subject.name.strip().lower()).values(subject_id=subject.id))
 
 def create_subject(data: SubjectCreate, user_id: int, db: Session) -> Subject:
-    subject = Subject(user_id=user_id, name=data.name)
+    subject = Subject(user_id=user_id, name=data.name, color=data.color)
     db.add(subject); db.flush()
     _adopt_exams(subject, db)
     db.commit(); db.refresh(subject)

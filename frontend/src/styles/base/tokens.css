@@ -49,6 +49,16 @@
   --danger-bg: rgba(242, 139, 125, 0.12);
   --danger-bg-strong: rgba(242, 139, 125, 0.22);
 
+  /* Materie: palette fissa di 8 colori (calendario, planner, statistiche) */
+  --subject-yellow: #dde66a;
+  --subject-green: #7fd6a4;
+  --subject-teal: #5fc9c4;
+  --subject-blue: #7aa7f0;
+  --subject-violet: #b39af0;
+  --subject-pink: #f08fc0;
+  --subject-red: #f28b7d;
+  --subject-orange: #f0b860;
+
   /* Tipografia: una sola famiglia, cinque taglie al massimo per schermata */
   --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --text-xs: 0.78rem;

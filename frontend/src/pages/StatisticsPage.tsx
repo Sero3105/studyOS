@@ -13,6 +13,9 @@ import type { Task } from '../services/taskService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import StudyHeatmap from '../components/stats/StudyHeatmap'
+import SubjectDot from '../components/ui/SubjectDot'
+import { subjectColor } from '../services/subjectService'
+import type { SubjectMinutes } from '../services/statsService'
 import RecordBook from '../components/exams/RecordBook'
 import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
@@ -30,16 +33,16 @@ function percentOf(part: number, total: number): number {
 }
 
 /** Classifica a barre orizzontali: nome, barra proporzionale, minuti e quota. */
-function RankedBars({ items, label }: { items: NameMinutes[]; label: string }) {
+function RankedBars({ items, label }: { items: (NameMinutes | SubjectMinutes)[]; label: string }) {
   const max = Math.max(1, ...items.map((item) => item.minutes))
   const total = items.reduce((sum, item) => sum + item.minutes, 0)
   return (
     <ol className="ranked" aria-label={label}>
       {items.map((item) => (
-        <li className="ranked-row" key={item.name}>
-          <span className="ranked-name">{item.name}</span>
+        <li className="ranked-row" key={'id' in item ? item.id : item.name}>
+          <span className="ranked-name">{'id' in item && <SubjectDot subject={item} />}{item.name}</span>
           <span className="ranked-track" aria-hidden="true">
-            <span style={{ width: `${(item.minutes / max) * 100}%` }} />
+            <span style={{ width: `${(item.minutes / max) * 100}%`, ...('id' in item && { background: `var(--subject-${subjectColor(item)})` }) }} />
           </span>
           <span className="ranked-value num">
             {formatMinutes(item.minutes)}

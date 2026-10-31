@@ -797,3 +797,15 @@ select:disabled {
 
 .palette-empty { padding: var(--space-4) var(--space-3); color: var(--text-muted); }
 .palette-footer { margin: 0; color: var(--text-muted); font-size: var(--text-xs); }
+
+/* Colore della materia: pallino accanto al nome */
+.subject-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--subject-color);
+  vertical-align: 0.1em;
+}

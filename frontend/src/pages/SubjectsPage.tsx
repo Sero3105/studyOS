@@ -8,8 +8,10 @@ import ProgressBar from '../components/ui/ProgressBar'
 import ConfirmButton from '../components/ui/ConfirmButton'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import type { StudySessionConfig } from '../components/timer/types'
-import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, updateSubject, updateTopic } from '../services/subjectService'
-import type { Subject, Topic } from '../services/subjectService'
+import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, SUBJECT_COLORS, subjectColor, updateSubject, updateTopic } from '../services/subjectService'
+import type { Subject, SubjectColor, Topic } from '../services/subjectService'
+import SubjectDot from '../components/ui/SubjectDot'
+import type { CSSProperties } from 'react'
 import { getStatsSummary } from '../services/statsService'
 import { exportNotesVault } from '../services/dataService'
 import { getExams } from '../services/examService'
@@ -44,7 +46,7 @@ function SubjectsPage() {
   const [saving, setSaving] = useState(false)
   const [exams, setExams] = useState<Exam[]>([])
   const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<{ name: string } | null>(null)
+  const [editing, setEditing] = useState<{ name: string; color: SubjectColor } | null>(null)
   const [renamingTopic, setRenamingTopic] = useState<{ id: number; title: string } | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
@@ -107,7 +109,7 @@ function SubjectsPage() {
     event.preventDefault()
     if (!selected || !editing?.name.trim()) return
     await run(async () => {
-      const updated = await updateSubject(selected.id, { name: editing.name.trim() })
+      const updated = await updateSubject(selected.id, { name: editing.name.trim(), color: editing.color })
       setSubjects((s) => s.map((x) => x.id === updated.id ? updated : x).sort((a, b) => a.name.localeCompare(b.name)))
       setEditing(null)
       // Gli esami collegati prendono il nuovo nome sul backend.
@@ -279,7 +281,7 @@ function SubjectsPage() {
                       aria-current={subject.id === selectedId ? 'true' : undefined}
                       onClick={() => setSelectedId(subject.id)}
                     >
-                      <span className="subject-nav-name">{subject.name}</span>
+                      <span className="subject-nav-name"><SubjectDot subject={subject} />{subject.name}</span>
                       <span className="subject-nav-meta num">
                         {subject.topics.length ? `${percent}%` : t('subjects.noTopics')}
                         {minutes ? ` · ${formatMinutes(minutes)}` : ''}
@@ -301,7 +303,7 @@ function SubjectsPage() {
             <section className="panel subject-detail" aria-labelledby="subject-detail-title">
               <div className="subject-detail-head">
                 <div>
-                  <h2 id="subject-detail-title">{selected.name}</h2>
+                  <h2 id="subject-detail-title"><SubjectDot subject={selected} />{selected.name}</h2>
                   <p className="panel-meta num">
                     {t('subjects.topicsCompleted', { done: selected.topics.filter((x) => x.completed).length, total: selected.topics.length })}
                     {minutesBySubject[selected.id] ? t('subjects.studiedSuffix', { value: formatMinutes(minutesBySubject[selected.id]) }) : ''}
@@ -311,7 +313,7 @@ function SubjectsPage() {
                   <button className="btn btn-primary" type="button" onClick={() => startSession(selected)}>
                     <Play aria-hidden="true" /> {t('subjects.study25')}
                   </button>
-                  <button className="icon-btn" type="button" onClick={() => setEditing({ name: selected.name })} aria-label={t('subjects.editLabel', { name: selected.name })} title={t('subjects.edit')}>
+                  <button className="icon-btn" type="button" onClick={() => setEditing({ name: selected.name, color: subjectColor(selected) })} aria-label={t('subjects.editLabel', { name: selected.name })} title={t('subjects.edit')}>
                     <Pencil aria-hidden="true" />
                   </button>
                   <ConfirmButton label={t('subjects.deleteSubjectLabel', { name: selected.name })} onConfirm={() => removeSubject(selected.id)} />
@@ -441,6 +443,17 @@ function SubjectsPage() {
               <span className="field-label">{t('subjects.name')}</span>
               <input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required maxLength={120} autoFocus />
             </label>
+            <fieldset className="field color-picker">
+              <legend className="field-label">{t('subjects.color')}</legend>
+              <div className="color-options">
+                {SUBJECT_COLORS.map((color) => (
+                  <label key={color} className="color-option" style={{ '--subject-color': `var(--subject-${color})` } as CSSProperties} title={t(`color.${color}`)}>
+                    <input type="radio" name="subject-color" value={color} checked={editing.color === color} onChange={() => setEditing({ ...editing, color })} />
+                    <span className="visually-hidden">{t(`color.${color}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div className="form-actions">
               <button className="btn btn-ghost" type="button" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
               <button className="btn btn-primary" type="submit" disabled={!editing.name.trim()}>{t('subjects.save')}</button>

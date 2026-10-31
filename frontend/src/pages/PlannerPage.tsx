@@ -15,6 +15,7 @@ import { getExams } from '../services/examService'
 import { isDated } from '../services/examService'
 import type { Exam } from '../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../utils/dates'
+import SubjectDot from '../components/ui/SubjectDot'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
@@ -110,7 +111,7 @@ function PlannerPage() {
     } catch (e) { setError(errorMessage(e, t('planner.deleteError'))) }
   }
 
-  const subjectName = (id: number | null) => subjects.find((s) => s.id === id)?.name
+  const subjectOf = (id: number | null) => subjects.find((s) => s.id === id)
   const topicName = (task: Task) => subjects.find((s) => s.id === task.subject_id)?.topics.find((t) => t.id === task.topic_id)?.title
   const upcomingExams = exams
     .filter(isDated)
@@ -124,7 +125,7 @@ function PlannerPage() {
   const renderTask = (task: Task) => {
     const days = task.due_date ? daysUntil(task.due_date) : null
     const done = task.status === 'done'
-    const subject = subjectName(task.subject_id)
+    const subject = subjectOf(task.subject_id)
     const topic = topicName(task)
     return (
       <li className={`row task-row${done ? ' is-complete' : ''}`} key={task.id}>
@@ -147,7 +148,7 @@ function PlannerPage() {
                   {relativeDay(task.due_date, locale)}
                 </span>
               ),
-              subject && `${subject}${topic ? ` / ${topic}` : ''}`,
+              subject && <><SubjectDot subject={subject} />{subject.name}{topic ? ` / ${topic}` : ''}</>,
             ]}
           />
         </span>

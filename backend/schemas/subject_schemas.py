@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 def _trim(value):
@@ -6,14 +7,21 @@ def _trim(value):
     value = str(value).strip()
     return value or None
 
+# Palette fissa: il frontend mappa ogni nome su un token CSS, valido in tema chiaro e scuro.
+class SubjectColor(str, Enum):
+    YELLOW = 'yellow'; GREEN = 'green'; TEAL = 'teal'; BLUE = 'blue'
+    VIOLET = 'violet'; PINK = 'pink'; RED = 'red'; ORANGE = 'orange'
+
 class SubjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    color: SubjectColor | None = None
     @field_validator('name', mode='before')
     @classmethod
     def trim(cls, value): return _trim(value)
 
 class SubjectUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
+    color: SubjectColor | None = None
     @field_validator('name', mode='before')
     @classmethod
     def trim(cls, value): return _trim(value)
@@ -44,5 +52,5 @@ class TopicResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class SubjectResponse(BaseModel):
-    id: int; user_id: int; name: str; created_at: datetime; topics: list[TopicResponse] = []
+    id: int; user_id: int; name: str; color: SubjectColor | None = None; created_at: datetime; topics: list[TopicResponse] = []
     model_config = ConfigDict(from_attributes=True)

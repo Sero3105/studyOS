@@ -51,7 +51,7 @@ def summary(user_id: int, db: Session) -> dict:
         'topics_total': len(topics_all),
         'streak_days': _streak(set(by_day), today),
         'daily': daily,
-        'by_subject': [{'id': k, 'name': subjects[k], 'minutes': v} for k, v in sorted(by_subject.items(), key=lambda x: -x[1])],
+        'by_subject': [{'id': k, 'name': subjects[k], 'color': subject_rows[k].color, 'minutes': v} for k, v in sorted(by_subject.items(), key=lambda x: -x[1])],
         'by_topic': [{'name': k, 'minutes': v} for k, v in sorted(by_topic.items(), key=lambda x: -x[1])],
         'last_session': None if last is None else {
             'subject': subjects.get(last.subject_id), 'topic': topics.get(last.topic_id),
