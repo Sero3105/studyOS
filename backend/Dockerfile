@@ -25,6 +25,11 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# tzdata: senza, TZ=Europe/Rome (compose.yaml) viene ignorato e "oggi" resta in UTC.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends tzdata \
+ && rm -rf /var/lib/apt/lists/*
+
 # Utente senza privilegi; /data è la cartella del database (volume persistente).
 RUN groupadd --system --gid 10001 studyos \
  && useradd --system --uid 10001 --gid studyos --no-create-home \
