@@ -1,4 +1,4 @@
-import { apiRequest, setAuthTokens } from './apiClient'
+import { ApiError, apiRequest, setAuthTokens } from './apiClient'
 
 export interface RegisterRequest { username: string; email: string; full_name: string; password: string }
 export interface UserResponse { id: number; username: string; email: string; full_name: string | null }
@@ -17,7 +17,15 @@ export async function login(credentials: LoginRequest): Promise<UserResponse> {
   return saveInMemorySession(await apiRequest<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }))
 }
 export async function refreshSession(): Promise<UserResponse> {
-  return saveInMemorySession(await apiRequest<AuthResponse>('/auth/refresh', { method: 'POST' }, false))
+  const refresh = () => apiRequest<AuthResponse>('/auth/refresh', { method: 'POST' }, false)
+  try {
+    return saveInMemorySession(await refresh())
+  } catch (error) {
+    // 409: un'altra scheda ha appena ruotato la sessione; il suo cookie nuovo arriva a momenti.
+    if (!(error instanceof ApiError && error.status === 409)) throw error
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    return saveInMemorySession(await refresh())
+  }
 }
 export async function logout(): Promise<void> {
   try { await apiRequest<void>('/auth/logout', { method: 'POST' }, false) }

@@ -9,7 +9,7 @@ Per un endpoint di registrazione, questo schema fa in modo che un client non
 possa inviare valori malformati o campi mancanti.
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -24,3 +24,9 @@ class UserCreate(BaseModel):
     email: EmailStr
     full_name: str | None = Field(default=None, max_length=120)
     password: str = Field(min_length=8, max_length=128)
+
+    # Email salvate e cercate sempre in minuscolo: Mario@x.it e mario@x.it sono lo stesso account.
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: str) -> str:
+        return value.lower()

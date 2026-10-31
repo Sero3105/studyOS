@@ -71,7 +71,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, ret
   const headers = new Headers(options.headers)
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-  const currentCsrf = csrfToken ?? csrfFromCookie()
+  // Prima il cookie: se un'altra scheda ha ruotato la sessione, il valore in memoria è vecchio.
+  const currentCsrf = csrfFromCookie() ?? csrfToken
   if (currentCsrf && !['GET', 'HEAD', 'OPTIONS'].includes(options.method?.toUpperCase() ?? 'GET')) {
     headers.set('X-CSRF-Token', currentCsrf)
   }

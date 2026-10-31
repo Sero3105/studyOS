@@ -1,4 +1,4 @@
-"""Authentication endpoints: login, refresh rotation, logout, and profile."""
+"""Authentication endpoints: register, login, refresh rotation, logout, and profile."""
 
 from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -9,13 +9,16 @@ from dependencies.database_dependency import get_db
 from models.user_models import User
 from schemas.account_schemas import AccountDelete, PasswordChange
 from schemas.auth_schemas import TokenResponse
+from schemas.userCreate_schemas import UserCreate
 from schemas.userLogin_schemas import UserLogin
 from schemas.users_schemas import UserResponse
 from services.account_service import change_password, delete_account
 from services.authenticateUser import authenticate_user
+from services.createUser import create_user
 from services.token_service import (
     create_access_token,
     create_refresh_session,
+    delete_expired_sessions,
     revoke_refresh_session,
     rotate_refresh_session,
 )
@@ -68,6 +71,14 @@ def _clear_refresh_cookie(response: Response) -> None:
     )
 
 
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
+    try:
+        return create_user(user_data, db)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+
+
 @router.post("/login", response_model=TokenResponse)
 def login_user(user_data: UserLogin, response: Response, db: Session = Depends(get_db)) -> TokenResponse:
     try:
@@ -75,6 +86,7 @@ def login_user(user_data: UserLogin, response: Response, db: Session = Depends(g
     except ValueError:
         raise HTTPException(status_code=401, detail="Email o password non corretti")
 
+    delete_expired_sessions(user.id, db)
     refresh_token, csrf_token, _ = create_refresh_session(user.id, db)
     _set_refresh_cookie(response, refresh_token)
     _set_csrf_cookie(response, csrf_token)
@@ -98,6 +110,9 @@ def refresh_access_token(
         )
     except PermissionError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid CSRF token")
+    except LookupError:
+        # Un'altra scheda ha appena ruotato la sessione: il cookie nuovo è già nel browser, non va cancellato.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Refresh session already rotated")
     except ValueError:
         _clear_refresh_cookie(response)
         raise HTTPException(status_code=401, detail="Refresh session is invalid or expired")

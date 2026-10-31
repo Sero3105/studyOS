@@ -6,7 +6,7 @@ from secrets import token_urlsafe
 from uuid import uuid4
 
 import jwt
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 import config
@@ -54,10 +54,22 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _aware(value: datetime) -> datetime:
+    # SQLite restituisce datetime senza fuso: sono sempre UTC.
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
 def _is_expired(value: datetime) -> bool:
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return value <= _utcnow()
+    return _aware(value) <= _utcnow()
+
+
+# Due schede che fanno refresh insieme mandano lo stesso token: non è un furto.
+ROTATION_GRACE = timedelta(seconds=30)
+
+
+def delete_expired_sessions(user_id: int, db: Session) -> None:
+    db.execute(delete(AuthSession).where(AuthSession.user_id == user_id, AuthSession.expires_at < _utcnow()))
+    db.commit()
 
 
 def create_refresh_session(user_id: int, db: Session) -> tuple[str, str, AuthSession]:
@@ -87,6 +99,8 @@ def rotate_refresh_session(
     if session is None:
         raise ValueError("Invalid refresh session")
     if session.revoked_at is not None:
+        if session.replaced_by_session_id and _utcnow() - _aware(session.revoked_at) < ROTATION_GRACE:
+            raise LookupError("Refresh session already rotated")
         db.execute(
             update(AuthSession)
             .where(AuthSession.user_id == session.user_id, AuthSession.revoked_at.is_(None))
