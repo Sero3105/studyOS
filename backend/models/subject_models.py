@@ -11,6 +11,7 @@ class Subject(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     name = Column(String(120), nullable=False)
+    color = Column(String(16), nullable=True)  # NULL = colore scelto dal frontend in base all'id
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     user = relationship('User', back_populates='subjects')
     topics = relationship('Topic', back_populates='subject', cascade='all, delete-orphan')

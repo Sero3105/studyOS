@@ -10,6 +10,7 @@ class Exam(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     title = Column(String(120), nullable=False)
     subject = Column(String(120), nullable=False)
+    subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=True)  # materia con quel nome, se esiste
     exam_date = Column(Date, nullable=True, index=True)  # NULL = appello non ancora fissato
     exam_time = Column(Time, nullable=True)
     location = Column(String(120), nullable=True)
