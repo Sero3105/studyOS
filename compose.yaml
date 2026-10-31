@@ -45,6 +45,9 @@ services:
       # development = cookie senza flag Secure, necessario su http://localhost
       # in tutti i browser. Con HTTPS davanti impostare APP_ENV=production.
       APP_ENV: ${APP_ENV:-development}
+      # Fuso orario per "oggi" (statistiche, giorni di fila, ripassi, piano d'esame).
+      # Senza, il container gira in UTC e dopo mezzanotte italiana "oggi" è ancora ieri.
+      TZ: ${TZ:-Europe/Rome}
       # Il browser vede un'unica origine (nginx); serve comunque alla validazione.
       FRONTEND_ORIGINS: "${STUDYOS_ORIGIN:-http://localhost:${STUDYOS_PORT:-8080}}"
     volumes:
