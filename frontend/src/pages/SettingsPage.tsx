@@ -14,12 +14,16 @@ import { changePassword, deleteAccount } from '../services/accountService'
 import { ApiError } from '../services/apiClient'
 import { notificationsSupported, remindersEnabled, runDeadlineReminders, setRemindersEnabled } from '../utils/reminders'
 import { reviewsEnabled, setReviewsEnabled } from '../utils/preferences'
+import { getTheme, setTheme } from '../utils/theme'
+import type { Theme } from '../utils/theme'
 import { validatePassword } from '../utils/password'
 import { todayIso } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { saveBlob } from '../utils/download'
 
 const SYNAPSE_URL = 'https://github.com/Sero3105/Synapse/releases/latest'
+
+const themeKeys: Record<Theme, TranslationKey> = { dark: 'settings.themeDark', light: 'settings.themeLight', system: 'settings.themeSystem' }
 
 const languageKeys: Record<Language, 'settings.italian' | 'settings.english'> = {
   it: 'settings.italian',
@@ -152,6 +156,7 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [reminders, setReminders] = useState(remindersEnabled)
   const [reviews, setReviews] = useState(reviewsEnabled)
+  const [theme, setThemeState] = useState(getTheme)
 
   const run: Run = async (action, fallback) => {
     setBusy(true); setError(''); setNotice('')
@@ -193,6 +198,7 @@ function SettingsPage() {
   }, t('settings.remindersDenied'))
 
   const toggleReviews = (enabled: boolean) => { setReviewsEnabled(enabled); setReviews(enabled) }
+  const chooseTheme = (value: Theme) => { setTheme(value); setThemeState(value) }
 
   return (
     <div className="page settings-page">
@@ -223,6 +229,20 @@ function SettingsPage() {
         </fieldset>
         <p className="panel-meta">{t('settings.currentDateExample', { date: example.charAt(0).toUpperCase() + example.slice(1) })}</p>
       </section>
+
+      <Section id="settings-theme-title" title={t('settings.themeTitle')} description={t('settings.themeDescription')}>
+        <fieldset className="settings-language">
+          <legend className="visually-hidden">{t('settings.themeTitle')}</legend>
+          <div className="settings-language-options">
+            {(Object.keys(themeKeys) as Theme[]).map((option) => (
+              <label key={option} className={`settings-language-option${theme === option ? ' is-selected' : ''}`}>
+                <input type="radio" name="theme" value={option} checked={theme === option} onChange={() => chooseTheme(option)} />
+                <span>{t(themeKeys[option])}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </Section>
 
       <Section id="settings-reminders-title" title={t('settings.remindersTitle')} description={t('settings.remindersDescription')}>
         {notificationsSupported() ? (

@@ -548,6 +548,11 @@ const it = {
   'color.pink': 'Rosa',
   'color.red': 'Rosso',
   'color.orange': 'Arancione',
+  'settings.themeTitle': 'Tema',
+  'settings.themeDescription': 'Scuro, chiaro o come il sistema. La scelta è salvata su questo dispositivo.',
+  'settings.themeDark': 'Scuro',
+  'settings.themeLight': 'Chiaro',
+  'settings.themeSystem': 'Come il sistema',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -929,6 +934,11 @@ const en: Record<TranslationKey, string> = {
   'color.pink': 'Pink',
   'color.red': 'Red',
   'color.orange': 'Orange',
+  'settings.themeTitle': 'Theme',
+  'settings.themeDescription': 'Dark, light or follow the system. Your choice is saved on this device.',
+  'settings.themeDark': 'Dark',
+  'settings.themeLight': 'Light',
+  'settings.themeSystem': 'System',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

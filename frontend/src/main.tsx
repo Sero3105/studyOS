@@ -21,6 +21,7 @@ import { LanguageProvider } from './i18n/LanguageProvider'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import './styles/index.css'
+import { initTheme } from './utils/theme'
 
 /**
  * Configurazione delle route dell'applicazione.
@@ -78,6 +79,8 @@ const router = createBrowserRouter([
     ],
   },
 ])
+
+initTheme()
 
 // Inizializzazione dell'applicazione React nel DOM.
 createRoot(document.getElementById('root')!).render(

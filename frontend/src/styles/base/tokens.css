@@ -115,6 +115,53 @@
   --z-modal: 60;
 }
 
+/*
+ * Tema chiaro: stessi token, valori diversi. L'evidenziatore giallo non si
+ * legge su fondo bianco, quindi l'accento diventa un oliva scuro (≥ 4.5:1).
+ * `data-theme` lo imposta utils/theme.ts (scelta utente o tema di sistema).
+ */
+:root[data-theme='light'] {
+  --bg: #f4f4f1;
+  --surface: #ffffff;
+  --surface-2: #efefeb;
+  --surface-3: #e4e4df;
+  --line: #deded8;
+  --line-strong: #c9c9c2;
+  --control-border: #85898f;
+
+  --text-strong: #14161a;
+  --text: #33373c;
+  --text-muted: #5f646b;
+
+  --accent: #5c6600;
+  --accent-hover: #4a5200;
+  --accent-bg: rgba(92, 102, 0, 0.1);
+  --accent-line: rgba(92, 102, 0, 0.4);
+  --on-accent: #ffffff;
+
+  --success: #1d7a4a;
+  --success-bg: rgba(29, 122, 74, 0.1);
+  --warning: #965800;
+  --warning-bg: rgba(150, 88, 0, 0.1);
+  --danger: #b0372a;
+  --danger-bg: rgba(176, 55, 42, 0.1);
+  --danger-bg-strong: rgba(176, 55, 42, 0.18);
+
+  --subject-yellow: #858b00;
+  --subject-green: #1f8a55;
+  --subject-teal: #0f7f7a;
+  --subject-blue: #2f63c4;
+  --subject-violet: #6c4fc4;
+  --subject-pink: #b8407e;
+  --subject-red: #b3392b;
+  --subject-orange: #b06a00;
+
+  --overlay: rgba(20, 22, 25, 0.45);
+  --shadow-float: 0 24px 64px rgba(20, 22, 25, 0.18);
+
+  color-scheme: light;
+}
+
 @media (max-width: 1100px) {
   :root {
     --page-pad: 32px;
