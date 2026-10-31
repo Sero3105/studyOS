@@ -42,6 +42,12 @@ class ExamUpdate(BaseModel):
         if value is None: return None
         value = str(value).strip()
         return value or None
+    # Si possono omettere, non svuotare: le colonne sono NOT NULL.
+    @field_validator('title','subject','status','honors')
+    @classmethod
+    def not_null(cls, value):
+        if value is None: raise ValueError('Field cannot be empty')
+        return value
 class ExamResponse(BaseModel):
     id:int; user_id:int; title:str; subject:str; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
     model_config=ConfigDict(from_attributes=True)

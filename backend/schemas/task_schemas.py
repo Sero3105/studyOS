@@ -36,6 +36,12 @@ class TaskUpdate(BaseModel):
     @field_validator('title', 'description', mode='before')
     @classmethod
     def trim(cls, value): return _trim(value)
+    # Si possono omettere, non svuotare: le colonne sono NOT NULL.
+    @field_validator('title', 'priority', 'status')
+    @classmethod
+    def not_null(cls, value):
+        if value is None: raise ValueError('Field cannot be empty')
+        return value
 
 class TaskResponse(BaseModel):
     id: int; user_id: int; title: str; description: str | None; due_date: date | None

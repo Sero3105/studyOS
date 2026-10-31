@@ -1,7 +1,8 @@
 from datetime import date, timedelta
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 from models.subject_models import Subject, Topic
+from models.session_models import StudySession
 from models.task_models import Task
 from schemas.subject_schemas import SubjectCreate, TopicCreate, TopicUpdate
 
@@ -18,8 +19,15 @@ def get_owned_subject(subject_id: int, user_id: int, db: Session) -> Subject:
     if subject is None: raise LookupError('Subject not found')
     return subject
 
+def _unlink(user_id: int, db: Session, column: str, ids: list[int]) -> None:
+    """SQLite qui non applica le foreign key: task e sessioni vanno scollegati a mano, o restano con id orfani."""
+    for model in (Task, StudySession):
+        db.execute(update(model).where(model.user_id == user_id, getattr(model, column).in_(ids)).values({column: None}))
+
 def delete_subject(subject_id: int, user_id: int, db: Session) -> None:
     subject = get_owned_subject(subject_id, user_id, db)
+    _unlink(user_id, db, 'subject_id', [subject.id])
+    _unlink(user_id, db, 'topic_id', [t.id for t in subject.topics])
     db.delete(subject); db.commit()
 
 def create_topic(subject_id: int, data: TopicCreate, user_id: int, db: Session) -> Topic:
@@ -51,4 +59,5 @@ def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) ->
 
 def delete_topic(topic_id: int, user_id: int, db: Session) -> None:
     topic = _owned_topic(topic_id, user_id, db)
+    _unlink(user_id, db, 'topic_id', [topic.id])
     db.delete(topic); db.commit()

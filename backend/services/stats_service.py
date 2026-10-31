@@ -7,7 +7,6 @@ from models.task_models import Task
 from services import exam_service, goal_service
 from schemas.task_schemas import TaskResponse
 from schemas.exam_schemas import ExamResponse
-from models.goal_models import Goal
 
 def _streak(days: set[date], today: date) -> int:
     cursor = today if today in days else today - timedelta(days=1)
@@ -22,9 +21,9 @@ def summary(user_id: int, db: Session) -> dict:
     monday = today - timedelta(days=today.weekday())
     sessions = list(db.scalars(select(StudySession).where(StudySession.user_id == user_id)))
     subjects = {s.id: s.name for s in db.scalars(select(Subject).where(Subject.user_id == user_id))}
-    topics = {t.id: t.title for t in db.scalars(select(Topic).join(Subject).where(Subject.user_id == user_id))}
     tasks = list(db.scalars(select(Task).where(Task.user_id == user_id)))
     topics_all = list(db.scalars(select(Topic).join(Subject).where(Subject.user_id == user_id)))
+    topics = {t.id: t.title for t in topics_all}
 
     by_day: dict[date, int] = {}
     by_subject: dict[str, int] = {}
@@ -38,7 +37,6 @@ def summary(user_id: int, db: Session) -> dict:
     open_tasks = sorted([t for t in tasks if t.status != 'done'], key=lambda t: (t.due_date is None, t.due_date or date.max, t.id))[:5]
     exams = [e for e in exam_service.list_user_exams(user_id, db) if e.status in ('planned', 'in_progress') and e.exam_date is not None and e.exam_date >= today][:5]
     last = max(sessions, key=lambda s: (s.studied_on, s.id), default=None)
-    goals = list(db.scalars(select(Goal).where(Goal.user_id == user_id).order_by(Goal.id)))
 
     return {
         'total_minutes': sum(s.duration_minutes for s in sessions),
@@ -60,5 +58,5 @@ def summary(user_id: int, db: Session) -> dict:
         },
         'upcoming_tasks': [TaskResponse.model_validate(t).model_dump(mode='json') for t in open_tasks],
         'upcoming_exams': [ExamResponse.model_validate(e).model_dump(mode='json') for e in exams],
-        'goals': goal_service.list_goals(user_id, db) if goals else [],
+        'goals': goal_service.list_goals(user_id, db),
     }
