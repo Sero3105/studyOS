@@ -46,3 +46,49 @@ export function planVsActual(subjects: { id: number; name: string }[], tasks: Ta
     .filter((row) => row.planned > 0 || row.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes || b.planned - a.planned)
 }
+
+interface ReviewTask { id: number; due_date: string | null; status: string; subject_id: number | null }
+
+export interface WeekReview {
+  from: string; to: string
+  planned: number; done: number
+  /** In scadenza da lunedì a ieri e non completati. */
+  skipped: number
+  minutes: number; previousMinutes: number
+  bySubject: { subjectId: number; name: string; minutes: number; previous: number }[]
+  /** Tutti i task aperti con scadenza passata, da spostare. */
+  overdue: ReviewTask[]
+}
+
+/** Settimana corrente (lunedì → domenica) a confronto con la precedente. */
+export function weeklyReview<T extends ReviewTask>(tasks: T[], sessions: SessionLike[], subjects: { id: number; name: string }[], today: string): WeekReview & { overdue: T[] } {
+  const from = weekStart(today)
+  const to = addDays(from, 6)
+  const prevFrom = addDays(from, -7)
+  const inWeek = (d: string | null) => d !== null && d >= from && d <= to
+  const inPrev = (d: string) => d >= prevFrom && d < from
+  const planned = tasks.filter((t) => inWeek(t.due_date))
+  const sum = (list: SessionLike[]) => list.reduce((total, s) => total + s.duration_minutes, 0)
+  const week = sessions.filter((s) => inWeek(s.studied_on))
+  const prev = sessions.filter((s) => inPrev(s.studied_on))
+  return {
+    from, to,
+    planned: planned.length,
+    done: planned.filter((t) => t.status === 'done').length,
+    skipped: planned.filter((t) => t.status !== 'done' && t.due_date! < today).length,
+    minutes: sum(week),
+    previousMinutes: sum(prev),
+    bySubject: subjects
+      .map((s) => ({ subjectId: s.id, name: s.name, minutes: sum(week.filter((x) => x.subject_id === s.id)), previous: sum(prev.filter((x) => x.subject_id === s.id)) }))
+      .filter((row) => row.minutes > 0 || row.previous > 0)
+      .sort((a, b) => b.minutes - a.minutes || b.previous - a.previous),
+    overdue: tasks.filter((t) => t.status !== 'done' && t.due_date !== null && t.due_date < today),
+  }
+}
+
+/** Nuova scadenza di un task scaduto: avanti di settimane intere (stesso giorno) finché non è più nel passato. */
+export function postponeByWeeks(due: string, today: string): string {
+  let next = addDays(due, 7)
+  while (next < today) next = addDays(next, 7)
+  return next
+}

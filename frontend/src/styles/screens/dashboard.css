@@ -229,3 +229,7 @@
     font-size: var(--text-md);
   }
 }
+
+/* Revisione settimanale */
+.weekly-review { display: grid; gap: var(--space-5); }
+.weekly-review-overdue { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildHeatmap, heatLevel, planVsActual } from '../src/utils/studyStats.ts'
+import { buildHeatmap, heatLevel, planVsActual, postponeByWeeks, weeklyReview } from '../src/utils/studyStats.ts'
 
 test('heat levels', () => {
   assert.deepEqual([0, 10, 25, 26, 60, 61, 121].map(heatLevel), [0, 1, 1, 2, 2, 3, 4])
@@ -35,4 +35,25 @@ test('plan vs actual counts only the window and the subject', () => {
     { subjectId: 2, name: 'Reti', planned: 0, done: 0, minutes: 50 },
     { subjectId: 1, name: 'Analisi', planned: 2, done: 1, minutes: 0 },
   ])
+})
+
+test('weekly review compares with last week and finds overdue tasks', () => {
+  // 2026-10-29 è un giovedì: settimana 26 ottobre → 1 novembre.
+  const tasks = [
+    { id: 1, due_date: '2026-10-26', status: 'done', subject_id: 1 },
+    { id: 2, due_date: '2026-10-27', status: 'todo', subject_id: 1 },
+    { id: 3, due_date: '2026-10-31', status: 'todo', subject_id: null },
+    { id: 4, due_date: '2026-10-10', status: 'todo', subject_id: null },
+  ]
+  const sessions = [
+    { studied_on: '2026-10-27', duration_minutes: 40, subject_id: 1 },
+    { studied_on: '2026-10-20', duration_minutes: 25, subject_id: 1 },
+    { studied_on: '2026-10-21', duration_minutes: 30, subject_id: 2 },
+  ]
+  const r = weeklyReview(tasks, sessions, [{ id: 1, name: 'Analisi' }, { id: 2, name: 'Reti' }], '2026-10-29')
+  assert.deepEqual([r.from, r.to, r.planned, r.done, r.skipped, r.minutes, r.previousMinutes], ['2026-10-26', '2026-11-01', 3, 1, 1, 40, 55])
+  assert.deepEqual(r.bySubject.map((x) => [x.name, x.minutes, x.previous]), [['Analisi', 40, 25], ['Reti', 0, 30]])
+  assert.deepEqual(r.overdue.map((t) => t.id), [2, 4])
+  assert.equal(postponeByWeeks('2026-10-27', '2026-10-29'), '2026-11-03')
+  assert.equal(postponeByWeeks('2026-10-10', '2026-10-29'), '2026-10-31')
 })

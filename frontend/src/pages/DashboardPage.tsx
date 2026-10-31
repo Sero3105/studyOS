@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, CalendarCheck } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import WeekChart from '../components/ui/WeekChart'
 import { ErrorNotice } from '../components/ui/Feedback'
@@ -9,6 +9,7 @@ import type { StudySessionConfig } from '../components/timer/types'
 import TodayOverview from '../components/dashboard/TodayOverview'
 import UpcomingExams from '../components/dashboard/UpcomingExams'
 import OpenTasks from '../components/dashboard/OpenTasks'
+import WeeklyReview from '../components/dashboard/WeeklyReview'
 import { getStatsSummary } from '../services/statsService'
 import type { StatsSummary } from '../services/statsService'
 import { useAuth } from '../context/useAuth'
@@ -35,6 +36,7 @@ function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
   const firstName = (user?.full_name?.split(' ')[0] || user?.username) ?? t('nav.studentFallback')
@@ -52,7 +54,15 @@ function DashboardPage() {
 
   return (
     <div className="page">
-      <PageHeader title={`${greeting(t)}, ${firstName}`} description={today.charAt(0).toUpperCase() + today.slice(1)} />
+      <PageHeader
+        title={`${greeting(t)}, ${firstName}`}
+        description={today.charAt(0).toUpperCase() + today.slice(1)}
+        actions={
+          <button className="btn btn-secondary" type="button" onClick={() => setReviewOpen(true)}>
+            <CalendarCheck aria-hidden="true" /> {t('review.title')}
+          </button>
+        }
+      />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
 
@@ -89,6 +99,8 @@ function DashboardPage() {
           </div>
         </div>
       )}
+
+      {reviewOpen && <WeeklyReview onClose={() => { setReviewOpen(false); load() }} />}
 
       {isSessionModalOpen && (
         <SessionSetupModal
