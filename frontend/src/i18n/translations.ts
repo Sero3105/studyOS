@@ -533,6 +533,12 @@ const it = {
   'timer.thenBreak': 'Poi {minutes} min di pausa',
   'timer.thenStudy': 'Poi {minutes} min di studio',
   'timer.remainingLabel': '{minutes} minuti e {seconds} secondi rimanenti, {mode}',
+  'subjects.edit': 'Modifica materia',
+  'subjects.editLabel': 'Modifica la materia {name}',
+  'subjects.name': 'Nome',
+  'subjects.save': 'Salva',
+  'subjects.rename': 'Rinomina',
+  'subjects.renameTopicLabel': 'Rinomina l’argomento {title}',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -899,6 +905,12 @@ const en: Record<TranslationKey, string> = {
   'timer.notePlaceholder': 'e.g. exercises 1–12 from chapter 3', 'timer.startSession': 'Start session', 'timer.pomodoroLabel': 'Pomodoro timer',
   'timer.modeWork': 'Study', 'timer.modeBreak': 'Break', 'timer.pause': 'Pause', 'timer.resume': 'Resume', 'timer.start': 'Start', 'timer.restart': 'Restart',
   'timer.thenBreak': 'Then {minutes} min break', 'timer.thenStudy': 'Then {minutes} min of study', 'timer.remainingLabel': '{minutes} minutes and {seconds} seconds remaining, {mode}',
+  'subjects.edit': 'Edit subject',
+  'subjects.editLabel': 'Edit subject {name}',
+  'subjects.name': 'Name',
+  'subjects.save': 'Save',
+  'subjects.rename': 'Rename',
+  'subjects.renameTopicLabel': 'Rename topic {title}',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

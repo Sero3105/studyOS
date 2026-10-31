@@ -49,5 +49,5 @@ class ExamUpdate(BaseModel):
         if value is None: raise ValueError('Field cannot be empty')
         return value
 class ExamResponse(BaseModel):
-    id:int; user_id:int; title:str; subject:str; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
+    id:int; user_id:int; title:str; subject:str; subject_id:int|None=None; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
     model_config=ConfigDict(from_attributes=True)

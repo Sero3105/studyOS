@@ -6,8 +6,12 @@ from models.exam_models import Exam
 from models.subject_models import Subject
 from models.task_models import Task
 from schemas.exam_schemas import ExamCreate
+def link_subject(exam:Exam, db:Session)->None:
+    """Collega l'esame per id alla materia con lo stesso nome; il nome resta quello scritto nell'esame."""
+    exam.subject_id=db.scalar(select(func.min(Subject.id)).where(Subject.user_id==exam.user_id, func.lower(func.trim(Subject.name))==exam.subject.strip().lower()))
 def create_exam(data: ExamCreate, user_id:int, db:Session)->Exam:
     exam=Exam(user_id=user_id, **data.model_dump())
+    link_subject(exam, db)
     try: db.add(exam); db.commit(); db.refresh(exam); return exam
     except SQLAlchemyError: db.rollback(); raise
 def _owned_exam(exam_id:int, user_id:int, db:Session)->Exam:
@@ -16,7 +20,9 @@ def _owned_exam(exam_id:int, user_id:int, db:Session)->Exam:
     return exam
 def update_exam(exam_id:int, data, user_id:int, db:Session)->Exam:
     exam=_owned_exam(exam_id,user_id,db)
-    for field,value in data.model_dump(exclude_unset=True).items(): setattr(exam,field,value)
+    values=data.model_dump(exclude_unset=True)
+    for field,value in values.items(): setattr(exam,field,value)
+    if 'subject' in values: link_subject(exam, db)
     if exam.honors and exam.grade != 30: raise ValueError('La lode richiede voto 30')
     try: db.commit(); db.refresh(exam); return exam
     except SQLAlchemyError: db.rollback(); raise
@@ -29,7 +35,7 @@ def plan_exam(exam_id:int, user_id:int, db:Session)->list[Task]:
     """Spreads the subject's open topics as tasks from tomorrow to the day before the exam."""
     exam=_owned_exam(exam_id,user_id,db)
     if exam.exam_date is None: raise ValueError('no_date')
-    subject=db.scalar(select(Subject).where(Subject.user_id==user_id, func.lower(Subject.name)==exam.subject.lower()))
+    subject=db.scalar(select(Subject).where(Subject.user_id==user_id, Subject.id==exam.subject_id))
     if subject is None: raise ValueError('no_subject')
     days=(exam.exam_date-date.today()).days-1
     if days<1: raise ValueError('too_close')

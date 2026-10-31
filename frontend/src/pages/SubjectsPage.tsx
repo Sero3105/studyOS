@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Download, GraduationCap, NotebookPen, Play, Plus } from 'lucide-react'
+import { ArrowRight, Download, GraduationCap, NotebookPen, Pencil, Play, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Modal from '../components/ui/Modal'
 import ProgressBar from '../components/ui/ProgressBar'
 import ConfirmButton from '../components/ui/ConfirmButton'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import type { StudySessionConfig } from '../components/timer/types'
-import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, updateTopic } from '../services/subjectService'
+import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, updateSubject, updateTopic } from '../services/subjectService'
 import type { Subject, Topic } from '../services/subjectService'
 import { getStatsSummary } from '../services/statsService'
 import { exportNotesVault } from '../services/dataService'
@@ -35,7 +35,7 @@ function SubjectsPage() {
   const { t, language, locale } = useLanguage()
   const navigate = useNavigate()
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [minutesBySubject, setMinutesBySubject] = useState<Record<string, number>>({})
+  const [minutesBySubject, setMinutesBySubject] = useState<Record<number, number>>({})
   const [selectedId, setSelectedId] = useState<number | null>((useLocation().state as { subjectId?: number } | null)?.subjectId ?? null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -44,6 +44,8 @@ function SubjectsPage() {
   const [saving, setSaving] = useState(false)
   const [exams, setExams] = useState<Exam[]>([])
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<{ name: string } | null>(null)
+  const [renamingTopic, setRenamingTopic] = useState<{ id: number; title: string } | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -59,7 +61,7 @@ function SubjectsPage() {
     // Esami e tempo per materia sono di contorno: se non arrivano, la pagina funziona lo stesso.
     getExams().then(setExams).catch(() => setExams([]))
     getStatsSummary()
-      .then((stats) => setMinutesBySubject(Object.fromEntries(stats.by_subject.map((x) => [x.name, x.minutes]))))
+      .then((stats) => setMinutesBySubject(Object.fromEntries(stats.by_subject.map((x) => [x.id, x.minutes]))))
       .catch(() => setMinutesBySubject({}))
   }, [t])
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
@@ -85,6 +87,7 @@ function SubjectsPage() {
       setSelectedId(created.id)
       setName('')
       setAdding(false)
+      getExams().then(setExams).catch(() => {})
     }, t('subjects.saveError'))
     setSaving(false)
   }
@@ -98,6 +101,25 @@ function SubjectsPage() {
       setSubjects((s) => s.map((x) => x.id === selected.id ? { ...x, topics: [...x.topics, topic] } : x))
       setTopicTitle('')
     }, t('subjects.addTopicError'))
+  }
+
+  const saveSubject = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!selected || !editing?.name.trim()) return
+    await run(async () => {
+      const updated = await updateSubject(selected.id, { name: editing.name.trim() })
+      setSubjects((s) => s.map((x) => x.id === updated.id ? updated : x).sort((a, b) => a.name.localeCompare(b.name)))
+      setEditing(null)
+      // Gli esami collegati prendono il nuovo nome sul backend.
+      getExams().then(setExams).catch(() => {})
+    }, t('subjects.saveError'))
+  }
+
+  const renameTopic = (subjectId: number, topic: Topic) => {
+    const title = renamingTopic?.title.trim()
+    setRenamingTopic(null)
+    if (!title || title === topic.title) return
+    void run(async () => replaceTopic(subjectId, await updateTopic(topic.id, { title })), t('subjects.updateTopicError'))
   }
 
   const replaceTopic = (subjectId: number, updated: Topic) =>
@@ -137,10 +159,9 @@ function SubjectsPage() {
       setSelectedId(remaining[0]?.id ?? null)
     }, t('subjects.deleteSubjectError'))
 
-  // Materia ed esame sono collegati per nome (lo stesso criterio di "Pianifica lo studio").
-  const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
-  const examFor = (subject: Subject) => exams.find((e) => e.status !== 'passed' && e.status !== 'failed' && sameName(e.subject, subject.name))
-  const examsWithoutSubject = exams.filter((e) => (e.status === 'planned' || e.status === 'in_progress') && !subjects.some((s) => sameName(s.name, e.subject)))
+  // Esame e materia sono collegati per id: il backend li unisce quando il nome coincide.
+  const examFor = (subject: Subject) => exams.find((e) => e.status !== 'passed' && e.status !== 'failed' && e.subject_id === subject.id)
+  const examsWithoutSubject = exams.filter((e) => (e.status === 'planned' || e.status === 'in_progress') && e.subject_id === null)
 
   const createFromExams = (list: Exam[]) =>
     run(async () => {
@@ -150,6 +171,7 @@ function SubjectsPage() {
       setSubjects((s) => [...s, ...created].sort((a, b) => a.name.localeCompare(b.name)))
       setSelectedId(created[0]?.id ?? null)
       setAdding(false)
+      setExams(await getExams())
     }, t('subjects.saveError'))
 
   const startSession = (subject: Subject, topic?: Topic) => {
@@ -248,7 +270,7 @@ function SubjectsPage() {
             <ul className="subject-nav">
               {subjects.map((subject) => {
                 const percent = progressOf(subject.topics)
-                const minutes = minutesBySubject[subject.name]
+                const minutes = minutesBySubject[subject.id]
                 return (
                   <li key={subject.id}>
                     <button
@@ -282,12 +304,15 @@ function SubjectsPage() {
                   <h2 id="subject-detail-title">{selected.name}</h2>
                   <p className="panel-meta num">
                     {t('subjects.topicsCompleted', { done: selected.topics.filter((x) => x.completed).length, total: selected.topics.length })}
-                    {minutesBySubject[selected.name] ? t('subjects.studiedSuffix', { value: formatMinutes(minutesBySubject[selected.name]) }) : ''}
+                    {minutesBySubject[selected.id] ? t('subjects.studiedSuffix', { value: formatMinutes(minutesBySubject[selected.id]) }) : ''}
                   </p>
                 </div>
                 <div className="row-actions">
                   <button className="btn btn-primary" type="button" onClick={() => startSession(selected)}>
                     <Play aria-hidden="true" /> {t('subjects.study25')}
+                  </button>
+                  <button className="icon-btn" type="button" onClick={() => setEditing({ name: selected.name })} aria-label={t('subjects.editLabel', { name: selected.name })} title={t('subjects.edit')}>
+                    <Pencil aria-hidden="true" />
                   </button>
                   <ConfirmButton label={t('subjects.deleteSubjectLabel', { name: selected.name })} onConfirm={() => removeSubject(selected.id)} />
                 </div>
@@ -345,8 +370,23 @@ function SubjectsPage() {
                           checked={topic.completed}
                           onChange={(e) => void toggleTopic(selected.id, topic.id, e.target.checked)}
                         />
-                        <span className={topic.completed ? 'is-done' : undefined}>{topic.title}</span>
+                        {renamingTopic?.id !== topic.id && <span className={topic.completed ? 'is-done' : undefined}>{topic.title}</span>}
                       </label>
+                      {renamingTopic?.id === topic.id && (
+                        <input
+                          className="input topic-rename"
+                          value={renamingTopic.title}
+                          onChange={(e) => setRenamingTopic({ id: topic.id, title: e.target.value })}
+                          onBlur={() => renameTopic(selected.id, topic)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur()
+                            if (e.key === 'Escape') setRenamingTopic(null)
+                          }}
+                          maxLength={200}
+                          aria-label={t('subjects.renameTopicLabel', { title: topic.title })}
+                          autoFocus
+                        />
+                      )}
                       <span className="row-actions">
                         {!topic.completed && (
                           <button className="icon-btn row-reveal" type="button" onClick={() => startSession(selected, topic)} aria-label={t('subjects.studyTopic', { title: topic.title })} title={t('subjects.studyTopicTitle')}>
@@ -363,6 +403,9 @@ function SubjectsPage() {
                           title={t('subjects.notes')}
                         >
                           <NotebookPen aria-hidden="true" />
+                        </button>
+                        <button className="icon-btn row-reveal" type="button" onClick={() => setRenamingTopic({ id: topic.id, title: topic.title })} aria-label={t('subjects.renameTopicLabel', { title: topic.title })} title={t('subjects.rename')}>
+                          <Pencil aria-hidden="true" />
                         </button>
                         <span className="row-reveal">
                           <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
@@ -390,6 +433,20 @@ function SubjectsPage() {
             </section>
           )}
         </div>
+      )}
+      {editing && selected && (
+        <Modal title={t('subjects.edit')} onClose={() => setEditing(null)}>
+          <form className="stacked-form" onSubmit={(e) => void saveSubject(e)}>
+            <label className="field">
+              <span className="field-label">{t('subjects.name')}</span>
+              <input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required maxLength={120} autoFocus />
+            </label>
+            <div className="form-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" type="submit" disabled={!editing.name.trim()}>{t('subjects.save')}</button>
+            </div>
+          </form>
+        </Modal>
       )}
       {adding && (
         <Modal title={t('subjects.newSubject')} description={t('subjects.newSubjectHint')} onClose={() => setAdding(false)}>

@@ -16,6 +16,7 @@ from schemas.goal_schemas import GoalCreate
 from schemas.session_schemas import SessionCreate
 from schemas.subject_schemas import SubjectCreate
 from schemas.task_schemas import TaskCreate
+from services.exam_service import link_subject
 from services.subject_service import list_subjects
 
 def _owned(model, user_id: int, db: Session):
@@ -59,7 +60,9 @@ def import_user_data(data: StudyData, user_id: int, db: Session) -> ImportResult
         for s in data.sessions:
             db.add(StudySession(user_id=user_id, **(s.model_dump() | links(s))))
         for e in data.exams:
-            db.add(Exam(user_id=user_id, **e.model_dump()))
+            exam = Exam(user_id=user_id, **e.model_dump())
+            link_subject(exam, db)
+            db.add(exam)
         for g in data.goals:
             db.add(Goal(user_id=user_id, **g.model_dump()))
         db.commit()

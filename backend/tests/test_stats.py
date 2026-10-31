@@ -22,7 +22,7 @@ def test_summary_aggregates_real_data(client):
     assert data["sessions_count"] == 2
     assert data["tasks_total"] == 1 and data["tasks_done"] == 0
     assert data["streak_days"] == 2
-    assert data["by_subject"] == [{"name": "Reti", "minutes": 30}]
+    assert [(x["name"], x["minutes"]) for x in data["by_subject"]] == [("Reti", 30)]
     assert data["last_session"]["subject"] == "Reti"
     assert len(data["daily"]) == 7 and data["daily"][-1]["minutes"] == 30
 

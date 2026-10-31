@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import type { CreateExamPayload } from '../../services/examService'
 import { errorMessage } from '../../utils/errors'
 import { useLanguage } from '../../i18n/useLanguage'
+import { getSubjects } from '../../services/subjectService'
 
 interface ExamFormProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
@@ -24,6 +25,10 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Suggerimenti: con lo stesso nome di una materia, l'esame le viene collegato (per id) dal backend.
+  const [subjectNames, setSubjectNames] = useState<string[]>([])
+  const listId = useId()
+  useEffect(() => { getSubjects().then((list) => setSubjectNames(list.map((s) => s.name))).catch(() => {}) }, [])
 
   const handleChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -75,7 +80,9 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
               placeholder={t('exams.formSubjectPlaceholder')}
               value={data.subject}
               onChange={handleChange}
+              list={listId}
             />
+            <datalist id={listId}>{subjectNames.map((name) => <option key={name} value={name} />)}</datalist>
           </label>
         </div>
       </fieldset>

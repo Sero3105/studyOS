@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from dependencies.auth_dependency import get_current_user
 from dependencies.database_dependency import get_db
 from models.user_models import User
-from schemas.subject_schemas import SubjectCreate, SubjectResponse, TopicCreate, TopicResponse, TopicUpdate
+from schemas.subject_schemas import SubjectCreate, SubjectResponse, SubjectUpdate, TopicCreate, TopicResponse, TopicUpdate
 from services import subject_service
 
 router = APIRouter(tags=['Subjects'])
@@ -18,6 +18,11 @@ def list_subjects(user: User = Depends(get_current_user), db: Session = Depends(
 @router.post('/subjects', response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
 def create_subject(data: SubjectCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return subject_service.create_subject(data, user.id, db)
+
+@router.patch('/subjects/{subject_id}', response_model=SubjectResponse)
+def update_subject(subject_id: int, data: SubjectUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try: return subject_service.update_subject(subject_id, data, user.id, db)
+    except LookupError as error: _404(error)
 
 @router.delete('/subjects/{subject_id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_subject(subject_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):

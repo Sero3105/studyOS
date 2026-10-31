@@ -201,3 +201,4 @@
 .new-subject-form .input { flex: 1; }
 .modal .exam-suggestions { margin-top: var(--space-5); }
 .subject-index-more { justify-self: start; margin-top: var(--space-2); color: var(--text-muted); }
+.topic-rename { flex: 1; min-width: 0; }

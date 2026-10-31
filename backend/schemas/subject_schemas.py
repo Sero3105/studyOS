@@ -12,6 +12,17 @@ class SubjectCreate(BaseModel):
     @classmethod
     def trim(cls, value): return _trim(value)
 
+class SubjectUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    @field_validator('name', mode='before')
+    @classmethod
+    def trim(cls, value): return _trim(value)
+    @field_validator('name')
+    @classmethod
+    def not_null(cls, value):
+        if value is None: raise ValueError('Field cannot be empty')
+        return value
+
 class TopicCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     @field_validator('title', mode='before')

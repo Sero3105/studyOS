@@ -1,17 +1,36 @@
 from datetime import date, timedelta
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session, selectinload
+from models.exam_models import Exam
 from models.subject_models import Subject, Topic
 from models.session_models import StudySession
 from models.task_models import Task
-from schemas.subject_schemas import SubjectCreate, TopicCreate, TopicUpdate
+from schemas.subject_schemas import SubjectCreate, SubjectUpdate, TopicCreate, TopicUpdate
 
 def list_subjects(user_id: int, db: Session) -> list[Subject]:
     return list(db.scalars(select(Subject).where(Subject.user_id == user_id).options(selectinload(Subject.topics)).order_by(Subject.name)))
 
+def _adopt_exams(subject: Subject, db: Session) -> None:
+    """Esami ancora senza materia con lo stesso nome (senza maiuscole) vengono collegati per id."""
+    db.execute(update(Exam).where(Exam.user_id == subject.user_id, Exam.subject_id.is_(None),
+                                  func.lower(func.trim(Exam.subject)) == subject.name.strip().lower()).values(subject_id=subject.id))
+
 def create_subject(data: SubjectCreate, user_id: int, db: Session) -> Subject:
     subject = Subject(user_id=user_id, name=data.name)
-    db.add(subject); db.commit(); db.refresh(subject)
+    db.add(subject); db.flush()
+    _adopt_exams(subject, db)
+    db.commit(); db.refresh(subject)
+    return subject
+
+def update_subject(subject_id: int, data: SubjectUpdate, user_id: int, db: Session) -> Subject:
+    subject = get_owned_subject(subject_id, user_id, db)
+    values = data.model_dump(exclude_unset=True)
+    for field, value in values.items(): setattr(subject, field, value)
+    if 'name' in values:
+        # Gli esami collegati seguono il nuovo nome.
+        db.execute(update(Exam).where(Exam.user_id == user_id, Exam.subject_id == subject.id).values(subject=subject.name))
+        _adopt_exams(subject, db)
+    db.commit(); db.refresh(subject)
     return subject
 
 def get_owned_subject(subject_id: int, user_id: int, db: Session) -> Subject:
@@ -28,6 +47,7 @@ def delete_subject(subject_id: int, user_id: int, db: Session) -> None:
     subject = get_owned_subject(subject_id, user_id, db)
     _unlink(user_id, db, 'subject_id', [subject.id])
     _unlink(user_id, db, 'topic_id', [t.id for t in subject.topics])
+    db.execute(update(Exam).where(Exam.user_id == user_id, Exam.subject_id == subject.id).values(subject_id=None))
     db.delete(subject); db.commit()
 
 def create_topic(subject_id: int, data: TopicCreate, user_id: int, db: Session) -> Topic:

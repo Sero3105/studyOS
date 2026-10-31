@@ -20,17 +20,18 @@ def summary(user_id: int, db: Session) -> dict:
     today = date.today()
     monday = today - timedelta(days=today.weekday())
     sessions = list(db.scalars(select(StudySession).where(StudySession.user_id == user_id)))
-    subjects = {s.id: s.name for s in db.scalars(select(Subject).where(Subject.user_id == user_id))}
+    subject_rows = {s.id: s for s in db.scalars(select(Subject).where(Subject.user_id == user_id))}
+    subjects = {i: s.name for i, s in subject_rows.items()}
     tasks = list(db.scalars(select(Task).where(Task.user_id == user_id)))
     topics_all = list(db.scalars(select(Topic).join(Subject).where(Subject.user_id == user_id)))
     topics = {t.id: t.title for t in topics_all}
 
     by_day: dict[date, int] = {}
-    by_subject: dict[str, int] = {}
+    by_subject: dict[int, int] = {}
     by_topic: dict[str, int] = {}
     for s in sessions:
         by_day[s.studied_on] = by_day.get(s.studied_on, 0) + s.duration_minutes
-        if s.subject_id in subjects: by_subject[subjects[s.subject_id]] = by_subject.get(subjects[s.subject_id], 0) + s.duration_minutes
+        if s.subject_id in subjects: by_subject[s.subject_id] = by_subject.get(s.subject_id, 0) + s.duration_minutes
         if s.topic_id in topics: by_topic[topics[s.topic_id]] = by_topic.get(topics[s.topic_id], 0) + s.duration_minutes
 
     daily = [{'date': (today - timedelta(days=offset)).isoformat(), 'minutes': by_day.get(today - timedelta(days=offset), 0)} for offset in range(6, -1, -1)]
@@ -50,7 +51,7 @@ def summary(user_id: int, db: Session) -> dict:
         'topics_total': len(topics_all),
         'streak_days': _streak(set(by_day), today),
         'daily': daily,
-        'by_subject': [{'name': k, 'minutes': v} for k, v in sorted(by_subject.items(), key=lambda x: -x[1])],
+        'by_subject': [{'id': k, 'name': subjects[k], 'minutes': v} for k, v in sorted(by_subject.items(), key=lambda x: -x[1])],
         'by_topic': [{'name': k, 'minutes': v} for k, v in sorted(by_topic.items(), key=lambda x: -x[1])],
         'last_session': None if last is None else {
             'subject': subjects.get(last.subject_id), 'topic': topics.get(last.topic_id),
