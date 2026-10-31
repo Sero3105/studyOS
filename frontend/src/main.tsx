@@ -82,6 +82,11 @@ const router = createBrowserRouter([
 
 initTheme()
 
+// App installabile (PWA): solo nella build, in sviluppo il service worker intralcerebbe l'hot reload.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js') })
+}
+
 // Inizializzazione dell'applicazione React nel DOM.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
