@@ -236,3 +236,10 @@
 
 /* Totali lunghi ("175 h 35") restano su una riga. */
 .figure-lead .figure-value { white-space: nowrap; font-size: clamp(2.25rem, 3.6vw, 4.25rem); }
+
+/* Ore migliori: 7 righe (lun→dom) × 24 ore */
+.best-hours { display: grid; gap: var(--space-3); margin: 0; }
+.best-hours-grid { display: grid; grid-template-columns: auto repeat(24, minmax(14px, 1fr)); gap: 3px; min-width: 520px; align-items: center; }
+.best-hours-grid .heatmap-cell { width: 100%; height: auto; aspect-ratio: 1; }
+.best-hours-hour, .best-hours-day { color: var(--text-muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.best-hours-day { padding-right: var(--space-2); text-transform: capitalize; }

@@ -47,6 +47,30 @@ export function planVsActual(subjects: { id: number; name: string }[], tasks: Ta
     .sort((a, b) => b.minutes - a.minutes || b.planned - a.planned)
 }
 
+/** `created_at` dell'API è UTC senza fuso: senza la Z il browser lo leggerebbe come ora locale. */
+export const parseUtc = (iso: string) => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
+
+/**
+ * Minuti studiati per giorno della settimana (0 = lunedì) e ora (0-23), nel fuso del browser.
+ * La sessione viene salvata alla fine: dall'ora di fine si conta all'indietro, ora per ora.
+ */
+export function hourGrid(sessions: { created_at: string; duration_minutes: number }[]): number[][] {
+  const grid = Array.from({ length: 7 }, () => Array<number>(24).fill(0))
+  for (const s of sessions) {
+    let end = parseUtc(s.created_at).getTime()
+    let left = s.duration_minutes
+    while (left > 0) {
+      const at = new Date(end - 1)
+      const hourStart = new Date(at).setMinutes(0, 0, 0)
+      const chunk = Math.min(left, Math.ceil((end - hourStart) / 60000))
+      grid[(at.getDay() + 6) % 7][at.getHours()] += chunk
+      left -= chunk
+      end -= chunk * 60000
+    }
+  }
+  return grid
+}
+
 interface ReviewTask { id: number; due_date: string | null; status: string; subject_id: number | null }
 
 export interface WeekReview {

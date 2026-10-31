@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 from schemas.exam_schemas import ExamCreate
 from schemas.goal_schemas import GoalCreate
@@ -16,12 +17,16 @@ class SubjectData(SubjectCreate):
     id: int | None = None
     topics: list[TopicData] = Field(default=[], max_length=1000)
 
+class SessionData(SessionCreate):
+    # Ora di fine della sessione: serve alle "ore migliori di studio", va conservata nel ripristino.
+    created_at: datetime | None = None
+
 class StudyData(BaseModel):
     version: int = 1
     subjects: list[SubjectData] = Field(default=[], max_length=1000)
     tasks: list[TaskCreate] = Field(default=[], max_length=10000)
     exams: list[ExamCreate] = Field(default=[], max_length=1000)
-    sessions: list[SessionCreate] = Field(default=[], max_length=50000)
+    sessions: list[SessionData] = Field(default=[], max_length=50000)
     goals: list[GoalCreate] = Field(default=[], max_length=1000)
 
 class ImportResult(BaseModel):

@@ -10,10 +10,9 @@ from models.goal_models import Goal
 from models.session_models import StudySession
 from models.subject_models import Subject, Topic
 from models.task_models import Task
-from schemas.data_schemas import ImportResult, StudyData
+from schemas.data_schemas import ImportResult, SessionData, StudyData
 from schemas.exam_schemas import ExamCreate
 from schemas.goal_schemas import GoalCreate
-from schemas.session_schemas import SessionCreate
 from schemas.subject_schemas import SubjectCreate
 from schemas.task_schemas import TaskCreate
 from services.exam_service import link_subject
@@ -28,7 +27,7 @@ def export_user_data(user_id: int, db: Session) -> StudyData:
         subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes} for t in s.topics]}
                   for s in list_subjects(user_id, db)],
         tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamCreate),
-        sessions=rows(StudySession, SessionCreate), goals=rows(Goal, GoalCreate),
+        sessions=rows(StudySession, SessionData), goals=rows(Goal, GoalCreate),
     )
 
 def _delete_user_data(user_id: int, db: Session) -> None:
@@ -66,7 +65,7 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
         for t in data.tasks:
             db.add(Task(user_id=user_id, **(t.model_dump() | links(t))))
         for s in data.sessions:
-            db.add(StudySession(user_id=user_id, **(s.model_dump() | links(s))))
+            db.add(StudySession(user_id=user_id, **(s.model_dump(exclude_none=True) | links(s))))
         for e in data.exams:
             exam = Exam(user_id=user_id, **e.model_dump())
             link_subject(exam, db)

@@ -64,6 +64,7 @@ def test_import_replace_restores_without_duplicates(client):
     s = client.post("/subjects", json={"name": "Chimica", "color": "green"}, headers=h).json()
     client.post("/goals", json={"title": "g", "kind": "topics_done", "target": 3, "subject_id": s["id"]}, headers=h)
     client.post("/tasks", json={"title": "t", "subject_id": s["id"], "recurrence": "weekly:2"}, headers=h)
+    client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-10-01"}, headers=h)
     backup = client.get("/data/export", headers=h).json()
     client.post("/subjects", json={"name": "Da buttare"}, headers=h)
 
@@ -74,3 +75,4 @@ def test_import_replace_restores_without_duplicates(client):
     assert len(client.get("/tasks", headers=h).json()) == 1
     assert client.get("/tasks", headers=h).json()[0]["recurrence"] == "weekly:2"
     assert client.get("/goals", headers=h).json()[0]["subject_id"] == subjects[0]["id"]
+    assert [x["created_at"] for x in client.get("/sessions", headers=h).json()] == [x["created_at"] for x in backup["sessions"]]

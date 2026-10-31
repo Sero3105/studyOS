@@ -581,6 +581,10 @@ const it = {
   'review.moveOverdue': 'Sposta i task scaduti alla settimana dopo',
   'review.moved': 'Spostati {count} task, ognuno nello stesso giorno della settimana.',
   'review.moveError': 'Impossibile spostare alcuni task',
+  'stats.bestHoursTitle': 'Ore migliori di studio',
+  'stats.bestHoursEmpty': 'Ancora nessuna sessione: qui vedrai in che ore e in che giorni studi di più.',
+  'stats.bestHoursSummary': 'Studi di più tra le {hour}, e il giorno più produttivo è {day}.',
+  'stats.bestHoursLabel': 'Minuti di studio per ora e giorno della settimana; ora migliore {hour}, {total} in totale',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -995,6 +999,10 @@ const en: Record<TranslationKey, string> = {
   'review.moveOverdue': 'Move overdue tasks to next week',
   'review.moved': 'Moved {count} tasks, each to the same weekday.',
   'review.moveError': 'Could not move some tasks',
+  'stats.bestHoursTitle': 'Best study hours',
+  'stats.bestHoursEmpty': 'No sessions yet: here you will see the hours and days you study most.',
+  'stats.bestHoursSummary': 'You study most between {hour}, and your most productive day is {day}.',
+  'stats.bestHoursLabel': 'Study minutes by hour and weekday; best hour {hour}, {total} in total',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildHeatmap, heatLevel, planVsActual, postponeByWeeks, weeklyReview } from '../src/utils/studyStats.ts'
+import { buildHeatmap, heatLevel, hourGrid, planVsActual, postponeByWeeks, weeklyReview } from '../src/utils/studyStats.ts'
 
 test('heat levels', () => {
   assert.deepEqual([0, 10, 25, 26, 60, 61, 121].map(heatLevel), [0, 1, 1, 2, 2, 3, 4])
@@ -35,6 +35,16 @@ test('plan vs actual counts only the window and the subject', () => {
     { subjectId: 2, name: 'Reti', planned: 0, done: 0, minutes: 50 },
     { subjectId: 1, name: 'Analisi', planned: 2, done: 1, minutes: 0 },
   ])
+})
+
+test('hour grid splits a session across the hours it spans, in local time', () => {
+  // Fine sessione alle 10:20 locali, 50 minuti: 30 nell'ora 9, 20 nell'ora 10.
+  const end = new Date(2026, 9, 26, 10, 20) // lunedì
+  const grid = hourGrid([{ created_at: end.toISOString().replace('Z', ''), duration_minutes: 50 }])
+  // toISOString è UTC: togliendo la Z si simula il formato dell'API, che parseUtc rilegge come UTC.
+  assert.equal(grid[0][9], 30)
+  assert.equal(grid[0][10], 20)
+  assert.equal(grid.flat().reduce((a, b) => a + b, 0), 50)
 })
 
 test('weekly review compares with last week and finds overdue tasks', () => {

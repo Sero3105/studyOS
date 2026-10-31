@@ -13,13 +13,14 @@ import type { Task } from '../services/taskService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import StudyHeatmap from '../components/stats/StudyHeatmap'
+import BestHours from '../components/stats/BestHours'
 import SubjectDot from '../components/ui/SubjectDot'
 import { subjectColor } from '../services/subjectService'
 import type { SubjectMinutes } from '../services/statsService'
 import RecordBook from '../components/exams/RecordBook'
 import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
-import { buildHeatmap, planVsActual } from '../utils/studyStats'
+import { buildHeatmap, hourGrid, planVsActual } from '../utils/studyStats'
 import type { NameMinutes, StatsSummary } from '../services/statsService'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
@@ -161,6 +162,13 @@ function StatisticsPage() {
             <section className="panel" aria-labelledby="stats-heatmap-title">
               <h2 id="stats-heatmap-title" className="panel-title panel-head">{t('stats.heatmapTitle')}</h2>
               <StudyHeatmap weeks={buildHeatmap(detail.sessions, today)} />
+            </section>
+          )}
+
+          {detail && (
+            <section className="panel" aria-labelledby="stats-hours-title">
+              <h2 id="stats-hours-title" className="panel-title panel-head">{t('stats.bestHoursTitle')}</h2>
+              <BestHours grid={hourGrid(detail.sessions)} />
             </section>
           )}
 
