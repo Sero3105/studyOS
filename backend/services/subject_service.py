@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session, selectinload
 from models.subject_models import Subject, Topic
 from models.session_models import StudySession
@@ -48,9 +48,12 @@ def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) ->
     topic = _owned_topic(topic_id, user_id, db)
     values = data.model_dump(exclude_unset=True, exclude={'schedule_reviews'})
     newly_completed = values.get('completed') is True and not topic.completed
+    reopened = values.get('completed') is False and topic.completed
+    open_reviews = (Task.user_id == user_id, Task.topic_id == topic.id, Task.title.startswith('↻'), Task.status != 'done')
     for field, value in values.items():
         if value is not None: setattr(topic, field, value)
-    if newly_completed and data.schedule_reviews:
+    if reopened: db.execute(delete(Task).where(*open_reviews))
+    if newly_completed and data.schedule_reviews and db.scalar(select(Task.id).where(*open_reviews).limit(1)) is None:
         today = date.today()
         db.add_all(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=today + timedelta(days=d),
                         priority='medium', subject_id=topic.subject_id, topic_id=topic.id) for d in REVIEW_DAYS)

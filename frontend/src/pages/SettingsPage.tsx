@@ -176,6 +176,9 @@ function SettingsPage() {
     void run(async () => {
       let data: unknown
       try { data = JSON.parse(await file.text()) } catch { throw new Error(t('settings.importInvalid')) }
+      // L'import aggiunge sempre: conferma per non duplicare tutto con un doppio import.
+      const count = (key: string) => { const v = (data as Record<string, unknown> | null)?.[key]; return Array.isArray(v) ? v.length : 0 }
+      if (!window.confirm(t('settings.importConfirm', { tasks: count('tasks'), exams: count('exams'), sessions: count('sessions'), subjects: count('subjects') }))) return ''
       const r = await importData(data)
       return t('settings.importDone', { tasks: r.tasks, exams: r.exams, sessions: r.sessions, subjects: r.subjects })
     }, t('settings.importError'))

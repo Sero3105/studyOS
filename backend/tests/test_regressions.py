@@ -89,3 +89,19 @@ def test_login_removes_expired_sessions(client):
     register_and_login(client, "cleanup@example.com")
     with SessionLocal() as db:
         assert db.query(AuthSession).filter(mine).count() == 1
+
+
+def test_recompleting_topic_does_not_duplicate_reviews(client):
+    h = _auth(client, "reviews@example.com")
+    s = client.post("/subjects", json={"name": "Chimica"}, headers=h).json()
+    t = client.post(f"/subjects/{s['id']}/topics", json={"title": "Legami"}, headers=h).json()
+    done = {"completed": True, "schedule_reviews": True}
+    client.patch(f"/topics/{t['id']}", json=done, headers=h)
+    first = client.get("/tasks", headers=h).json()
+    client.patch(f"/tasks/{first[0]['id']}", json={"status": "done"}, headers=h)  # un ripasso già fatto resta
+
+    client.patch(f"/topics/{t['id']}", json={"completed": False}, headers=h)
+    assert [x["id"] for x in client.get("/tasks", headers=h).json()] == [first[0]["id"]]
+
+    client.patch(f"/topics/{t['id']}", json=done, headers=h)
+    assert len(client.get("/tasks", headers=h).json()) == 5
