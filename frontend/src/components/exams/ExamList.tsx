@@ -5,6 +5,8 @@ import { isDated } from '../../services/examService'
 import type { DatedExam, Exam, ExamStatus } from '../../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
+import ReadinessMeter from './ReadinessMeter'
+import type { Readiness } from '../../utils/planning'
 import type { TranslationKey } from '../../i18n/translations'
 
 const statusKeys: Record<ExamStatus, TranslationKey> = {
@@ -26,6 +28,7 @@ interface ExamActionsProps {
   onEdit: (exam: Exam) => void
   onDelete: (exam: Exam) => Promise<void>
   onPlan?: (exam: Exam) => void
+  readiness?: Readiness
 }
 
 function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
@@ -47,16 +50,26 @@ function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
 }
 
 function StatusTag({ exam }: { exam: Exam }) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const grade = exam.status === 'passed' && exam.grade ? ` · ${exam.grade}${exam.honors ? 'L' : ''}` : ''
-  return <span className={`tag ${statusTone[exam.status]}`}>{t(statusKeys[exam.status])}{grade}</span>
+  const attempts = exam.attempts.map((a) => `${formatDay(a.exam_date, 'long', locale)} · ${t(`exams.attempt.${a.outcome}`)}${a.grade ? ` ${a.grade}` : ''}`)
+  return (
+    <>
+      <span className={`tag ${statusTone[exam.status]}`}>{t(statusKeys[exam.status])}{grade}</span>
+      {attempts.length > 0 && (
+        <span className="tag exam-attempts" title={`${t('exams.previousAttempts')}\n${attempts.join('\n')}`}>
+          {t('exams.attemptNumber', { n: attempts.length + 1 })}
+        </span>
+      )}
+    </>
+  )
 }
 
 /**
  * Il prossimo esame, in grande: il numero di giorni mancanti è l'elemento
  * dominante, i dettagli pratici (data, ora, luogo) stanno in una riga sola.
  */
-export function NextExam({ exam, onEdit, onDelete, onPlan }: ExamActionsProps & { exam: DatedExam }) {
+export function NextExam({ exam, onEdit, onDelete, onPlan, readiness }: ExamActionsProps & { exam: DatedExam }) {
   const { t, locale } = useLanguage()
   const days = daysUntil(exam.exam_date)
   return (
@@ -79,6 +92,7 @@ export function NextExam({ exam, onEdit, onDelete, onPlan }: ExamActionsProps & 
           {exam.location && <li><MapPin aria-hidden="true" />{exam.location}</li>}
           <li><StatusTag exam={exam} /></li>
         </ul>
+        {readiness && <ReadinessMeter readiness={readiness} />}
         {exam.notes && <p className="next-exam-notes">{exam.notes}</p>}
       </div>
     </article>
@@ -90,10 +104,11 @@ interface ExamListProps {
   onEdit: (exam: Exam) => void
   onDelete: (exam: Exam) => Promise<void>
   onPlan?: (exam: Exam) => void
+  readiness?: Record<number, Readiness>
 }
 
 /** Elenco compatto: blocco data a sinistra, dettagli al centro, azioni a destra. */
-function ExamList({ exams, onEdit, onDelete, onPlan }: ExamListProps) {
+function ExamList({ exams, onEdit, onDelete, onPlan, readiness }: ExamListProps) {
   const { t, locale } = useLanguage()
   return (
     <ul className="panel rows exam-rows">
@@ -127,6 +142,7 @@ function ExamList({ exams, onEdit, onDelete, onPlan }: ExamListProps) {
               {date === null ? <span className="exam-row-days">{t('exams.noDate')}</span>
                 : days! >= 0 && <span className={`exam-row-days num ${urgencyClass(days!)}`}>{relativeDay(date, locale)}</span>}
               <StatusTag exam={exam} />
+              {readiness?.[exam.id] && <ReadinessMeter readiness={readiness[exam.id]} compact />}
             </span>
             <ExamActions exam={exam} onEdit={onEdit} onDelete={onDelete} onPlan={onPlan} />
           </li>

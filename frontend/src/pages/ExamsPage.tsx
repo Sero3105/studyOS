@@ -5,16 +5,60 @@ import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
 import ExamList, { NextExam } from '../components/exams/ExamList'
-import { createExam, deleteExam, getExams, isDated, planExam, updateExam } from '../services/examService'
-import type { CreateExamPayload, Exam } from '../services/examService'
-import { daysUntil, relativeDay } from '../utils/dates'
+import { createExam, deleteExam, getExams, isDated, planExam, recordAttempt, updateExam } from '../services/examService'
+import type { CreateExamPayload, DatedExam, Exam } from '../services/examService'
+import { daysUntil, relativeDay, todayIso } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { restDays } from '../utils/preferences'
+import { examReadiness } from '../utils/planning'
+import type { Readiness } from '../utils/planning'
+import { getSubjects } from '../services/subjectService'
+import { getCards } from '../services/cardService'
+import { getTasks } from '../services/taskService'
+import { getSessions } from '../services/sessionService'
 import RecordBook from '../components/exams/RecordBook'
 import { ApiError } from '../services/apiClient'
 import type { TranslationKey } from '../i18n/translations'
 import { useLanguage } from '../i18n/useLanguage'
 
 type ExamFilter = 'upcoming' | 'archive' | 'all'
+
+const GRADES = Array.from({ length: 13 }, (_, i) => String(18 + i)).concat('30L')
+
+/**
+ * Esame con data passata ancora "da preparare": si registra com'è andato in un clic. Voto facoltativo (idoneità).
+ * Bocciato o rifiutato diventa un tentativo nello storico dell'esame, che torna da preparare per il prossimo appello.
+ */
+function OutcomePrompt({ exam, onSave }: { exam: DatedExam; onSave: (request: () => Promise<Exam>) => Promise<void> }) {
+  const { t, locale } = useLanguage()
+  const [grade, setGrade] = useState('')
+  const [busy, setBusy] = useState(false)
+  const save = (request: () => Promise<Exam>) => { setBusy(true); void onSave(request).finally(() => setBusy(false)) }
+  const value = grade ? parseInt(grade, 10) : null
+
+  return (
+    <div className="panel exam-outcome">
+      <p className="exam-outcome-question">{t('exams.outcomeQuestion', { title: exam.title, when: relativeDay(exam.exam_date, locale).toLowerCase() })}</p>
+      <div className="exam-outcome-actions">
+        <select className="input exam-outcome-grade" value={grade} onChange={(e) => setGrade(e.target.value)} aria-label={t('exams.outcomeGrade', { title: exam.title })}>
+          <option value="">{t('exams.outcomeNoGrade')}</option>
+          {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+        </select>
+        <button className="btn btn-primary" type="button" disabled={busy}
+          onClick={() => save(() => updateExam(exam.id, { status: 'passed', grade: value, honors: grade === '30L' }))}>
+          {t('exams.status.passed')}
+        </button>
+        <button className="btn btn-secondary" type="button" disabled={busy || value === null} title={value === null ? t('exams.rejectedNeedsGrade') : undefined}
+          onClick={() => save(() => recordAttempt(exam.id, 'rejected', value))}>
+          {t('exams.attempt.rejected')}
+        </button>
+        <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => save(() => recordAttempt(exam.id, 'failed', null))}>
+          {t('exams.attempt.failed')}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 /** In arrivo: non ancora sostenuto e con data da oggi in poi, oppure data ancora da fissare. */
 function isUpcoming(exam: Exam): boolean {
@@ -31,22 +75,35 @@ function ExamsPage() {
   const [filter, setFilter] = useState<ExamFilter>('upcoming')
   const [notice, setNotice] = useState('')
 
+  const [readiness, setReadiness] = useState<Record<number, Readiness>>({})
+
+  // Prontezza degli esami da sostenere: di contorno, se qualcosa fallisce la pagina resta.
+  const loadReadiness = useCallback(async (list: Exam[]) => {
+    try {
+      const [subjects, cards, tasks, sessions] = await Promise.all([getSubjects(), getCards(), getTasks(), getSessions()])
+      const data = { subjects, cards, tasks, sessions }
+      setReadiness(Object.fromEntries(list.filter(isUpcoming).map((e) => [e.id, examReadiness(e, data, todayIso())])))
+    } catch { setReadiness({}) }
+  }, [])
+
   const loadExams = useCallback(async () => {
     try {
       setError('')
-      setExams(await getExams())
+      const list = await getExams()
+      setExams(list)
+      void loadReadiness(list)
     } catch (loadError) {
       setError(errorMessage(loadError, t('exams.loadError')))
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [t, loadReadiness])
 
   useEffect(() => {
     queueMicrotask(() => { void loadExams() })
   }, [loadExams])
 
-  const sortExams = (list: Exam[]) =>
+  const sortExams = <T extends Exam>(list: T[]) =>
     [...list].sort(
       (first, second) =>
         (first.exam_date ?? '9999').localeCompare(second.exam_date ?? '9999') ||
@@ -65,6 +122,15 @@ function ExamsPage() {
     setEditingExam(null)
   }
 
+  const recordOutcome = async (request: () => Promise<Exam>) => {
+    try {
+      const updated = await request()
+      setExams((currentExams) => currentExams.map((x) => (x.id === updated.id ? updated : x)))
+    } catch (saveError) {
+      setError(errorMessage(saveError, t('exams.outcomeError')))
+    }
+  }
+
   const handleDelete = async (exam: Exam) => {
     try {
       await deleteExam(exam.id)
@@ -77,7 +143,7 @@ function ExamsPage() {
   const handlePlan = async (exam: Exam) => {
     setError(''); setNotice('')
     try {
-      const tasks = await planExam(exam.id)
+      const tasks = await planExam(exam.id, restDays())
       setNotice(tasks.length ? t('exams.planDone', { count: tasks.length, title: exam.title }) : t('exams.planNothing'))
     } catch (planError) {
       const code = planError instanceof ApiError && planError.status === 422 ? planError.message : ''
@@ -89,6 +155,7 @@ function ExamsPage() {
   const openEdit = (exam: Exam) => { setEditingExam(exam); setIsModalOpen(true) }
 
   const upcoming = sortExams(exams.filter(isUpcoming))
+  const awaitingOutcome = sortExams(exams.filter((exam): exam is DatedExam => isDated(exam) && !isUpcoming(exam) && (exam.status === 'planned' || exam.status === 'in_progress')))
   const archive = sortExams(exams.filter((exam) => !isUpcoming(exam))).reverse()
   const visible = filter === 'upcoming' ? upcoming : filter === 'archive' ? archive : sortExams(exams)
   // Il blocco grande col conto alla rovescia è per il primo esame con data; quelli senza data restano in lista.
@@ -119,6 +186,8 @@ function ExamsPage() {
       {error && <ErrorNotice message={error} onRetry={exams.length ? undefined : () => void loadExams()} onDismiss={exams.length ? () => setError('') : undefined} />}
 
       {notice && <div className="notice notice-success" role="status">{notice}</div>}
+
+      {awaitingOutcome.map((exam) => <OutcomePrompt key={exam.id} exam={exam} onSave={recordOutcome} />)}
 
       <RecordBook exams={exams} />
 
@@ -156,11 +225,11 @@ function ExamsPage() {
           {filter === 'upcoming' ? (
             upcoming.length > 0 ? (
               <>
-                {next && <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />}
+                {next && <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness[next.id]} />}
                 {rest.length > 0 && (
                   <div className="page-section">
                     {next && <h2 className="section-title">{t('exams.comingLater')}</h2>}
-                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} />
+                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness} />
                   </div>
                 )}
               </>

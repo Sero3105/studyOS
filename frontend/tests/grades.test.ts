@@ -34,3 +34,12 @@ test('grade trend is chronological with a running weighted average', () => {
   assert.deepEqual(trend.map((p) => p.average), [30, 30, 28])
   assert.deepEqual(trend.map((p) => p.delta), [null, 0, -2])
 })
+
+test('required average for a graduation target', async () => {
+  const { requiredAverage } = await import('../src/utils/grades.ts')
+  const passed = [{ status: 'passed' as const, grade: 24, cfu: 60 }]
+  // 110 su 120 CFU richiede media 30 in totale: (30*120 - 24*60) / 60 = 36, irraggiungibile.
+  assert.equal(requiredAverage(passed, 120, 110), 36)
+  assert.equal(Math.round(requiredAverage(passed, 120, 99)! * 100) / 100, 30)
+  assert.equal(requiredAverage([{ status: 'passed', grade: 30, cfu: 180 }], 180, 110), null)
+})

@@ -10,9 +10,6 @@ export function gradeSummary(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[]) {
   return { count: graded.length, cfu, average, weightedAverage, graduationBase: (weightedAverage * 110) / 30 }
 }
 
-/** CFU di una laurea triennale. shortcut: fisso a 180, rendilo un'impostazione se servono magistrali (120) o ciclo unico. */
-export const DEGREE_CFU = 180
-
 export interface GradePoint { id: number; title: string; date: string; grade: number; honors: boolean; cfu: number | null; average: number | null; delta: number | null }
 
 /** Esami superati in ordine di data, con la media ponderata sui CFU dopo ciascuno (null finché nessuno ha CFU) e quanto è cambiata. */
@@ -30,4 +27,18 @@ export function gradeTrend(exams: Pick<Exam, 'id' | 'title' | 'status' | 'grade'
       previous = average ?? previous
       return { id: e.id, title: e.title, date: e.exam_date!, grade: e.grade!, honors: e.honors, cfu: e.cfu, average, delta }
     })
+}
+
+/**
+ * Media ponderata da tenere nei CFU che mancano per arrivare a `targetBase` (in 110) su `totalCfu`.
+ * null se non mancano CFU. Sopra 30 il traguardo è irraggiungibile, sotto 18 è già al sicuro.
+ * shortcut: tutti i CFU mancanti contano come esami con voto (tesi, tirocinio e idoneità no); va bene come stima.
+ */
+export function requiredAverage(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[], totalCfu: number, targetBase: number): number | null {
+  const graded = exams.filter((e) => e.status === 'passed' && e.grade && e.cfu)
+  const cfu = graded.reduce((sum, e) => sum + e.cfu!, 0)
+  const points = graded.reduce((sum, e) => sum + e.grade! * e.cfu!, 0)
+  const remaining = totalCfu - cfu
+  if (remaining <= 0) return null
+  return ((targetBase * 30) / 110 * totalCfu - points) / remaining
 }
