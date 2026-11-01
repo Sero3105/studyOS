@@ -3,11 +3,13 @@
 #   docker compose up --build -d     # avvia → http://localhost:8080
 #   docker compose down              # ferma (i dati restano nel volume)
 #
-# Due servizi:
+# Tre servizi:
 # - web: nginx con la build del frontend; unica porta pubblicata, solo su
 #        127.0.0.1. Inoltra /api/* al backend.
 # - api: FastAPI/uvicorn, un solo processo, raggiungibile solo dalla rete
 #        interna. SQLite gira dentro questo processo: niente container database.
+# - backup: una volta al giorno copia il database in ./backups (fuori dal
+#           volume, sul disco dell'host) e tiene gli ultimi 7 file.
 #
 # I dati stanno nel volume `studyos-data` (montato su /data). Sopravvive a
 # stop, ricreazione dei container e rebuild delle immagini; lo cancella solo
@@ -70,6 +72,47 @@ services:
           memory: ${API_MEMORY_LIMIT:-256M}
           cpus: "${API_CPUS:-1.0}"
           pids: 64
+
+  backup:
+    <<: *hardening
+    image: studyos-api:local
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Europe/Rome}
+    volumes:
+      - studyos-data:/data:ro
+      # Cartella sull'host: sopravvive anche alla perdita del volume. Su Linux
+      # deve essere scrivibile dall'utente del container: `mkdir backups && sudo chown 10001 backups`.
+      - ${STUDYOS_BACKUP_DIR:-./backups}:/backups
+    # API di backup di SQLite: copia coerente anche mentre l'api scrive. Un file
+    # al giorno (a ogni avvio rifà quello di oggi), scritto in .tmp e poi rinominato.
+    command:
+      - python
+      - -c
+      - |
+        import datetime, pathlib, sqlite3, time
+        src, out = pathlib.Path('/data/studyos.db'), pathlib.Path('/backups')
+        while True:
+            try:
+                target = out / f'studyos-{datetime.date.today()}.db'
+                tmp = target.with_suffix('.tmp')
+                db, copy = sqlite3.connect(f'file:{src}?mode=ro', uri=True), sqlite3.connect(tmp)
+                db.backup(copy)
+                copy.close(); db.close()
+                tmp.replace(target)
+                for old in sorted(out.glob('studyos-*.db'))[:-7]: old.unlink()
+                print('backup ok:', target, flush=True)
+            except Exception as error:
+                print('backup failed:', error, flush=True)
+            time.sleep(86400)
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
+          pids: 16
 
   web:
     <<: *hardening

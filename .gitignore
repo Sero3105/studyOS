@@ -19,3 +19,6 @@ __pycache__/
 **/.venv/
 
 .DS_Store
+
+# Backup automatici del database (servizio backup in compose.yaml)
+backups/
