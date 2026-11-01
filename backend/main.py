@@ -15,6 +15,8 @@ from routers.stats_router import router as stats_router
 from routers.data_router import router as data_router
 from routers.share_router import router as share_router
 from routers.card_router import router as card_router
+from routers.mistake_router import router as mistake_router
+from routers.settings_router import router as settings_router
 import config
 from database import run_migrations
 
@@ -50,3 +52,5 @@ app.include_router(stats_router)
 app.include_router(data_router)
 app.include_router(share_router)
 app.include_router(card_router)
+app.include_router(mistake_router)
+app.include_router(settings_router)

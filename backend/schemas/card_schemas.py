@@ -30,6 +30,22 @@ class CardBulk(BaseModel):
 class BulkResult(BaseModel):
     created: int; skipped: int
 
+class MistakeCreate(BaseModel):
+    topic_id: int
+    mistake: str = Field(min_length=1, max_length=5000)
+    correction: str = Field(min_length=1, max_length=5000)
+    source: str | None = Field(default=None, max_length=200)
+    @field_validator('mistake', 'correction', 'source', mode='before')
+    @classmethod
+    def trim(cls, value): return _trim(value)
+
+class MistakeUpdate(BaseModel):
+    card_id: int | None = None
+
+class MistakeResponse(BaseModel):
+    id: int; topic_id: int; mistake: str; correction: str; source: str | None; card_id: int | None; created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 class CardReview(BaseModel):
     rating: Rating
 

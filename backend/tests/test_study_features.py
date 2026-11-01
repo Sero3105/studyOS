@@ -118,9 +118,19 @@ def test_change_password_and_delete_account(client):
     assert client.post("/auth/password", json={"current_password": "nope", "new_password": "newpassword1"}, headers=h).status_code == 400
     assert client.post("/auth/password", json={"current_password": "password123", "new_password": "newpassword1"}, headers=h).status_code == 204
     assert client.post("/auth/login", json={"email": "acc@example.com", "password": "newpassword1"}).status_code == 200
-    client.post("/subjects", json={"name": "Da cancellare"}, headers=h)
+    subject = client.post("/subjects", json={"name": "Da cancellare"}, headers=h).json()
+    topic = client.post(f"/subjects/{subject['id']}/topics", json={"title": "T"}, headers=h).json()
+    client.post("/cards", json={"topic_id": topic["id"], "front": "cancellami", "back": "x"}, headers=h)
+    exam = client.post("/exams", json={"title": "E", "subject": "E", "exam_date": "2026-01-01"}, headers=h).json()
+    client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "failed", "grade": None}, headers=h)
     client.post("/share", headers=h)
     assert client.request("DELETE", "/auth/account", json={"password": "password123"}, headers=h).status_code == 400
     assert client.request("DELETE", "/auth/account", json={"password": "newpassword1"}, headers=h).status_code == 204
     assert client.get("/subjects", headers=h).status_code == 401
     assert client.post("/auth/login", json={"email": "acc@example.com", "password": "newpassword1"}).status_code == 401
+    from dependencies.database_dependency import SessionLocal
+    from models.card_models import Card
+    from models.exam_models import ExamAttempt
+    with SessionLocal() as db:
+        assert db.query(Card).filter(Card.front == "cancellami").count() == 0
+        assert db.query(ExamAttempt).filter(ExamAttempt.exam_id == exam["id"]).count() == 0

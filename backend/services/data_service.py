@@ -5,13 +5,14 @@ import zipfile
 from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from models.exam_models import Exam
+from models.card_models import Card, Mistake
+from models.exam_models import Exam, ExamAttempt
 from models.goal_models import Goal
 from models.session_models import StudySession
 from models.subject_models import Subject, Topic
 from models.task_models import Task
-from schemas.data_schemas import ImportResult, SessionData, StudyData
-from schemas.exam_schemas import ExamCreate
+from models.user_models import User
+from schemas.data_schemas import CardData, ExamData, ImportResult, MistakeData, SessionData, StudyData
 from schemas.goal_schemas import GoalCreate
 from schemas.subject_schemas import SubjectCreate
 from schemas.task_schemas import TaskCreate
@@ -24,16 +25,19 @@ def _owned(model, user_id: int, db: Session):
 def export_user_data(user_id: int, db: Session) -> StudyData:
     rows = lambda model, schema: [schema.model_validate(r, from_attributes=True) for r in _owned(model, user_id, db)]
     return StudyData(
-        subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes} for t in s.topics]}
+        subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes, 'difficulty': t.difficulty} for t in s.topics]}
                   for s in list_subjects(user_id, db)],
-        tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamCreate),
-        sessions=rows(StudySession, SessionData), goals=rows(Goal, GoalCreate),
+        tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamData),
+        sessions=rows(StudySession, SessionData), goals=rows(Goal, GoalCreate), cards=rows(Card, CardData),
+        mistakes=rows(Mistake, MistakeData), preferences=db.get(User, user_id).preferences,
     )
 
 def _delete_user_data(user_id: int, db: Session) -> None:
     owned_subjects = select(Subject.id).where(Subject.user_id == user_id)
+    db.execute(delete(Card).where(Card.user_id == user_id))
+    db.execute(delete(Mistake).where(Mistake.user_id == user_id))
     db.execute(delete(Topic).where(Topic.subject_id.in_(owned_subjects)))
-    for model in (Task, StudySession, Exam, Goal, Subject):
+    for model in (Task, StudySession, ExamAttempt, Exam, Goal, Subject):
         db.execute(delete(model).where(model.user_id == user_id))
 
 def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool = False) -> ImportResult:
@@ -49,7 +53,7 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
             db.add(subject)
             if s.id is not None: subject_ids[s.id] = subject
             for t in s.topics:
-                topic = Topic(subject=subject, title=t.title, completed=t.completed, notes=t.notes)
+                topic = Topic(subject=subject, title=t.title, completed=t.completed, notes=t.notes, difficulty=t.difficulty)
                 db.add(topic); topics += 1
                 if t.id is not None: topic_ids[t.id] = topic
         db.flush()
@@ -67,9 +71,23 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
         for s in data.sessions:
             db.add(StudySession(user_id=user_id, **(s.model_dump(exclude_none=True) | links(s))))
         for e in data.exams:
-            exam = Exam(user_id=user_id, **e.model_dump())
+            exam = Exam(user_id=user_id, **e.model_dump(exclude={'attempts'}))
+            exam.attempts = [ExamAttempt(user_id=user_id, **a.model_dump()) for a in e.attempts]
             link_subject(exam, db)
             db.add(exam)
+        cards = 0
+        for c in data.cards:
+            topic = topic_ids.get(c.topic_id)
+            if topic is None: continue  # carta senza argomento nel file: scartata
+            db.add(Card(user_id=user_id, **(c.model_dump(exclude_none=True) | {'topic_id': topic.id}))); cards += 1
+        mistakes = 0
+        for m in data.mistakes:
+            topic = topic_ids.get(m.topic_id)
+            if topic is None: continue
+            db.add(Mistake(user_id=user_id, **(m.model_dump(exclude_none=True) | {'topic_id': topic.id}))); mistakes += 1
+        # Le preferenze del file valgono nel ripristino, o se l'utente non ne ha ancora.
+        user = db.get(User, user_id)
+        if data.preferences is not None and (replace or not user.preferences): user.preferences = data.preferences.root
         for g in data.goals:
             subject = subject_ids.get(g.subject_id)
             db.add(Goal(user_id=user_id, **(g.model_dump() | {'subject_id': subject.id if subject else None})))
@@ -77,7 +95,7 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
     except SQLAlchemyError:
         db.rollback(); raise
     return ImportResult(subjects=len(data.subjects), topics=topics, tasks=len(data.tasks),
-                        exams=len(data.exams), sessions=len(data.sessions), goals=len(data.goals))
+                        exams=len(data.exams), sessions=len(data.sessions), goals=len(data.goals), cards=cards, mistakes=mistakes)
 
 
 # --- Vault Synapse: note degli argomenti come file Markdown collegati ---------

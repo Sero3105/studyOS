@@ -10,17 +10,29 @@ def test_export_import_roundtrip_relinks_ids(client):
     subject = client.post("/subjects", json={"name": "Fisica"}, headers=a).json()
     topic = client.post(f"/subjects/{subject['id']}/topics", json={"title": "Ottica"}, headers=a).json()
     client.post("/tasks", json={"title": "Esercizi", "subject_id": subject["id"], "topic_id": topic["id"]}, headers=a)
-    client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-10-01", "topic_id": topic["id"]}, headers=a)
-    client.post("/exams", json={"title": "Scritto", "subject": "Fisica", "exam_date": "2027-01-10"}, headers=a)
+    client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-10-01", "topic_id": topic["id"], "kind": "lesson", "focus": 3}, headers=a)
+    client.post("/mistakes", json={"topic_id": topic["id"], "mistake": "Segno invertito", "correction": "n1 > n2"}, headers=a)
+    client.patch("/settings", json={"degreeCfu": 120, "restDays": [7]}, headers=a)
+    exam = client.post("/exams", json={"title": "Scritto", "subject": "Fisica", "exam_date": "2026-01-10"}, headers=a).json()
+    client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "rejected", "grade": 19}, headers=a)
     client.post("/goals", json={"title": "Ore", "kind": "total_minutes", "target": 600}, headers=a)
+    client.patch(f"/topics/{topic['id']}", json={"difficulty": 3}, headers=a)
+    client.post("/cards", json={"topic_id": topic["id"], "front": "Snell?", "back": "n1 sin = n2 sin"}, headers=a)
 
     dump = client.get("/data/export", headers=a).json()
     assert len(dump["tasks"]) == 1 and dump["subjects"][0]["topics"][0]["title"] == "Ottica"
 
     b = _headers(client, "d2@example.com")
     result = client.post("/data/import", json=dump, headers=b).json()
-    assert result == {"subjects": 1, "topics": 1, "tasks": 1, "exams": 1, "sessions": 1, "goals": 1}
+    assert result == {"subjects": 1, "topics": 1, "tasks": 1, "exams": 1, "sessions": 1, "goals": 1, "cards": 1, "mistakes": 1}
+    assert client.get("/settings", headers=b).json() == {"degreeCfu": 120, "restDays": [7]}
+    assert client.get("/mistakes", headers=b).json()[0]["mistake"] == "Segno invertito"
+    assert (client.get("/sessions", headers=b).json()[0]["kind"], client.get("/sessions", headers=b).json()[0]["focus"]) == ("lesson", 3)
     new_subject = client.get("/subjects", headers=b).json()[0]
+    assert new_subject["topics"][0]["difficulty"] == 3
+    assert client.get("/cards", headers=b).json()[0]["topic_id"] == new_subject["topics"][0]["id"]
+    attempts = client.get("/exams", headers=b).json()[0]["attempts"]
+    assert [(x["exam_date"], x["outcome"], x["grade"]) for x in attempts] == [("2026-01-10", "rejected", 19)]
     task = client.get("/tasks", headers=b).json()[0]
     assert task["subject_id"] == new_subject["id"] and task["topic_id"] == new_subject["topics"][0]["id"]
     assert client.get("/sessions", headers=b).json()[0]["subject_id"] == new_subject["id"]
