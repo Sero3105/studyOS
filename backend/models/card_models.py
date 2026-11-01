@@ -18,3 +18,15 @@ class Card(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     topic = relationship('Topic', back_populates='cards')
 
+class Mistake(Base):
+    """Quaderno degli errori: un errore fatto su un argomento, con la spiegazione giusta; può diventare una flashcard."""
+    __tablename__ = 'mistakes'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    topic_id = Column(Integer, ForeignKey('topics.id'), nullable=False, index=True)
+    mistake = Column(Text, nullable=False)
+    correction = Column(Text, nullable=False)
+    source = Column(String(200), nullable=True)
+    card_id = Column(Integer, nullable=True)  # flashcard creata dall'errore, se c'è
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    topic = relationship('Topic', back_populates='mistakes')

@@ -1,6 +1,6 @@
 """Academic tasks owned by a user, optionally linked to subject/topic."""
 from datetime import datetime, timezone
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -19,7 +19,8 @@ class Task(Base):
     topic_id = Column(Integer, ForeignKey('topics.id'), nullable=True)
     recurrence = Column(String(40), nullable=True)  # 'daily' o 'weekly:1,3' (1 = lunedì)
     review_interval = Column(Integer, nullable=True)
-    # giorni dal ripasso precedente; NULL = non è un ripasso adattivo
+    scheduled_time = Column(Time, nullable=True)  # blocco orario nel giorno di due_date (time blocking)
+    planned_minutes = Column(Integer, nullable=True)  # durata prevista del blocco  # giorni dal ripasso precedente; NULL = non è un ripasso adattivo
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     user = relationship('User', back_populates='tasks')

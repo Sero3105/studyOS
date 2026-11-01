@@ -27,3 +27,4 @@ class Topic(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     subject = relationship('Subject', back_populates='topics')
     cards = relationship('Card', back_populates='topic', cascade='all, delete-orphan')
+    mistakes = relationship('Mistake', back_populates='topic', cascade='all, delete-orphan')

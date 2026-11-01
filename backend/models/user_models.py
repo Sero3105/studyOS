@@ -16,7 +16,7 @@ relative agli utenti, e viene usato insieme a SQLAlchemy per creare la tabella
 nel database configurato dal progetto.
 """
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import JSON, Column, Integer, String
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -50,6 +50,9 @@ class User(Base):
     # Password già trasformata in hash. Non memorizziamo mai la password in chiaro.
     # L'hashing avviene prima del salvataggio tramite il service di creazione utente.
     password_hash = Column(String, nullable=False)
+
+    # Preferenze dell'interfaccia (CFU, giorni liberi, avvisi...): seguono l'utente su ogni browser e nel backup.
+    preferences = Column(JSON, nullable=True)
 
     auth_sessions = relationship(
         "AuthSession", back_populates="user", cascade="all, delete-orphan"

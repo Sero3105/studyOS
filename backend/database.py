@@ -42,7 +42,7 @@ from models.task_models import Task
 from models.session_models import StudySession
 from models.goal_models import Goal
 from models.share_models import CalendarFeed, ShareLink
-from models.card_models import Card
+from models.card_models import Card, Mistake
 
 
 def run_migrations() -> None:
