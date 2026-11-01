@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
-import { ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react'
+import type { DragEvent, FormEvent } from 'react'
+import { ChevronLeft, ChevronRight, Clock3, GraduationCap, GripVertical } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
 import { ErrorNotice, LoadingRows } from '../components/ui/Feedback'
@@ -13,12 +13,20 @@ import type { StudySession } from '../services/sessionService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import SubjectDot from '../components/ui/SubjectDot'
+import BlockEditor from '../components/calendar/BlockEditor'
+import Modal from '../components/ui/Modal'
 import { addDays, formatDay, formatMinutes, parseDay, todayIso, weekStart } from '../utils/dates'
 import { heatLevel } from '../utils/studyStats'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
 
 type View = 'week' | 'month'
+
+/** "09:30:00" + 90 → "11:00". */
+function endTime(start: string, minutes: number): string {
+  const total = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5)) + minutes
+  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
 
 /** Primo giorno del mese della data indicata. */
 const monthStart = (iso: string) => `${iso.slice(0, 8)}01`
@@ -43,6 +51,10 @@ function CalendarPage() {
   const [sessions, setSessions] = useState<StudySession[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  // Time blocking: task in modifica (giorno/ora/durata) e task che si sta trascinando.
+  const [editing, setEditing] = useState<number | null>(null)
+  const [dragId, setDragId] = useState<number | null>(null)
+  const [dropDay, setDropDay] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -70,7 +82,10 @@ function CalendarPage() {
   }, [loading, view, start])
 
   const minutesOn = (day: string) => sessions.filter((s) => s.studied_on === day).reduce((sum, s) => sum + s.duration_minutes, 0)
+  // Prima i blocchi orari in ordine di ora, poi i task senza orario.
   const tasksOn = (day: string) => tasks.filter((x) => x.due_date === day)
+    .sort((a, b) => (a.scheduled_time ?? '99').localeCompare(b.scheduled_time ?? '99') || a.id - b.id)
+  const unplanned = tasks.filter((x) => x.status !== 'done' && x.due_date === null)
   const examsOn = (day: string) => exams.filter((e) => e.exam_date === day)
 
   const inRange = (iso: string | null) => iso !== null && iso >= weekDays[0] && iso <= weekDays[6]
@@ -104,6 +119,49 @@ function CalendarPage() {
     } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
   }
 
+  const schedule = async (task: Task, patch: Partial<Task>) => {
+    try {
+      const updated = await updateTask(task.id, patch)
+      setTasks((list) => list.map((x) => (x.id === task.id ? updated : x)))
+      setEditing(null)
+    } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
+  }
+
+  const drop = (day: string) => {
+    const task = tasks.find((x) => x.id === dragId)
+    setDragId(null); setDropDay(null)
+    if (task && task.due_date !== day) void schedule(task, { due_date: day })
+  }
+
+  const dragProps = (task: Task) => ({
+    draggable: true,
+    onDragStart: (e: DragEvent) => { e.dataTransfer.effectAllowed = 'move'; setDragId(task.id) },
+    onDragEnd: () => { setDragId(null); setDropDay(null) },
+  })
+
+  const renderTask = (task: Task) => (
+    <li key={task.id} className={`calendar-task-item${task.scheduled_time ? ' is-block' : ''}${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
+      {task.scheduled_time && (
+        <span className="calendar-block-time num">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
+      )}
+      <div className="calendar-task-line">
+        <label className={`calendar-task${task.status === 'done' ? ' is-done' : ''}`}>
+          <input className="check" type="checkbox" checked={task.status === 'done'} onChange={() => void toggle(task)} />
+          <span className={`priority priority-${task.priority}`} aria-hidden="true" />
+          <span className="calendar-task-title"><SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />{task.title}</span>
+        </label>
+        {task.status !== 'done' && (
+          <button className="icon-btn calendar-task-time" type="button" onClick={() => setEditing(editing === task.id ? null : task.id)}
+            aria-expanded={editing === task.id} aria-label={t('calendar.blockEdit', { title: task.title })} title={t('calendar.blockEditTitle')}>
+            <Clock3 aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </li>
+  )
+
+  const editingTask = tasks.find((x) => x.id === editing)
+
   const title = view === 'week'
     ? t('calendar.weekOf', { from: formatDay(weekDays[0], 'short', locale), to: formatDay(weekDays[6], 'long', locale) })
     : new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(parseDay(monthStart(anchor)))
@@ -133,6 +191,12 @@ function CalendarPage() {
 
       {error && <ErrorNotice message={error} onRetry={loading ? undefined : () => void load()} onDismiss={() => setError('')} />}
 
+      {editingTask && (
+        <Modal title={t('calendar.blockEditTitle')} description={editingTask.title} onClose={() => setEditing(null)}>
+          <BlockEditor task={editingTask} defaultDay={editingTask.due_date ?? today} onSave={(patch) => schedule(editingTask, patch)} onCancel={() => setEditing(null)} />
+        </Modal>
+      )}
+
       {loading ? <LoadingRows label={t('calendar.loading')} /> : view === 'week' ? (
         <>
           <dl className="calendar-summary">
@@ -144,6 +208,27 @@ function CalendarPage() {
             ))}
           </dl>
 
+          {unplanned.length > 0 && (
+            <section className="panel calendar-tray" aria-labelledby="calendar-tray-title">
+              <div className="panel-head">
+                <h2 id="calendar-tray-title" className="panel-title">{t('calendar.trayTitle', { count: unplanned.length })}</h2>
+                <span className="panel-meta">{t('calendar.trayHint')}</span>
+              </div>
+              <ul className="calendar-tray-list">
+                {unplanned.map((task) => (
+                  <li key={task.id} className={`calendar-chip${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
+                    <GripVertical aria-hidden="true" className="calendar-chip-grip" />
+                    <SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />
+                    <button type="button" className="calendar-chip-title" onClick={() => setEditing(editing === task.id ? null : task.id)} aria-expanded={editing === task.id}
+                      aria-label={t('calendar.blockEdit', { title: task.title })}>
+                      {task.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <ol className="calendar-week">
             {weekDays.map((day) => {
               const dayExams = examsOn(day)
@@ -151,7 +236,13 @@ function CalendarPage() {
               const minutes = minutesOn(day)
               const isToday = day === today
               return (
-                <li key={day} className={`calendar-day${isToday ? ' is-today' : ''}${day < today ? ' is-past' : ''}`}>
+                <li
+                  key={day}
+                  className={`calendar-day${isToday ? ' is-today' : ''}${day < today ? ' is-past' : ''}${dropDay === day ? ' is-drop' : ''}`}
+                  onDragOver={(e) => { if (dragId !== null) { e.preventDefault(); setDropDay(day) } }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropDay(null) }}
+                  onDrop={(e) => { e.preventDefault(); drop(day) }}
+                >
                   <h2 className="calendar-day-head">
                     <span className="calendar-weekday">{weekdayShort(day)}</span>
                     <span className="calendar-date num">{parseDay(day).getDate()}</span>
@@ -168,15 +259,7 @@ function CalendarPage() {
                         </span>
                       </li>
                     ))}
-                    {dayTasks.map((task) => (
-                      <li key={task.id}>
-                        <label className={`calendar-task${task.status === 'done' ? ' is-done' : ''}`}>
-                          <input className="check" type="checkbox" checked={task.status === 'done'} onChange={() => void toggle(task)} />
-                          <span className={`priority priority-${task.priority}`} aria-hidden="true" />
-                          <span className="calendar-task-title"><SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />{task.title}</span>
-                        </label>
-                      </li>
-                    ))}
+                    {dayTasks.map(renderTask)}
                     {dayExams.length === 0 && dayTasks.length === 0 && <li className="calendar-free">{t('calendar.free')}</li>}
                   </ul>
 

@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { ArrowRight, ChevronDown, Plus, Repeat } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowRight, ChevronDown, Play, Plus, Repeat } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
-import ConfirmButton from '../components/ui/ConfirmButton'
+import DeleteButton from '../components/ui/DeleteButton'
+import { useUndo } from '../context/undoContext'
 import Meta from '../components/ui/Meta'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createTask, deleteTask, getTasks, updateTask } from '../services/taskService'
-import type { Task, TaskPriority, TaskStatus } from '../services/taskService'
+import type { ReviewRating as ReviewRatingValue, Task, TaskPriority, TaskStatus } from '../services/taskService'
+import ReviewRating from '../components/ReviewRating'
+import { sessionFor } from '../utils/pomodoro'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import { getExams } from '../services/examService'
@@ -53,6 +56,8 @@ function sortTasks(list: Task[]): Task[] {
  */
 function PlannerPage() {
   const { t, locale } = useLanguage()
+  const { undoable } = useUndo()
+  const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [exams, setExams] = useState<Exam[]>([])
@@ -104,20 +109,18 @@ function PlannerPage() {
     finally { setSaving(false) }
   }
 
-  const changeStatus = async (task: Task, status: TaskStatus) => {
+  const changeStatus = async (task: Task, status: TaskStatus, rating?: ReviewRatingValue) => {
     try {
-      const updated = await updateTask(task.id, { status })
-      // Un task ricorrente completato crea il successivo sul backend: si ricarica la lista.
-      if (status === 'done' && task.recurrence) setTasks(await getTasks())
+      const updated = await updateTask(task.id, { status, review_rating: rating })
+      // Un task ricorrente o un ripasso completato crea il successivo sul backend: si ricarica la lista.
+      if (status === 'done' && (task.recurrence || task.review_interval)) setTasks(await getTasks())
       else setTasks((t) => t.map((x) => x.id === task.id ? updated : x))
     } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
   }
 
-  const removeTask = async (id: number) => {
-    try {
-      await deleteTask(id)
-      setTasks((t) => t.filter((x) => x.id !== id))
-    } catch (e) { setError(errorMessage(e, t('planner.deleteError'))) }
+  const removeTask = (task: Task) => {
+    setTasks((list) => list.filter((x) => x.id !== task.id))
+    undoable(t('common.deleted', { title: task.title }), () => deleteTask(task.id), () => setTasks((list) => [...list, task]))
   }
 
   const subjectOf = (id: number | null) => subjects.find((s) => s.id === id)
@@ -157,7 +160,7 @@ function PlannerPage() {
               <span className={`priority priority-${task.priority}`}>{t(priorityKeys[task.priority])}</span>,
               task.due_date && (
                 <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long', locale)}>
-                  {relativeDay(task.due_date, locale)}
+                  {relativeDay(task.due_date, locale)}{task.scheduled_time && ` · ${task.scheduled_time.slice(0, 5)}`}
                 </span>
               ),
               subject && <><SubjectDot subject={subject} />{subject.name}{topic ? ` / ${topic}` : ''}</>,
@@ -166,7 +169,10 @@ function PlannerPage() {
           />
         </span>
         <span className="row-actions">
-          {!done && (
+          {/* Un ripasso in scadenza si chiude dicendo com'è andato; prima di allora è un task normale. */}
+          {!done && task.review_interval !== null && days !== null && days <= 0 ? (
+            <ReviewRating onRate={(rating) => void changeStatus(task, 'done', rating)} />
+          ) : !done && (
             <button
               className={`tag tag-button${task.status === 'in_progress' ? ' tag-accent' : ' row-reveal'}`}
               type="button"
@@ -176,8 +182,14 @@ function PlannerPage() {
               {t('planner.inProgress')}
             </button>
           )}
-          <span className="row-reveal">
-            <ConfirmButton label={t('planner.deleteLabel', { title: task.title })} onConfirm={() => removeTask(task.id)} />
+          <span className="row-reveal row-actions">
+            {!done && (
+              <button className="icon-btn" type="button" onClick={() => navigate('/timer', { state: sessionFor(subject, subject?.topics.find((x) => x.id === task.topic_id), task) })}
+                aria-label={t('planner.startTimer', { title: task.title })} title={t('planner.startTimerTitle')}>
+                <Play aria-hidden="true" />
+              </button>
+            )}
+            <DeleteButton label={t('planner.deleteLabel', { title: task.title })} onDelete={() => removeTask(task)} />
           </span>
         </span>
       </li>

@@ -233,3 +233,32 @@
 /* Revisione settimanale */
 .weekly-review { display: grid; gap: var(--space-5); }
 .weekly-review-overdue { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+
+/* Cosa studio oggi? */
+.today-plan-skeleton { height: 220px; }
+
+.today-plan-row { gap: var(--space-3); }
+
+.today-plan-icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.today-plan-icon svg { width: 18px; height: 18px; }
+.today-plan-icon.is-block { color: var(--accent); background: var(--accent-bg); }
+.today-plan-icon.is-review { color: var(--success); background: var(--success-bg); }
+.today-plan-icon.is-exam { color: var(--warning); background: var(--warning-bg); }
+
+.today-plan-row .row-meta { display: flex; align-items: baseline; gap: 6px; }
+
+.today-plan-go { flex: 0 0 auto; }
+
+@media (max-width: 560px) {
+  .today-plan-go-label { display: none; }
+}

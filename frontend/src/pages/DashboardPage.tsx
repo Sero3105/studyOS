@@ -11,6 +11,7 @@ import UpcomingExams from '../components/dashboard/UpcomingExams'
 import OpenTasks from '../components/dashboard/OpenTasks'
 import WeeklyReview from '../components/dashboard/WeeklyReview'
 import { getStatsSummary } from '../services/statsService'
+import TodayPlan from '../components/dashboard/TodayPlan'
 import type { StatsSummary } from '../services/statsService'
 import { useAuth } from '../context/useAuth'
 import { formatMinutes } from '../utils/dates'
@@ -78,6 +79,7 @@ function DashboardPage() {
         <div className="dashboard-grid">
           <div className="dashboard-main">
             <TodayOverview stats={stats} onStartSession={() => setIsSessionModalOpen(true)} />
+            <TodayPlan />
 
             <section className="panel" aria-labelledby="dash-week-title">
               <div className="panel-head">

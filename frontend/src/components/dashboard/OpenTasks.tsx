@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { EmptyState, ErrorNotice } from '../ui/Feedback'
 import Meta from '../ui/Meta'
+import ReviewRating from '../ReviewRating'
 import { updateTask } from '../../services/taskService'
-import type { Task } from '../../services/taskService'
+import type { ReviewRating as Rating, Task } from '../../services/taskService'
 import { daysUntil, relativeDay } from '../../utils/dates'
 import { errorMessage } from '../../utils/errors'
 import { useLanguage } from '../../i18n/useLanguage'
@@ -22,10 +23,10 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
   const [tasks, setTasks] = useState(initialTasks)
   const [error, setError] = useState('')
 
-  const complete = async (task: Task) => {
+  const complete = async (task: Task, rating?: Rating) => {
     setError('')
     try {
-      await updateTask(task.id, { status: 'done' })
+      await updateTask(task.id, { status: 'done', review_rating: rating })
       setTasks((current) => current.filter((item) => item.id !== task.id))
     } catch (e) {
       setError(errorMessage(e, t('dashboard.updateTaskError')))
@@ -75,6 +76,7 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
                     ]}
                   />
                 </span>
+                {task.review_interval !== null && task.due_date !== null && daysUntil(task.due_date) <= 0 && <ReviewRating onRate={(rating) => void complete(task, rating)} />}
               </li>
             )
           })}
