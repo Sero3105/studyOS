@@ -17,21 +17,31 @@ StudyOS/
 ├── .env                     # variabili di ambiente
 ├── README.md                # descrizione del progetto
 ├── DEVELOPMENT_GUIDE.md     # questa guida
+├── compose.yaml             # nginx + api + backup giornaliero
 ├── backend/
 │   ├── config.py
-│   ├── database.py
+│   ├── database.py          # engine SQLite e migrazioni all'avvio
 │   ├── main.py
 │   ├── dependencies/
 │   ├── models/
 │   ├── routers/
 │   ├── schemas/
-│   └── services/
+│   ├── services/
+│   ├── migrations/          # Alembic, una revisione per modifica dello schema
+│   └── tests/               # pytest su un database temporaneo
 ├── database/
 │   └── studyos.db           # database sqlite locale
 └── frontend/
     ├── package.json
     ├── vite.config.ts
+    ├── tests/               # test della logica pura (node --test)
     └── src/
+        ├── pages/           # una pagina per route
+        ├── components/      # UI kit, timer, esami, flashcard, calendario, dashboard
+        ├── context/         # auth, timer persistente, annulla dopo l'eliminazione
+        ├── services/        # chiamate API, una per risorsa
+        ├── utils/           # logica pura: date, voti, pomodoro, piano di oggi, prontezza, CSV, Anki, preferenze
+        └── styles/
 ```
 
 ## 3. Stack tecnologico
@@ -43,6 +53,8 @@ StudyOS/
 - Vite
 - React Router
 - lucide-react
+- Recharts (grafici, caricato solo quando serve)
+- marked + KaTeX + DOMPurify (anteprima delle note, caricati solo all'apertura)
 - CSS modularizzato per componenti e layout
 
 ### Backend setup
@@ -52,6 +64,7 @@ StudyOS/
 - SQLAlchemy
 - Pydantic
 - SQLite
+- Alembic (migrazioni)
 - python-dotenv
 - pwdlib
 
@@ -232,8 +245,8 @@ Se vuoi aggiungere una nuova pagina o un endpoint:
 
 ## 11. Checklist veloce prima di fare commit
 
-- backend avviato correttamente?
-- frontend avviato correttamente?
+- test backend e frontend verdi (`pytest`, `tsc -b`, `npm run lint`, `npm test`)?
+- se hai cambiato un modello: nuova migrazione Alembic e export/import aggiornati?
 - .env presente e corretto?
 - logica separata bene tra router/service/model?
 - file commentati o almeno leggibili?
@@ -256,13 +269,21 @@ Aree implementate end-to-end (frontend, API, persistenza, isolamento per utente)
 
 | Area | Backend | Frontend |
 | --- | --- | --- |
-| Auth | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Login/Register, sessione ripristinata al reload |
-| Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` | `/subjects` |
-| Task | `/tasks` (CRUD, link materia/topic validati) | `/planner` con prossimi esami |
-| Esami | `/exams` (CRUD completo) | `/exams` con modifica ed eliminazione |
-| Sessioni | `/sessions` | Timer salva la sessione a fine focus; `/history` |
+| Auth e account | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`, `/auth/password`, `DELETE /auth/account` | Login/Register, Impostazioni → Account |
+| Preferenze | `GET/PATCH /settings` (JSON sull'utente) | `utils/preferences.ts`: server come fonte, localStorage come cache |
+| Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` (note, difficoltà, ripassi adattivi) | `/subjects` con note Markdown e anteprima |
+| Task | `/tasks` (ricorrenza, ripasso adattivo con `review_rating`, blocco orario `scheduled_time` + `planned_minutes`) | `/planner`, `/calendar` (time blocking) |
+| Esami | `/exams` (CRUD), `POST /exams/{id}/plan` (piano pesato, `rest_days`), `POST /exams/{id}/attempts` | `/exams`: esito, tentativi, prontezza, libretto e simulatore |
+| Sessioni | `/sessions` (CRUD, `kind`, `focus`) | Timer, `/history` |
+| Flashcard ed errori | `/cards`, `/cards/bulk`, `/cards/{id}/review`, `/mistakes` | `/cards`: ripasso, import/export, quaderno degli errori |
 | Obiettivi | `/goals` (progresso calcolato dai dati) | `/goals` |
-| Statistiche | `/stats/summary` | Dashboard e `/statistics` su dati reali |
+| Statistiche | `/stats/summary` | Dashboard ("Cosa studio oggi?") e `/statistics` con export CSV |
+| Dati | `/data/export`, `/data/import` (aggiungi o sostituisci), `/data/notes-vault` | Impostazioni → Dati e backup, Synapse |
+| Condivisione e calendario | `/share`, `/share/public/{token}`, feed iCal | Impostazioni, `/shared/:token` |
+
+Ripetizione dilazionata: `services/spaced_repetition.py` (`next_interval`) è
+condivisa da ripassi e flashcard. Difficile riparte da 1 giorno, Ok moltiplica
+per 2,5, Facile per 4; oltre 60 giorni un argomento è consolidato.
 
 Assunzioni adottate: una sessione viene registrata quando il blocco Work del
 timer termina, con la durata pianificata; gli obiettivi misurano minuti
@@ -270,17 +291,20 @@ timer termina, con la durata pianificata; gli obiettivi misurano minuti
 la costanza (streak) conta i giorni consecutivi con almeno una sessione,
 incluso oggi o ieri.
 
-Database: le nuove tabelle (`subjects`, `topics`, `tasks`, `study_sessions`,
-`goals`) vengono create da `Base.metadata.create_all` all'avvio; nessuna
-colonna esistente è stata modificata, quindi il database di sviluppo è
-preservato senza migrazioni distruttive.
+Database: lo schema è gestito da Alembic (`backend/migrations/versions/`,
+0001 → 0008). L'API applica le migrazioni mancanti all'avvio; ogni modifica a
+un modello va accompagnata da una nuova revisione (`alembic revision
+--autogenerate -m "..."`) e dall'aggiornamento di `tests/test_migrations.py`.
+Nuove tabelle con dati dell'utente vanno aggiunte anche a export/import e alla
+cancellazione in `services/data_service.py`.
 
-Test: `backend/tests/` usa un database SQLite temporaneo isolato.
-Esecuzione: `source backend/.venv/bin/activate && python -m pytest backend/tests/ -q`.
+Test:
+- backend: `source backend/.venv/bin/activate && python -m pytest backend/tests/ -q` (database SQLite temporaneo isolato);
+- frontend: `cd frontend && npx tsc -b && npm run lint && npm test` (logica pura in `src/utils`, con `node --test`).
 
 ## 14. Design system (redesign UI/UX)
 
-Direzione: dark-first, superfici quasi-nere, accento viola unico, stile piatto
+Direzione: dark-first (con tema chiaro), superfici quasi-nere, accento lime unico, stile piatto
 (niente gradienti/glow), transizioni 150-200ms, `prefers-reduced-motion`
 rispettato. Tutti i valori vivono in `frontend/src/styles/base/tokens.css`:
 superfici, testo, accento, colori semantici, tipografia, spaziature, raggi,

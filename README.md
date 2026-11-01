@@ -42,19 +42,23 @@
 
 | | Area | What it does |
 |---|---|---|
-| 📅 | **Planner** | Tasks with subject, topic, priority, deadlines, and status |
-| ⏱️ | **Pomodoro Timer** | Keeps running across pages and saves the session when a focus block ends |
-| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy with Markdown notes per topic and automatic spaced reviews (+1/3/7/21 days) |
-| 📝 | **Exams** | Countdowns, one-click study plan up to the exam, grades and CFU with weighted average and graduation base |
+| 🧭 | **What do I study today?** | On the dashboard: time blocks, reviews, flashcards, due tasks and the least-studied topic of the next exam, each one a click away |
+| 📅 | **Planner** | Tasks with subject, topic, priority, deadline, status and recurrence; ▶ starts the timer on a task |
+| ⏱️ | **Pomodoro Timer** | Keeps running across pages, long break every N blocks, sound and notification when a block ends, activity type and focus for each block |
+| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy, Markdown notes with preview and formulas (KaTeX), difficulty per topic and adaptive reviews: Hard / Ok / Easy decides when the next one comes |
+| 🃏 | **Flashcards** | Spaced repetition with keyboard shortcuts, cards from notes (`question :: answer`), Anki or CSV import and export, mistakes notebook |
+| 📝 | **Exams** | Countdowns, exam readiness, study plan weighted by difficulty and hours already studied (with rest days), outcome and attempts (failed or rejected) |
+| 🎓 | **Record book** | Simple and weighted average, graduation base, configurable degree CFU, grade trend and graduation grade simulator |
 | 🎯 | **Goals** | Weekly/total minutes, tasks, topics, sessions — progress calculated from real data |
-| 📊 | **Statistics** | Totals, time by subject/topic, streaks, one-year heatmap, planned vs studied per subject |
-| 🕘 | **History** | Sessions grouped by day with totals |
-| 🗓️ | **Calendar** | Weekly view of exams, deadlines and minutes studied; iCal feed for Apple/Google Calendar and Outlook |
-| 💾 | **Backups** | One-click JSON export of all your data; import adds a backup back in |
+| 📊 | **Statistics** | Totals, time by subject, topic and activity type, average focus, streaks, one-year heatmap, best hours, planned vs studied, CSV export |
+| 🕘 | **History** | Sessions grouped by day with totals; sessions added or fixed by hand |
+| 🗓️ | **Calendar** | Week and month views of exams, deadlines and minutes studied; time blocking (drag tasks onto days, time and duration per block); iCal feed for Apple/Google Calendar and Outlook |
+| 💾 | **Backups** | One-click JSON export, import that adds or restores, automatic daily copy of the database (last 7 files) |
 | 🔔 | **Reminders** | Daily browser notification for overdue/upcoming tasks and exams at 7/3/1/0 days |
 | 🔗 | **Sharing** | Revocable read-only link to your study plan (no notes, locations or email) |
 | ⌨️ | **Command palette** | `⌘K` / `Ctrl+K` to search tasks, exams and topics; `g` + letter to jump between pages, `n` for a new task |
 | 🧠 | **Synapse notes** | Export topic notes as a linked Markdown vault for [Synapse](https://github.com/Sero3105/Synapse) |
+| ⚙️ | **Preferences** | Theme, degree CFU, rest days and alerts stored on the server: they follow you to every browser; "Undo" after every delete |
 | 🔐 | **Account** | Registration/login, cookie-based refresh, password change, account deletion |
 
 ### 🔄 The StudyOS cycle
@@ -69,7 +73,7 @@ Each part feeds the next: a task leads to a session, the session powers the stat
 
 ![Dashboard](./docs/media/dashboard.jpg)
 
-*The dashboard: today's focus, deadlines, compact statistics, and recent activity.*
+*The dashboard: today's focus, "What do I study today?", deadlines and the last 7 days.*
 
 </div>
 
@@ -89,13 +93,13 @@ Each part feeds the next: a task leads to a session, the session powers the stat
 |---|---|---|
 | ![Planner](./docs/media/planner.jpg) | ![Command palette](./docs/media/palette.jpg) | ![Goals](./docs/media/goals.jpg) |
 
-| History | Settings | Login |
+| Flashcards | History | Settings |
 |---|---|---|
-| ![History](./docs/media/history.jpg) | ![Settings](./docs/media/settings.jpg) | ![Login](./docs/media/login.jpg) |
+| ![Flashcards](./docs/media/cards.jpg) | ![History](./docs/media/history.jpg) | ![Settings](./docs/media/settings.jpg) |
 
-| Mobile dashboard | Mobile timer |
-|---|---|
-| ![Mobile dashboard](./docs/media/mobile-dashboard.jpg) | ![Mobile timer](./docs/media/mobile-timer.jpg) |
+| Login | Mobile dashboard | Mobile timer |
+|---|---|---|
+| ![Login](./docs/media/login.jpg) | ![Mobile dashboard](./docs/media/mobile-dashboard.jpg) | ![Mobile timer](./docs/media/mobile-timer.jpg) |
 
 > 📁 All images are in [`docs/media/`](./docs/media). Demo video: [`demo.mp4`](./docs/media/demo.mp4).
 
@@ -130,6 +134,7 @@ docker compose logs -f api  # backend logs (web for nginx)
 |---|---|---|---|
 | `web` | nginx unprivileged (Alpine) | Serves the frontend and forwards `/api/*` to the backend | `127.0.0.1:8080` (only published port) |
 | `api` | Python 3.14 slim | FastAPI + SQLAlchemy, one uvicorn process, SQLite included | Internal network only |
+| `backup` | same image as `api` | Copies the database every day to `./backups` and keeps the last 7 files | None |
 
 There is no database container: SQLite is a file in the `studyos-data` volume (`/data` in `api`). The browser communicates only with `http://localhost:8080`, so no CORS is needed and auth cookies work.
 
@@ -137,6 +142,14 @@ There is no database container: SQLite is a file in the `studyos-data` volume (`
 
 - **Docker:** volume `studyos_studyos-data`, mounted at `/data/studyos.db` in `api`. It survives `down`, restarts, and rebuilds.
 - **Local development:** `database/studyos.db` in the repository. Docker never touches it.
+
+The `backup` service copies the database once a day to `./backups` (on disk, outside the volume) and keeps the last 7 files; change the folder with `STUDYOS_BACKUP_DIR`. On Linux, make it writable by the container: `mkdir backups && sudo chown 10001 backups`. To restore one (replaces the current data):
+
+```bash
+docker compose stop api
+docker compose run --rm --no-deps -T api sh -c 'cat > /data/studyos.db' < backups/studyos-YYYY-MM-DD.db
+docker compose up -d
+```
 
 The easiest backup is **Settings → Download backup** in the app. To copy the whole database file:
 
@@ -180,7 +193,7 @@ docker compose up -d
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · vanilla CSS with design tokens |
+| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · Recharts · marked + KaTeX + DOMPurify (notes) · vanilla CSS with design tokens |
 | **Backend** | FastAPI · SQLAlchemy · Alembic · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
 | **Database** | SQLite (file in the Docker volume, `database/studyos.db` locally) |
 | **Deployment** | Docker Compose · nginx (static files + `/api` proxy) · multi-stage images |
@@ -193,7 +206,7 @@ docker compose up -d
 
 ```text
 StudyOS/
-├── compose.yaml          # production setup (nginx + api)
+├── compose.yaml          # production setup (nginx + api + daily backup)
 ├── .env.example          # environment variable template
 ├── backend/
 │   ├── main.py           # FastAPI entry point + router mounting
@@ -206,9 +219,10 @@ StudyOS/
 │   └── tests/            # pytest with temporary SQLite database
 ├── frontend/
 │   └── src/
-│       ├── pages/        # dashboard, timer, planner, calendar, subjects, exams, goals, history, statistics, settings, shared plan
+│       ├── pages/        # dashboard, timer, planner, calendar, subjects, exams, flashcards, goals, history, statistics, settings, shared plan
 │       ├── components/   # sidebar, Pomodoro, forms, UI kit
-│       ├── context/      # auth + persistent timer
+│       ├── context/      # auth, persistent timer, undo after delete
+│       ├── utils/        # tested pure logic: dates, grades, today plan, readiness, CSV, Anki
 │       └── styles/       # base / layout / components / screens
 ├── database/             # local studyos.db (never touched by Docker)
 └── docs/                 # screenshots, demo, design notes
@@ -232,7 +246,7 @@ npm install
 npm run dev
 ```
 
-Backend tests: `python -m pytest backend/tests/ -q`
+Backend tests: `python -m pytest backend/tests/ -q` · frontend tests: `cd frontend && npm test`
 
 **Database migrations (Alembic).** The API applies pending migrations on startup, including on databases created before Alembic was added. After changing a model in `backend/models/`:
 
@@ -256,6 +270,12 @@ alembic revision --autogenerate -m "describe the change"   # review the generate
 - [x] Topic notes with Synapse export
 - [x] Yearly heatmap and planned vs studied
 - [x] Password change and account deletion
+- [x] Long breaks, end-of-block alerts, session activity type and focus
+- [x] Adaptive reviews, flashcards with Anki import/export and a mistakes notebook
+- [x] Exam attempts, readiness, weighted exam plan and graduation grade simulator
+- [x] Calendar time blocking and "What do I study today?"
+- [x] Notes with Markdown preview and formulas
+- [x] Server-side preferences, undo after delete, CSV export and automatic backups
 
 ---
 
