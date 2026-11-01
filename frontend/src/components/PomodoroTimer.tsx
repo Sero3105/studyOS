@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import { useTimer } from '../context/useTimer'
 import { useLanguage } from '../i18n/useLanguage'
+import { breakMinutes, longBreak } from '../utils/pomodoro'
 
 /**
  * Quadrante del timer Pomodoro.
@@ -18,9 +19,13 @@ import { useLanguage } from '../i18n/useLanguage'
  */
 function PomodoroTimer() {
   const { t } = useLanguage()
-  const { config, mode, isRunning, remainingSeconds, totalSeconds, hasStarted, toggle, reset } = useTimer()
+  const { config, mode, isRunning, remainingSeconds, totalSeconds, hasStarted, completedBlocks, toggle, reset } = useTimer()
   const timer = config?.focusMinutes ?? 0
-  const pause = config?.breakMinutes ?? 0
+  const pause = config ? breakMinutes(config, completedBlocks + 1) : 0
+  // Blocchi del ciclo attuale verso la pausa lunga; durante la pausa lunga il ciclo è pieno.
+  const cycle = config ? Math.min(longBreak(config).blocksBeforeLongBreak, 8) : 0
+  const inCycle = cycle ? completedBlocks % cycle : 0
+  const filled = mode === 'Break' && completedBlocks > 0 && inCycle === 0 ? cycle : inCycle
 
   const minutes = Math.floor(remainingSeconds / 60)
   const remainingSecondsPart = remainingSeconds % 60
@@ -70,6 +75,11 @@ function PomodoroTimer() {
           <span className="timer-next">
             {mode === 'Work' ? t('timer.thenBreak', { minutes: pause }) : t('timer.thenStudy', { minutes: timer })}
           </span>
+          {cycle > 1 && (
+            <span className="timer-blocks" role="img" aria-label={t('timer.blocksLabel', { done: filled, total: cycle })}>
+              {Array.from({ length: cycle }, (_, i) => <span key={i} className={i < filled ? 'is-done' : undefined} />)}
+            </span>
+          )}
         </div>
       </div>
 

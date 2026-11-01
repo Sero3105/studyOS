@@ -116,3 +116,21 @@ export function postponeByWeeks(due: string, today: string): string {
   while (next < today) next = addDays(next, 7)
   return next
 }
+
+/** Minuti per tipo di attività (studio, lezione, esercizi...), dal più frequente. */
+export function minutesByKind(sessions: { kind: string; duration_minutes: number }[]): { kind: string; minutes: number }[] {
+  const totals = new Map<string, number>()
+  for (const s of sessions) totals.set(s.kind, (totals.get(s.kind) ?? 0) + s.duration_minutes)
+  return [...totals].map(([kind, minutes]) => ({ kind, minutes })).sort((a, b) => b.minutes - a.minutes)
+}
+
+/** Focus medio (1-3) per materia, solo sui blocchi valutati; le sessioni libere finiscono sotto `null`. */
+export function focusBySubject(sessions: { subject_id: number | null; focus: number | null }[]): { subjectId: number | null; average: number; count: number }[] {
+  const acc = new Map<number | null, { sum: number; count: number }>()
+  for (const s of sessions) {
+    if (!s.focus) continue
+    const entry = acc.get(s.subject_id) ?? { sum: 0, count: 0 }
+    acc.set(s.subject_id, { sum: entry.sum + s.focus, count: entry.count + 1 })
+  }
+  return [...acc].map(([subjectId, { sum, count }]) => ({ subjectId, average: sum / count, count })).sort((a, b) => b.average - a.average)
+}

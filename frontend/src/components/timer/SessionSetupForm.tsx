@@ -6,6 +6,9 @@ import { getSubjects } from '../../services/subjectService'
 import type { Subject } from '../../services/subjectService'
 import { useLanguage } from '../../i18n/useLanguage'
 import type { TranslationKey } from '../../i18n/translations'
+import { LONG_BREAK_DEFAULTS } from '../../utils/pomodoro'
+import { SESSION_KINDS } from '../../services/sessionService'
+import type { SessionKind } from '../../services/sessionService'
 
 interface SessionSetupFormProps {
   onSubmit: (config: StudySessionConfig) => void
@@ -31,7 +34,10 @@ function SessionSetupForm({
   const { t } = useLanguage()
   const [focusMinutes, setFocusMinutes] = useState('25')
   const [breakMinutes, setBreakMinutes] = useState('5')
+  const [longBreakMinutes, setLongBreakMinutes] = useState(String(LONG_BREAK_DEFAULTS.longBreakMinutes))
+  const [blocksBeforeLongBreak, setBlocksBeforeLongBreak] = useState(String(LONG_BREAK_DEFAULTS.blocksBeforeLongBreak))
   const [notes, setNotes] = useState('')
+  const [kind, setKind] = useState<SessionKind>('study')
   const [subjectId, setSubjectId] = useState('')
   const [topicId, setTopicId] = useState('')
   const [subjects, setSubjects] = useState<Subject[]>([])
@@ -50,22 +56,24 @@ function SessionSetupForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const focusDuration = Number(focusMinutes)
-    const breakDuration = Number(breakMinutes)
-
-    if (!Number.isInteger(focusDuration) || !Number.isInteger(breakDuration) || focusDuration <= 0 || breakDuration <= 0) {
+    const durations = [focusMinutes, breakMinutes, longBreakMinutes, blocksBeforeLongBreak].map(Number)
+    if (durations.some((value) => !Number.isInteger(value) || value <= 0)) {
       setError(t('timer.durationError'))
       return
     }
+    const [focusDuration, breakDuration, longBreakDuration, everyBlocks] = durations
 
     onSubmit({
       focusMinutes: focusDuration,
       breakMinutes: breakDuration,
+      longBreakMinutes: longBreakDuration,
+      blocksBeforeLongBreak: everyBlocks,
       notes: notes.trim(),
       subjectId: subjectId ? Number(subjectId) : null,
       topicId: topicId ? Number(topicId) : null,
       subject: selectedSubject?.name ?? '',
       topic: selectedTopic?.title ?? '',
+      kind,
     })
   }
 
@@ -119,6 +127,34 @@ function SessionSetupForm({
             />
           </label>
         </div>
+        <div className="form-grid">
+          <label className="field">
+            <span className="field-label">{t('timer.longBreakMinutes')}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              step="1"
+              value={longBreakMinutes}
+              onChange={(event) => { setLongBreakMinutes(event.target.value); setError('') }}
+              required
+              aria-invalid={Boolean(error)}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">{t('timer.blocksBeforeLongBreak')}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              step="1"
+              value={blocksBeforeLongBreak}
+              onChange={(event) => { setBlocksBeforeLongBreak(event.target.value); setError('') }}
+              required
+              aria-invalid={Boolean(error)}
+            />
+          </label>
+        </div>
         {error && <p className="field-error" role="alert">{error}</p>}
       </fieldset>
 
@@ -140,6 +176,12 @@ function SessionSetupForm({
             </select>
           </label>
         </div>
+        <label className="field">
+          <span className="field-label">{t('session.kind')}</span>
+          <select value={kind} onChange={(event) => setKind(event.target.value as SessionKind)}>
+            {SESSION_KINDS.map((value) => <option key={value} value={value}>{t(`session.kind.${value}`)}</option>)}
+          </select>
+        </label>
         <label className="field">
           <span className="field-label">{t('timer.note')} <em>{t('common.optional')}</em></span>
           <textarea

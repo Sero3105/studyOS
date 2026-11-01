@@ -114,3 +114,25 @@
     align-items: center;
   }
 }
+
+/* Domande a fine blocco: focus e chiusura del task */
+.timer-prompt {
+  display: flex;
+  text-align: left;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.timer-prompt p {
+  color: var(--text-strong);
+  font-weight: 500;
+}
+
+.timer-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

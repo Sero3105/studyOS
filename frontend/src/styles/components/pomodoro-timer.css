@@ -71,6 +71,25 @@
   font-size: var(--text-sm);
 }
 
+/* Blocchi completati prima della pausa lunga */
+.timer-blocks {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+.timer-blocks span {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.timer-blocks span.is-done {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
 .timer-controls {
   display: flex;
   flex-wrap: wrap;

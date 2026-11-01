@@ -3,10 +3,14 @@ import type { ReactNode } from 'react'
 import { TimerContext } from './timerContext'
 import type { TimerMode, TimerSaveState } from './timerContext'
 import type { StudySessionConfig } from '../components/timer/types'
-import { createSession } from '../services/sessionService'
-import type { CreateSessionPayload } from '../services/sessionService'
+import { createSession, updateSession } from '../services/sessionService'
+import type { CreateSessionPayload, Focus } from '../services/sessionService'
 import { useAuth } from './useAuth'
 import { todayIso } from '../utils/dates'
+import { breakMinutes } from '../utils/pomodoro'
+import { timerAlertsEnabled } from '../utils/preferences'
+import { notificationsSupported } from '../utils/reminders'
+import { useLanguage } from '../i18n/useLanguage'
 
 /**
  * Stato del timer Pomodoro, condiviso da tutte le pagine protette.
@@ -20,7 +24,8 @@ import { todayIso } from '../utils/dates'
  * browser rallenta gli intervalli (scheda in background, sospensione).
  * In pausa si conserva invece il rimanente (`remainingMs`).
  *
- * Ciclo: fine studio → pausa che parte da sola; fine pausa → studio, fermo.
+ * Ciclo: fine studio → pausa che parte da sola (lunga ogni N blocchi); fine pausa → studio, fermo.
+ * A ogni fine fase suona un avviso e, con la finestra non in primo piano, arriva una notifica.
  * Ogni blocco di studio completato viene salvato una sola volta nello storico.
  */
 
@@ -62,7 +67,7 @@ function advance(state: TimerState, time: number): TimerState {
       next = {
         ...next,
         mode: 'Break',
-        endsAt: next.endsAt + minutesMs(next.config.breakMinutes),
+        endsAt: next.endsAt + minutesMs(breakMinutes(next.config, next.completedBlocks + 1)),
         completedBlocks: next.completedBlocks + 1,
       }
     } else {
@@ -97,14 +102,35 @@ function writeJson(key: string, value: unknown) {
 
 const RETRY_MS = 60000
 
+/** Due note brevi sintetizzate con Web Audio: nessun file da scaricare. */
+function chime() {
+  try {
+    const ctx = new AudioContext()
+    ;[880, 660].forEach((frequency, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      const at = ctx.currentTime + i * 0.25
+      gain.gain.setValueAtTime(0.2, at)
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.6)
+      osc.frequency.value = frequency
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(at)
+      osc.stop(at + 0.6)
+    })
+    setTimeout(() => void ctx.close(), 1500)
+  } catch { /* audio non disponibile o bloccato dal browser */ }
+}
+
 export function TimerProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const key = `studyos.timer.${user?.id ?? 0}`
   const queueKey = `${key}.unsaved`
   const [stored] = useState(() => readJson<Stored>(key))
   // I blocchi finiti mentre la pagina era chiusa vengono contati da `advance` e salvati sotto.
   const [state, setState] = useState<TimerState>(() => (stored ? advance(stored.state, Date.now()) : idleState))
   const [saveState, setSaveState] = useState<TimerSaveState>('idle')
+  const [lastBlockId, setLastBlockId] = useState<number | null>(null)
   // Blocchi già inviati al backend, per sessione: evita salvataggi doppi (anche dopo un reload).
   const savedRef = useRef(stored ? { sessionId: stored.state.sessionId, blocks: stored.savedBlocks } : { sessionId: 0, blocks: 0 })
   const lastWrittenRef = useRef<string | null>(null)
@@ -120,8 +146,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   // Un blocco che non si riesce a salvare finisce in coda e viene riprovato dopo.
   const saveBlock = useCallback(async (payload: CreateSessionPayload) => {
     try {
-      await createSession(payload)
+      const saved = await createSession(payload)
       setSaveState('saved')
+      setLastBlockId(saved.id)
     } catch {
       writeJson(queueKey, [...(readJson<CreateSessionPayload[]>(queueKey) ?? []), payload])
       setSaveState('error')
@@ -173,6 +200,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             duration_minutes: config.focusMinutes,
             studied_on: todayIso(),
             notes: config.notes || undefined,
+            kind: config.kind,
           })
         }
       }
@@ -183,6 +211,23 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     lastWrittenRef.current = value
     try { localStorage.setItem(key, value) } catch { /* storage non disponibile: timer solo in memoria */ }
   }, [state, key, saveBlock])
+
+  // Avviso a fine fase. Non per i cambi recuperati all'apertura (lo stato iniziale) né per un reset:
+  // la pausa è finita solo se il tempo ha superato la sua fine.
+  // shortcut: con più schede aperte il suono parte in ognuna (la notifica no, ha un tag); serve una scheda "leader" se dà fastidio.
+  const previousRef = useRef(state)
+  useEffect(() => {
+    const previous = previousRef.current
+    previousRef.current = state
+    if (previous.sessionId !== state.sessionId || !timerAlertsEnabled()) return
+    const workEnded = state.completedBlocks > previous.completedBlocks
+    const breakEnded = previous.mode === 'Break' && state.mode === 'Work' && previous.endsAt !== null && state.now >= previous.endsAt
+    if (!workEnded && !breakEnded) return
+    chime()
+    if (notificationsSupported() && Notification.permission === 'granted' && !document.hasFocus()) {
+      new Notification(t(state.mode === 'Break' ? 'timer.alertWorkDone' : 'timer.alertBreakDone'), { tag: 'studyos-timer', icon: '/favicon.svg' })
+    }
+  }, [state, t])
 
   // Avvio, pausa o reset fatti in un'altra scheda.
   useEffect(() => {
@@ -197,6 +242,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, [key])
 
   const start = useCallback((config: StudySessionConfig) => {
+    // Siamo dentro un clic: unico momento in cui il browser lascia chiedere il permesso.
+    if (timerAlertsEnabled() && notificationsSupported() && Notification.permission === 'default') void Notification.requestPermission()
     setSaveState('idle')
     setState((current) => ({
       ...idleState,
@@ -232,8 +279,15 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     setState((current) => ({ ...idleState, sessionId: current.sessionId + 1 }))
   }, [])
 
-  const { config, mode, isRunning, endsAt, remainingMs, now } = state
-  const totalMs = config ? minutesMs(mode === 'Work' ? config.focusMinutes : config.breakMinutes) : 0
+  const rateFocus = useCallback((focus: Focus | null) => {
+    const id = lastBlockId
+    setLastBlockId(null)
+    // Se il salvataggio fallisce si perde solo la valutazione, non il blocco.
+    if (id !== null && focus !== null) updateSession(id, { focus }).catch(() => {})
+  }, [lastBlockId])
+
+  const { config, mode, isRunning, endsAt, remainingMs, now, completedBlocks } = state
+  const totalMs = config ? minutesMs(mode === 'Work' ? config.focusMinutes : breakMinutes(config, completedBlocks)) : 0
   const leftMs = isRunning && endsAt !== null ? Math.max(0, endsAt - now) : remainingMs
   const remainingSeconds = Math.ceil(leftMs / 1000)
   const totalSeconds = Math.round(totalMs / 1000)
@@ -247,7 +301,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         remainingSeconds,
         totalSeconds,
         hasStarted: remainingSeconds < totalSeconds,
+        completedBlocks,
         saveState,
+        lastBlockId,
+        rateFocus,
         start,
         toggle,
         reset,
