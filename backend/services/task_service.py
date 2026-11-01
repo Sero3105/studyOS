@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from models.subject_models import Subject, Topic
 from models.task_models import Task
 from schemas.task_schemas import TaskCreate, TaskUpdate
+from services.spaced_repetition import MAX_REVIEW_DAYS, Rating, next_interval
 
 def _check_links(user_id: int, db: Session, subject_id, topic_id) -> None:
     if subject_id is not None:
@@ -42,7 +43,7 @@ def next_due(recurrence: str, due: date | None, today: date) -> date:
 
 def update_task(task_id: int, data: TaskUpdate, user_id: int, db: Session) -> Task:
     task = _owned(task_id, user_id, db)
-    values = data.model_dump(exclude_unset=True)
+    values = data.model_dump(exclude_unset=True, exclude={'review_rating'})
     _check_links(user_id, db, values.get('subject_id', task.subject_id), values.get('topic_id', task.topic_id))
     newly_done = values.get('status') == 'done' and task.status != 'done'
     for field, value in values.items(): setattr(task, field, value)
@@ -54,6 +55,14 @@ def update_task(task_id: int, data: TaskUpdate, user_id: int, db: Session) -> Ta
         if exists is None:
             db.add(Task(user_id=user_id, title=task.title, description=task.description, due_date=due, priority=task.priority,
                         subject_id=task.subject_id, topic_id=task.topic_id, recurrence=task.recurrence))
+    if newly_done and task.review_interval:
+        # Ripasso adattivo: il prossimo arriva prima se è andato male, più tardi se è andato bene.
+        interval = next_interval(task.review_interval, data.review_rating or Rating.OK)
+        exists = db.scalar(select(Task.id).where(Task.user_id == user_id, Task.topic_id == task.topic_id, Task.review_interval.is_not(None),
+                                                 Task.status != 'done', Task.id != task.id).limit(1))
+        if interval <= MAX_REVIEW_DAYS and exists is None:
+            db.add(Task(user_id=user_id, title=task.title, due_date=date.today() + timedelta(days=interval), priority=task.priority,
+                        subject_id=task.subject_id, topic_id=task.topic_id, review_interval=interval))
     db.commit(); db.refresh(task)
     return task
 

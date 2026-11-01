@@ -20,9 +20,28 @@ def test_completing_topic_schedules_reviews_once(client):
     client.patch(f"/topics/{t['id']}", json={"completed": True, "schedule_reviews": True}, headers=h)
     client.patch(f"/topics/{t['id']}", json={"completed": True, "schedule_reviews": True}, headers=h)  # già completato
     due = sorted(x["due_date"] for x in client.get("/tasks", headers=h).json())
-    assert due == [_day(1), _day(3), _day(7), _day(21)]
+    assert due == [_day(1)]
     client.patch(f"/topics/{t['id']}", json={"notes": "# Ionici\n- NaCl"}, headers=h)
     assert client.get("/subjects", headers=h).json()[0]["topics"][0]["notes"].startswith("# Ionici")
+
+
+def test_adaptive_review_chain(client):
+    h = _headers(client, "r2@example.com")
+    s = client.post("/subjects", json={"name": "Storia"}, headers=h).json()
+    t = client.post(f"/subjects/{s['id']}/topics", json={"title": "Roma"}, headers=h).json()
+    client.patch(f"/topics/{t['id']}", json={"completed": True, "schedule_reviews": True}, headers=h)
+
+    def complete_open(rating=None):
+        task = next(x for x in client.get("/tasks", headers=h).json() if x["status"] != "done")
+        body = {"status": "done"} | ({"review_rating": rating} if rating else {})
+        assert client.patch(f"/tasks/{task['id']}", json=body, headers=h).status_code == 200
+        return [(x["due_date"], x["review_interval"]) for x in client.get("/tasks", headers=h).json() if x["status"] != "done"]
+
+    assert complete_open("easy") == [(_day(4), 4)]
+    assert complete_open() == [(_day(10), 10)]  # senza valutazione vale "ok"
+    assert complete_open("hard") == [(_day(1), 1)]
+    for _ in range(3): complete_open("easy")  # 4, 16, poi 64 > 60: argomento consolidato
+    assert [x for x in client.get("/tasks", headers=h).json() if x["status"] != "done"] == []
 
 
 def test_exam_plan_spreads_open_topics(client):

@@ -18,6 +18,8 @@ class Task(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=True)
     topic_id = Column(Integer, ForeignKey('topics.id'), nullable=True)
     recurrence = Column(String(40), nullable=True)  # 'daily' o 'weekly:1,3' (1 = lunedì)
+    review_interval = Column(Integer, nullable=True)
+    # giorni dal ripasso precedente; NULL = non è un ripasso adattivo
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     user = relationship('User', back_populates='tasks')

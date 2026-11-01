@@ -63,8 +63,6 @@ def _owned_topic(topic_id: int, user_id: int, db: Session) -> Topic:
     if topic is None: raise LookupError('Topic not found')
     return topic
 
-# Ripetizione dilazionata: ripassi a distanza crescente dal completamento.
-REVIEW_DAYS = (1, 3, 7, 21)
 
 def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) -> Topic:
     topic = _owned_topic(topic_id, user_id, db)
@@ -76,9 +74,9 @@ def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) ->
         if value is not None: setattr(topic, field, value)
     if reopened: db.execute(delete(Task).where(*open_reviews))
     if newly_completed and data.schedule_reviews and db.scalar(select(Task.id).where(*open_reviews).limit(1)) is None:
-        today = date.today()
-        db.add_all(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=today + timedelta(days=d),
-                        priority='medium', subject_id=topic.subject_id, topic_id=topic.id) for d in REVIEW_DAYS)
+        # Solo il primo ripasso: i successivi li crea il completamento, in base a com'è andato (vedi task_service).
+        db.add(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=date.today() + timedelta(days=1),
+                    priority='medium', subject_id=topic.subject_id, topic_id=topic.id, review_interval=1))
     db.commit(); db.refresh(topic)
     return topic
 

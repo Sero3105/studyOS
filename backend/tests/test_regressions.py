@@ -104,4 +104,4 @@ def test_recompleting_topic_does_not_duplicate_reviews(client):
     assert [x["id"] for x in client.get("/tasks", headers=h).json()] == [first[0]["id"]]
 
     client.patch(f"/topics/{t['id']}", json=done, headers=h)
-    assert len(client.get("/tasks", headers=h).json()) == 5
+    assert len(client.get("/tasks", headers=h).json()) == 2

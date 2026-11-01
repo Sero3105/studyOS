@@ -23,5 +23,6 @@ class Topic(Base):
     title = Column(String(200), nullable=False)
     completed = Column(Boolean, nullable=False, default=False)
     notes = Column(Text, nullable=True)
+    difficulty = Column(Integer, nullable=False, default=2, server_default='2')  # 1 facile, 2 media, 3 difficile
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     subject = relationship('Subject', back_populates='topics')
