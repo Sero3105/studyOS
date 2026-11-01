@@ -39,3 +39,19 @@ def test_exam_without_date(client):
     # Fissata la data più tardi: torna un esame normale.
     assert client.patch(f"/exams/{undated.json()['id']}", json={"exam_date": "2099-02-01"}, headers=headers).json()["exam_date"] == "2099-02-01"
     assert dated["exam_date"] == "2099-01-01"
+
+
+def test_exam_attempts_keep_history(client):
+    h = _headers(client, "att1@example.com")
+    exam = client.post("/exams", json={"title": "Analisi", "subject": "Analisi", "exam_date": "2026-06-10", "exam_time": "09:00"}, headers=h).json()
+    after = client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "failed"}, headers=h)
+    assert after.status_code == 201
+    body = after.json()
+    assert (body["status"], body["exam_date"], body["exam_time"]) == ("planned", None, None)
+    assert [(a["exam_date"], a["outcome"]) for a in body["attempts"]] == [("2026-06-10", "failed")]
+    # Senza data non c'è un appello da registrare.
+    assert client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "failed"}, headers=h).status_code == 422
+    assert client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "passed"}, headers=h).status_code == 422
+    other = _headers(client, "att2@example.com")
+    assert client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "failed"}, headers=other).status_code == 404
+    assert client.delete(f"/exams/{exam['id']}", headers=h).status_code == 204

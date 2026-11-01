@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 from enum import Enum
+from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 class ExamStatus(str, Enum):
@@ -48,6 +49,16 @@ class ExamUpdate(BaseModel):
     def not_null(cls, value):
         if value is None: raise ValueError('Field cannot be empty')
         return value
+class AttemptCreate(BaseModel):
+    outcome: Literal['failed', 'rejected']  # bocciato, oppure voto rifiutato
+    grade: int | None = Field(default=None, ge=18, le=30)
+class AttemptResponse(AttemptCreate):
+    id: int; exam_date: date
+    model_config = ConfigDict(from_attributes=True)
+class PlanRequest(BaseModel):
+    # Giorni della settimana senza studio, 1 = lunedì ... 7 = domenica.
+    rest_days: list[Annotated[int, Field(ge=1, le=7)]] = Field(default=[], max_length=7)
 class ExamResponse(BaseModel):
     id:int; user_id:int; title:str; subject:str; subject_id:int|None=None; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
+    attempts: list[AttemptResponse] = []
     model_config=ConfigDict(from_attributes=True)

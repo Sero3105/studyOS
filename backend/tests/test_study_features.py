@@ -59,6 +59,21 @@ def test_exam_plan_spreads_open_topics(client):
     assert client.post(f"/exams/{other['id']}/plan", headers=h).json()["detail"] == "no_subject"
 
 
+def test_exam_plan_weights_and_rest_days(client):
+    h = _headers(client, "p2@example.com")
+    s = client.post("/subjects", json={"name": "Chimica"}, headers=h).json()
+    ids = [client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h).json()["id"] for x in "ABC"]
+    client.patch(f"/topics/{ids[0]}", json={"difficulty": 3}, headers=h)
+    client.patch(f"/topics/{ids[1]}", json={"difficulty": 1}, headers=h)
+    # C resta media (2) ma con 2 ore già studiate pesa come una facile: pesi 3, 1, 1.
+    client.post("/sessions", json={"topic_id": ids[2], "duration_minutes": 120, "studied_on": _day(0)}, headers=h)
+    exam = client.post("/exams", json={"title": "Orale", "subject": "Chimica", "exam_date": _day(11)}, headers=h).json()
+    rest = (date.today() + timedelta(days=1)).isoweekday()  # liberi i giorni 1 e 8: restano 2-7, 9, 10
+    tasks = client.post(f"/exams/{exam['id']}/plan", json={"rest_days": [rest]}, headers=h).json()
+    assert [t["due_date"] for t in tasks] == [_day(2), _day(6), _day(9)]
+    assert client.post(f"/exams/{exam['id']}/plan", json={"rest_days": [8]}, headers=h).status_code == 422
+
+
 def test_exam_grades_validation(client):
     h = _headers(client, "g1@example.com")
     base = {"title": "Algebra", "subject": "Algebra", "exam_date": "2026-01-10", "status": "passed", "cfu": 9}

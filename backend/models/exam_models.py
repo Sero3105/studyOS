@@ -22,3 +22,16 @@ class Exam(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     user = relationship('User', back_populates='exams')
+    attempts = relationship('ExamAttempt', back_populates='exam', cascade='all, delete-orphan', order_by='ExamAttempt.exam_date')
+
+class ExamAttempt(Base):
+    """Appello già sostenuto senza superare l'esame (bocciato o voto rifiutato); l'esame resta il contenitore."""
+    __tablename__ = 'exam_attempts'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    exam_id = Column(Integer, ForeignKey('exams.id'), nullable=False, index=True)
+    exam_date = Column(Date, nullable=False)
+    outcome = Column(String(20), nullable=False)  # 'failed' o 'rejected'
+    grade = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    exam = relationship('Exam', back_populates='attempts')
