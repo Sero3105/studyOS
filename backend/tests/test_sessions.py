@@ -29,3 +29,20 @@ def test_session_validation(client):
     assert client.post("/sessions", json={"duration_minutes": 0, "studied_on": "2026-09-01"}, headers=headers).status_code == 422
     assert client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-09-01", "subject_id": 9999}, headers=headers).status_code == 422
     assert client.get("/sessions").status_code == 401
+
+
+def test_session_update(client):
+    headers = _headers(client, "ss4@example.com")
+    subject = client.post("/subjects", json={"name": "Analisi"}, headers=headers).json()
+    session = client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-09-01"}, headers=headers).json()
+    url = f"/sessions/{session['id']}"
+
+    updated = client.patch(url, json={"duration_minutes": 90, "subject_id": subject["id"], "notes": " Biblioteca "}, headers=headers)
+    assert updated.status_code == 200
+    assert (updated.json()["duration_minutes"], updated.json()["subject_id"], updated.json()["notes"]) == (90, subject["id"], "Biblioteca")
+    assert updated.json()["studied_on"] == "2026-09-01"
+
+    assert client.patch(url, json={"subject_id": None}, headers=headers).json()["subject_id"] is None
+    assert client.patch(url, json={"duration_minutes": None}, headers=headers).status_code == 422
+    assert client.patch(url, json={"subject_id": 9999}, headers=headers).status_code == 422
+    assert client.patch(url, json={"duration_minutes": 10}, headers=_headers(client, "ss5@example.com")).status_code == 404
