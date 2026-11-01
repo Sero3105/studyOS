@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Download, GraduationCap, NotebookPen, Pencil, Play, Plus } from 'lucide-react'
@@ -9,7 +9,7 @@ import ConfirmButton from '../components/ui/ConfirmButton'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import type { StudySessionConfig } from '../components/timer/types'
 import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, SUBJECT_COLORS, subjectColor, updateSubject, updateTopic } from '../services/subjectService'
-import type { Subject, SubjectColor, Topic } from '../services/subjectService'
+import type { Difficulty, Subject, SubjectColor, Topic } from '../services/subjectService'
 import SubjectDot from '../components/ui/SubjectDot'
 import type { CSSProperties } from 'react'
 import { getStatsSummary } from '../services/statsService'
@@ -22,6 +22,8 @@ import { reviewsEnabled } from '../utils/preferences'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
+// marked + KaTeX pesano: si scaricano solo aprendo l'anteprima di una nota.
+const MarkdownPreview = lazy(() => import('../components/MarkdownPreview'))
 
 function progressOf(topics: Topic[]): number {
   if (topics.length === 0) return 0
@@ -71,6 +73,7 @@ function SubjectsPage() {
   const [notice, setNotice] = useState('')
   const [notesFor, setNotesFor] = useState<number | null>(null)
   const [notesDraft, setNotesDraft] = useState('')
+  const [notesPreview, setNotesPreview] = useState(false)
 
   const selected = subjects.find((subject) => subject.id === selectedId) ?? null
 
@@ -134,7 +137,12 @@ function SubjectsPage() {
       setNotice(scheduleReviews ? t('subjects.reviewsScheduled') : '')
     }, t('subjects.updateTopicError'))
 
+  // Facile → media → difficile → facile: pesa nel piano d'esame.
+  const cycleDifficulty = (subjectId: number, topic: Topic) =>
+    void run(async () => replaceTopic(subjectId, await updateTopic(topic.id, { difficulty: ((topic.difficulty % 3) + 1) as Difficulty })), t('subjects.updateTopicError'))
+
   const openNotes = (topic: Topic) => {
+    setNotesPreview(false)
     setNotesFor(notesFor === topic.id ? null : topic.id)
     setNotesDraft(topic.notes ?? '')
   }
@@ -412,21 +420,44 @@ function SubjectsPage() {
                         <span className="row-reveal">
                           <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
                         </span>
+                        {!topic.completed && (
+                          <button
+                            className={`tag tag-button topic-difficulty is-${topic.difficulty}${topic.difficulty === 2 ? ' row-reveal' : ''}`}
+                            type="button"
+                            onClick={() => cycleDifficulty(selected.id, topic)}
+                            aria-label={t('subjects.difficultyLabel', { title: topic.title, level: t(`subjects.difficulty${topic.difficulty}`) })}
+                            title={t('subjects.difficultyHint')}
+                          >
+                            {t(`subjects.difficulty${topic.difficulty}`)}
+                          </button>
+                        )}
                       </span>
                       {notesFor === topic.id && (
-                        <label className="field topic-notes" id={`notes-${topic.id}`}>
-                          <span className="visually-hidden">{t('subjects.notesLabel', { title: topic.title })}</span>
-                          <textarea
-                            value={notesDraft}
-                            onChange={(e) => setNotesDraft(e.target.value)}
-                            onBlur={() => saveNotes(selected.id, topic)}
-                            rows={6}
-                            maxLength={20000}
-                            placeholder={t('subjects.notesPlaceholder')}
-                            autoFocus
-                          />
-                          <span className="panel-meta">{t('subjects.notesHint')}</span>
-                        </label>
+                        <div className="topic-notes" id={`notes-${topic.id}`}>
+                          <div className="topic-notes-tabs" role="group" aria-label={t('subjects.notesLabel', { title: topic.title })}>
+                            <button type="button" className={`tag tag-button${notesPreview ? '' : ' tag-accent'}`} aria-pressed={!notesPreview} onClick={() => setNotesPreview(false)}>{t('subjects.notesWrite')}</button>
+                            <button type="button" className={`tag tag-button${notesPreview ? ' tag-accent' : ''}`} aria-pressed={notesPreview} onClick={() => { saveNotes(selected.id, topic); setNotesPreview(true) }}>{t('subjects.notesPreview')}</button>
+                          </div>
+                          {notesPreview ? (
+                            <Suspense fallback={<div className="skeleton topic-notes-skeleton" />}>
+                              <MarkdownPreview source={notesDraft} emptyText={t('subjects.notesEmpty')} />
+                            </Suspense>
+                          ) : (
+                            <label className="field">
+                              <span className="visually-hidden">{t('subjects.notesLabel', { title: topic.title })}</span>
+                              <textarea
+                                value={notesDraft}
+                                onChange={(e) => setNotesDraft(e.target.value)}
+                                onBlur={() => saveNotes(selected.id, topic)}
+                                rows={8}
+                                maxLength={20000}
+                                placeholder={t('subjects.notesPlaceholder')}
+                                autoFocus
+                              />
+                            </label>
+                          )}
+                          <span className="panel-meta">{t('subjects.notesHintMath')}</span>
+                        </div>
                       )}
                     </li>
                   ))}

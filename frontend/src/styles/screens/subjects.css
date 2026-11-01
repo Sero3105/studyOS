@@ -148,7 +148,9 @@
 
 .topic-row { flex-wrap: wrap; }
 .topic-row .has-notes { color: var(--accent); }
-.topic-notes { flex-basis: 100%; gap: var(--space-2); padding: 0 0 var(--space-2) calc(24px + var(--space-3)); }
+.topic-notes { display: grid; flex-basis: 100%; gap: var(--space-2); padding: 0 0 var(--space-2) calc(24px + var(--space-3)); }
+.topic-notes-tabs { display: flex; gap: var(--space-1); }
+.topic-notes-skeleton { height: 140px; }
 .topic-notes textarea { min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--text-sm); }
 
 /* Materie dagli esami da sostenere */
@@ -225,3 +227,46 @@
 .color-option:has(input:checked) { box-shadow: inset 0 0 0 2px var(--text-strong); }
 .color-option:has(input:focus-visible) { box-shadow: var(--focus-ring); }
 .topic-rename { flex: 1; min-width: 0; }
+
+/* Difficoltà dell'argomento: larghezza fissa, così le righe restano allineate */
+.topic-difficulty {
+  min-width: 64px;
+  justify-content: center;
+}
+
+.topic-difficulty.is-1 {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.topic-difficulty.is-3 {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* Anteprima delle note: Markdown con formule KaTeX */
+.markdown {
+  min-height: 140px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-s);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.markdown > * + * { margin-top: var(--space-2); }
+.markdown h1, .markdown h2, .markdown h3 { color: var(--text-strong); font-weight: 600; line-height: 1.3; }
+.markdown h1 { font-size: var(--text-lg); }
+.markdown h2 { font-size: var(--text-md); }
+.markdown ul, .markdown ol { padding-left: 1.4em; }
+.markdown ul { list-style: disc; }
+.markdown ol { list-style: decimal; }
+.markdown code { padding: 1px 4px; border-radius: 4px; background: var(--surface-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+.markdown pre { padding: var(--space-3); border-radius: var(--radius-s); background: var(--surface-2); overflow-x: auto; }
+.markdown pre code { padding: 0; background: none; }
+.markdown blockquote { padding-left: var(--space-3); border-left: 3px solid var(--line); color: var(--text-muted); }
+.markdown a { color: var(--accent); text-decoration: underline; }
+.markdown table { border-collapse: collapse; }
+.markdown th, .markdown td { padding: var(--space-1) var(--space-2); border: 1px solid var(--line); }
+.markdown .katex-display { overflow-x: auto; overflow-y: hidden; padding: var(--space-1) 0; }

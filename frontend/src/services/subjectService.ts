@@ -1,6 +1,8 @@
 import { apiRequest } from './apiClient'
 
-export interface Topic { id: number; subject_id: number; title: string; completed: boolean; notes: string | null; created_at: string }
+export interface Topic { id: number; subject_id: number; title: string; completed: boolean; notes: string | null; difficulty: Difficulty; created_at: string }
+/** 1 facile, 2 media, 3 difficile: pesa nel piano d'esame. */
+export type Difficulty = 1 | 2 | 3
 export const SUBJECT_COLORS = ['yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'red', 'orange'] as const
 export type SubjectColor = typeof SUBJECT_COLORS[number]
 export interface Subject { id: number; user_id: number; name: string; color: SubjectColor | null; created_at: string; topics: Topic[] }
@@ -13,6 +15,6 @@ export const createSubject = (name: string) => apiRequest<Subject>('/subjects', 
 export const updateSubject = (id: number, patch: { name?: string; color?: SubjectColor }) => apiRequest<Subject>(`/subjects/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
 export const deleteSubject = (id: number) => apiRequest<void>(`/subjects/${id}`, { method: 'DELETE' })
 export const createTopic = (subjectId: number, title: string) => apiRequest<Topic>(`/subjects/${subjectId}/topics`, { method: 'POST', body: JSON.stringify({ title }) })
-export interface TopicPatch { title?: string; completed?: boolean; notes?: string; schedule_reviews?: boolean }
+export interface TopicPatch { title?: string; completed?: boolean; notes?: string; difficulty?: Difficulty; schedule_reviews?: boolean }
 export const updateTopic = (id: number, patch: TopicPatch) => apiRequest<Topic>(`/topics/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
 export const deleteTopic = (id: number) => apiRequest<void>(`/topics/${id}`, { method: 'DELETE' })
