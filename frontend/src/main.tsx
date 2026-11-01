@@ -12,6 +12,7 @@ import ExamsPage from './pages/ExamsPage'
 import SubjectsPage from './pages/SubjectsPage'
 import PlannerPage from './pages/PlannerPage'
 import HistoryPage from './pages/HistoryPage'
+import CardsPage from './pages/CardsPage'
 import GoalsPage from './pages/GoalsPage'
 import StatisticsPage from './pages/StatisticsPage'
 import SettingsPage from './pages/SettingsPage'
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
           { path: '/calendar', element: <CalendarPage /> },
           { path: '/history', element: <HistoryPage /> },
           { path: '/goals', element: <GoalsPage /> },
+          { path: '/cards', element: <CardsPage /> },
           { path: '/statistics', element: <StatisticsPage /> },
           { path: '/settings', element: <SettingsPage /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },

@@ -1,0 +1,151 @@
+/**
+ * Flashcard: ripasso di oggi (o la carta in corso) in alto, poi nuova carta
+ * e carte per argomento affiancate. Sotto i 1000px le colonne si impilano.
+ */
+
+.card-today {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.card-today-count {
+  color: var(--text-strong);
+  font-size: var(--text-display);
+  font-weight: 600;
+  line-height: 1;
+  margin: var(--space-2) 0;
+}
+
+.card-quiz {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card-quiz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.card-quiz-head h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.card-face {
+  max-width: 70ch;
+  color: var(--text-strong);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.card-back {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: var(--text-lg);
+  font-weight: 400;
+}
+
+.card-quiz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.card-quiz-keys {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+.cards-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+@media (max-width: 1000px) {
+  .cards-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.card-form {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.card-answer {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Valutazione di un ripasso: piccola nelle righe, grande nel quiz */
+
+.review-rating {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.review-rating.is-lg {
+  gap: var(--space-2);
+}
+
+.review-rating.is-lg .tag {
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.review-key {
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(127 127 127 / 0.18);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.card-tools {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.card-tools .settings-actions {
+  margin: 0 0 var(--space-2);
+}
+
+.card-tools label.btn { cursor: pointer; }
+.card-tools label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-tools .is-disabled { opacity: 0.5; pointer-events: none; }
+
+/* Quaderno degli errori */
+.mistake-row { align-items: flex-start; }
+.mistake-text { white-space: pre-wrap; }
+
+.mistake-correction {
+  color: var(--text);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+
+.mistake-correction::before {
+  content: '→ ';
+  color: var(--success);
+}

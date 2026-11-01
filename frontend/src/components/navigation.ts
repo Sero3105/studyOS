@@ -5,6 +5,7 @@ import {
   CalendarDays,
   GraduationCap,
   History,
+  Layers,
   LayoutDashboard,
   Settings,
   Target,
@@ -37,6 +38,7 @@ export const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
       { to: '/subjects', labelKey: 'nav.subjects', icon: BookOpen, key: 'm' },
       { to: '/exams', labelKey: 'nav.exams', icon: GraduationCap, key: 'e' },
       { to: '/goals', labelKey: 'nav.goals', icon: Target, key: 'o' },
+      { to: '/cards', labelKey: 'nav.cards', icon: Layers, key: 'f' },
     ],
   },
   {
