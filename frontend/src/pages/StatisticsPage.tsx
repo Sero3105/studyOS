@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Download } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import WeekChart from '../components/ui/WeekChart'
 import ProgressBar from '../components/ui/ProgressBar'
@@ -20,7 +20,9 @@ import type { SubjectMinutes } from '../services/statsService'
 import RecordBook from '../components/exams/RecordBook'
 import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
-import { buildHeatmap, hourGrid, planVsActual } from '../utils/studyStats'
+import { buildHeatmap, focusBySubject, hourGrid, minutesByKind, planVsActual } from '../utils/studyStats'
+import { toCsv } from '../utils/csv'
+import { saveBlob } from '../utils/download'
 import type { NameMinutes, StatsSummary } from '../services/statsService'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
@@ -61,7 +63,7 @@ function RankedBars({ items, label }: { items: (NameMinutes | SubjectMinutes)[];
  * gli obiettivi. Tutto viene da `/stats/summary`.
  */
 function StatisticsPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
   const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[] } | null>(null)
@@ -82,10 +84,32 @@ function StatisticsPage() {
   useEffect(() => { queueMicrotask(load) }, [load])
 
   const activeDays = stats?.daily.filter((day) => day.minutes > 0).length ?? 0
+  const subjectById = (id: number | null) => detail?.subjects.find((s) => s.id === id)
+  const kinds = detail ? minutesByKind(detail.sessions).map((k) => ({ name: t(`session.kind.${k.kind}` as TranslationKey), minutes: k.minutes })) : []
+  const focus = detail ? focusBySubject(detail.sessions) : []
+
+  // Tutte le sessioni, una per riga, in ordine di data: per un foglio di calcolo.
+  const exportCsv = () => {
+    if (!detail) return
+    const topicTitle = (s: StudySession) => subjectById(s.subject_id)?.topics.find((x) => x.id === s.topic_id)?.title
+    const rows = [...detail.sessions].sort((a, b) => a.studied_on.localeCompare(b.studied_on) || a.id - b.id).map((s) => [
+      s.studied_on, s.duration_minutes, subjectById(s.subject_id)?.name, topicTitle(s), t(`session.kind.${s.kind}`), s.focus ? t(`session.focus.${s.focus}`) : '', s.notes,
+    ])
+    const header = [t('history.date'), t('history.minutes'), t('timer.subject'), t('timer.topic'), t('session.kind'), t('session.focus'), t('timer.note')]
+    saveBlob(new Blob([toCsv([header, ...rows])], { type: 'text/csv;charset=utf-8' }), `studyos-sessioni-${today}.csv`)
+  }
 
   return (
     <div className="page stats-page">
-      <PageHeader title={t('stats.title')} description={t('stats.description')} />
+      <PageHeader
+        title={t('stats.title')}
+        description={t('stats.description')}
+        actions={detail && detail.sessions.length > 0 && (
+          <button className="btn btn-secondary" type="button" onClick={exportCsv} title={t('stats.exportHint')}>
+            <Download aria-hidden="true" /> {t('stats.export')}
+          </button>
+        )}
+      />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
       {!stats && !error && <LoadingRows rows={4} label={t('stats.loading')} />}
@@ -155,6 +179,34 @@ function StatisticsPage() {
               )}
             </section>
           </div>
+
+          {detail && detail.sessions.length > 0 && (
+            <div className="stats-pair">
+              <section className="panel" aria-labelledby="stats-kind-title">
+                <h2 id="stats-kind-title" className="panel-title panel-head">{t('stats.byKind')}</h2>
+                <RankedBars items={kinds} label={t('stats.byKind')} />
+              </section>
+              <section className="panel" aria-labelledby="stats-focus-title">
+                <h2 id="stats-focus-title" className="panel-title panel-head">{t('stats.focusTitle')}</h2>
+                {focus.length === 0 ? (
+                  <EmptyState compact title={t('stats.focusEmptyTitle')}>{t('stats.focusEmptyBody')}</EmptyState>
+                ) : (
+                  <ol className="ranked" aria-label={t('stats.focusTitle')}>
+                    {focus.map((row) => {
+                      const subject = subjectById(row.subjectId)
+                      return (
+                        <li className="ranked-row" key={row.subjectId ?? 'free'} title={t('stats.focusDetail', { value: row.average.toLocaleString(locale, { maximumFractionDigits: 1 }), count: row.count })}>
+                          <span className="ranked-name"><SubjectDot subject={subject} />{subject?.name ?? t('history.freeSession')}</span>
+                          <span className="ranked-track" aria-hidden="true"><span style={{ width: `${Math.max(4, ((row.average - 1) / 2) * 100)}%` }} /></span>
+                          <span className="ranked-value">{t(`session.focus.${Math.round(row.average) as 1 | 2 | 3}`)}</span>
+                        </li>
+                      )
+                    })}
+                  </ol>
+                )}
+              </section>
+            </div>
+          )}
 
           {detail && <RecordBook exams={detail.exams} detailed />}
 

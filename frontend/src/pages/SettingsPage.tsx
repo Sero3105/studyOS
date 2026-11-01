@@ -13,8 +13,8 @@ import type { LinkKind } from '../services/shareService'
 import { changePassword, deleteAccount } from '../services/accountService'
 import { ApiError } from '../services/apiClient'
 import { notificationsSupported, remindersEnabled, runDeadlineReminders, setRemindersEnabled } from '../utils/reminders'
-import { reviewsEnabled, setReviewsEnabled } from '../utils/preferences'
-import { getTheme, setTheme } from '../utils/theme'
+import { chooseTheme as saveTheme, DEGREE_CFU_OPTIONS, degreeCfu, restDays, reviewsEnabled, setDegreeCfu, setRestDays, setReviewsEnabled, setTimerAlertsEnabled, timerAlertsEnabled } from '../utils/preferences'
+import { getTheme } from '../utils/theme'
 import type { Theme } from '../utils/theme'
 import { validatePassword } from '../utils/password'
 import { todayIso } from '../utils/dates'
@@ -156,6 +156,11 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [reminders, setReminders] = useState(remindersEnabled)
   const [reviews, setReviews] = useState(reviewsEnabled)
+  const [timerAlerts, setTimerAlerts] = useState(timerAlertsEnabled)
+  const [cfu, setCfu] = useState(degreeCfu)
+  const [rest, setRest] = useState(restDays)
+  // 1-7 gennaio 2024 = lunedì-domenica: nomi dei giorni nella lingua scelta.
+  const weekdayName = (day: number) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, day))
   const [theme, setThemeState] = useState(getTheme)
 
   const run: Run = async (action, fallback) => {
@@ -199,7 +204,17 @@ function SettingsPage() {
   }, t('settings.remindersDenied'))
 
   const toggleReviews = (enabled: boolean) => { setReviewsEnabled(enabled); setReviews(enabled) }
-  const chooseTheme = (value: Theme) => { setTheme(value); setThemeState(value) }
+  const toggleTimerAlerts = (enabled: boolean) => {
+    // La notifica è un extra: senza permesso resta il suono.
+    if (enabled && notificationsSupported() && Notification.permission === 'default') void Notification.requestPermission()
+    setTimerAlertsEnabled(enabled); setTimerAlerts(enabled)
+  }
+  const chooseCfu = (value: number) => { setDegreeCfu(value); setCfu(value) }
+  const toggleRestDay = (day: number, off: boolean) => {
+    const next = off ? [...rest, day].sort() : rest.filter((d) => d !== day)
+    setRestDays(next); setRest(next)
+  }
+  const chooseTheme = (value: Theme) => { saveTheme(value); setThemeState(value) }
 
   return (
     <div className="page settings-page">
@@ -256,6 +271,34 @@ function SettingsPage() {
           <input type="checkbox" className="check" checked={reviews} onChange={(e) => toggleReviews(e.target.checked)} />
           <span>{t('settings.reviewsToggle')}</span>
         </label>
+        <label className="settings-toggle">
+          <input type="checkbox" className="check" checked={timerAlerts} onChange={(e) => toggleTimerAlerts(e.target.checked)} />
+          <span>{t('settings.timerAlertsToggle')}</span>
+        </label>
+      </Section>
+
+      <Section id="settings-degree-title" title={t('settings.degreeTitle')} description={t('settings.degreeDescription')}>
+        <label className="field form-narrow">
+          <span className="field-label">{t('settings.degreeCfu')}</span>
+          <select value={cfu} onChange={(e) => chooseCfu(Number(e.target.value))}>
+            {DEGREE_CFU_OPTIONS.map((option) => <option key={option} value={option}>{t(`settings.degreeCfu${option}`)}</option>)}
+          </select>
+        </label>
+      </Section>
+
+      <Section id="settings-plan-title" title={t('settings.planTitle')} description={t('settings.planDescription')}>
+        <fieldset className="settings-language">
+          <legend className="field-label">{t('settings.restDays')}</legend>
+          <div className="settings-language-options settings-weekdays">
+            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+              <label key={day} className={`settings-language-option${rest.includes(day) ? ' is-selected' : ''}`}>
+                <input type="checkbox" checked={rest.includes(day)} onChange={(e) => toggleRestDay(day, e.target.checked)} />
+                <span>{weekdayName(day)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {rest.length > 0 && <p className="panel-meta">{t('settings.restDaysSummary', { days: rest.map(weekdayName).join(', ') })}</p>}
       </Section>
 
       <Section id="settings-feed-title" title={t('settings.feedTitle')} description={t('settings.feedDescription')}>

@@ -7,6 +7,8 @@ import { navItems } from '../components/navigation'
 import { TimerProvider } from '../context/TimerProvider'
 import { useLanguage } from '../i18n/useLanguage'
 import { runDeadlineReminders } from '../utils/reminders'
+import { syncPreferences } from '../utils/preferences'
+import UndoProvider from '../components/UndoProvider'
 
 const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
@@ -42,6 +44,9 @@ function AppLayout() {
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
   }, [collapsed])
+
+  // Preferenze dal server (valgono su ogni browser); offline resta la cache locale.
+  useEffect(() => { void syncPreferences().catch(() => {}) }, [])
 
   // Controllo all'apertura e ogni ora: la notifica parte al massimo una volta al giorno.
   useEffect(() => {
@@ -85,6 +90,7 @@ function AppLayout() {
 
   return (
     <TimerProvider>
+    <UndoProvider>
       <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
         <a className="skip-link" href="#main-content">{t('app.skipToContent')}</a>
 
@@ -127,6 +133,7 @@ function AppLayout() {
           </div>
         </main>
       </div>
+    </UndoProvider>
     </TimerProvider>
   )
 }

@@ -22,3 +22,6 @@
 .settings-danger .settings-subtitle { color: var(--danger); }
 .settings-actions a.btn svg { width: 14px; height: 14px; }
 .settings-actions + .panel-meta { margin-top: var(--space-3); }
+.settings-weekdays { gap: var(--space-2); }
+.settings-weekdays .settings-language-option { padding: var(--space-2) var(--space-3); text-transform: capitalize; }
+.settings-weekdays + .panel-meta, .settings-language + .panel-meta { margin-top: var(--space-3); }
