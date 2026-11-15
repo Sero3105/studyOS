@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { DragEvent, FormEvent } from 'react'
+import type { CSSProperties, DragEvent, FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, Clock3, GraduationCap, GripVertical } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
@@ -10,7 +10,7 @@ import { getExams } from '../services/examService'
 import type { Exam } from '../services/examService'
 import { getSessions } from '../services/sessionService'
 import type { StudySession } from '../services/sessionService'
-import { getSubjects } from '../services/subjectService'
+import { getSubjects, subjectColor } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import SubjectDot from '../components/ui/SubjectDot'
 import BlockEditor from '../components/calendar/BlockEditor'
@@ -139,16 +139,21 @@ function CalendarPage() {
     onDragEnd: () => { setDragId(null); setDropDay(null) },
   })
 
-  const renderTask = (task: Task) => (
-    <li key={task.id} className={`calendar-task-item${task.scheduled_time ? ' is-block' : ''}${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
-      {task.scheduled_time && (
-        <span className="calendar-block-time num">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
-      )}
-      <div className="calendar-task-line">
+  const renderTask = (task: Task) => {
+    const subject = subjects.find((x) => x.id === task.subject_id)
+    const tint = subject ? { '--subject-color': `var(--subject-${subjectColor(subject)})` } as CSSProperties : undefined
+    return (
+      <li key={task.id} style={tint}
+        className={`calendar-task-item${task.scheduled_time ? ' is-block' : ''}${subject ? ' has-subject' : ''}${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
+        {task.scheduled_time && (
+          <span className="calendar-block-time num">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
+        )}
         <label className={`calendar-task${task.status === 'done' ? ' is-done' : ''}`}>
           <input className="check" type="checkbox" checked={task.status === 'done'} onChange={() => void toggle(task)} />
-          <span className={`priority priority-${task.priority}`} aria-hidden="true" />
-          <span className="calendar-task-title"><SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />{task.title}</span>
+          <span className="calendar-task-body">
+            <span className="calendar-task-title">{task.title}</span>
+            {subject && <span className="calendar-task-subject">{subject.name}</span>}
+          </span>
         </label>
         {task.status !== 'done' && (
           <button className="icon-btn calendar-task-time" type="button" onClick={() => setEditing(editing === task.id ? null : task.id)}
@@ -156,9 +161,9 @@ function CalendarPage() {
             <Clock3 aria-hidden="true" />
           </button>
         )}
-      </div>
-    </li>
-  )
+      </li>
+    )
+  }
 
   const editingTask = tasks.find((x) => x.id === editing)
 
@@ -243,10 +248,9 @@ function CalendarPage() {
                   onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropDay(null) }}
                   onDrop={(e) => { e.preventDefault(); drop(day) }}
                 >
-                  <h2 className="calendar-day-head">
-                    <span className="calendar-weekday">{weekdayShort(day)}</span>
-                    <span className="calendar-date num">{parseDay(day).getDate()}</span>
-                    {isToday && <span className="tag tag-accent calendar-today">{t('common.today')}</span>}
+                  <h2 className="calendar-day-head" aria-label={isToday ? `${formatDay(day, 'full', locale)}, ${t('common.today')}` : formatDay(day, 'full', locale)}>
+                    <span className="calendar-weekday" aria-hidden="true">{weekdayShort(day)}</span>
+                    <span className="calendar-date num" aria-hidden="true">{parseDay(day).getDate()}</span>
                   </h2>
 
                   <ul className="calendar-items">
