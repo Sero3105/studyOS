@@ -59,9 +59,9 @@
 }
 
 .page-header h1 {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  letter-spacing: var(--tracking-tight);
+  font-size: 2rem;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
   line-height: var(--leading-tight);
 }
 
@@ -116,6 +116,7 @@
 
   .topbar .brand {
     flex: 1;
+    min-height: var(--target-min);
   }
 
   .topbar-cta {
@@ -148,8 +149,13 @@
     align-items: stretch;
   }
 
-  .page-header-actions > .btn {
-    flex: 1;
+  .page-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .page-header-actions > * {
+    min-width: 0;
+    flex: 1 1 160px;
   }
 }
 

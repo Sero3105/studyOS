@@ -29,24 +29,30 @@
   min-width: 0;
   align-items: center;
   gap: var(--space-3);
+  /* Il padding fa spazio all'anello di focus; il margine negativo rimette il marchio sulla linea del contenuto */
+  margin-left: calc(var(--space-1) * -1);
   padding: var(--space-1);
   border-radius: var(--radius-s);
   color: var(--text-strong);
   text-decoration: none;
 }
 
+/* Marchio "stack" (tasteskill): tre barre che si accorciano, come una lista che si svuota */
 .brand-mark {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   background: var(--accent);
+  -webkit-mask: var(--brand-mark) center / contain no-repeat;
+  mask: var(--brand-mark) center / contain no-repeat;
+  --brand-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2.5' width='20' height='5.5' rx='2.75'/%3E%3Crect x='2' y='9.25' width='14' height='5.5' rx='2.75'/%3E%3Crect x='2' y='16' width='8' height='5.5' rx='2.75'/%3E%3C/svg%3E");
 }
 
 .brand-name {
-  font-size: var(--text-md);
-  font-weight: 650;
-  letter-spacing: var(--tracking-tight);
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
@@ -63,10 +69,15 @@
   display: none;
 }
 
+/* Scorciatoia sempre presente: tonale, così il primario pieno resta quello della pagina */
 .sidebar-cta {
   width: 100%;
   justify-content: flex-start;
   padding: 0 var(--space-3);
+}
+
+.sidebar-cta svg {
+  color: var(--accent);
 }
 
 /* Navigazione */

@@ -16,7 +16,7 @@ const systemLight = () => window.matchMedia('(prefers-color-scheme: light)')
 function apply(): void {
   const light = current === 'light' || (current === 'system' && systemLight().matches)
   document.documentElement.dataset.theme = light ? 'light' : 'dark'
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f4f4f1' : '#0e0f11')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f5f5f2' : '#0a0a0a')
 }
 
 export const getTheme = (): Theme => current

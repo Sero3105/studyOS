@@ -77,7 +77,7 @@ function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile, onOp
         </button>
       </div>
 
-      <Link to="/timer" className="btn btn-primary sidebar-cta" data-label={t('nav.newSession')}>
+      <Link to="/timer" className="btn btn-secondary sidebar-cta" data-label={t('nav.newSession')}>
         <Play aria-hidden="true" />
         <span className="nav-text">{t('nav.newSession')}</span>
       </Link>
