@@ -22,6 +22,7 @@ import SubjectDot from '../components/ui/SubjectDot'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
+import DatePicker from '../components/ui/DatePicker'
 
 const priorityKeys: Record<TaskPriority, TranslationKey> = { low: 'priority.low', medium: 'priority.medium', high: 'priority.high' }
 const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 }
@@ -231,10 +232,9 @@ function PlannerPage() {
                 maxLength={200}
                 placeholder={t('planner.titlePlaceholder')}
               />
-              <label className="field composer-compact">
-                <span className="visually-hidden">{t('planner.dueDate')}</span>
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} aria-label={t('planner.dueDate')} />
-              </label>
+              <div className="composer-compact composer-date">
+                <DatePicker value={dueDate} onChange={setDueDate} placeholder={t('planner.dueDate')} aria-label={t('planner.dueDate')} />
+              </div>
               <label className="field composer-compact">
                 <span className="visually-hidden">{t('planner.priority')}</span>
                 <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} aria-label={t('planner.priority')}>

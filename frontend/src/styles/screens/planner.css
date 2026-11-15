@@ -37,8 +37,8 @@
 }
 
 .composer-title {
-  min-width: 220px;
-  flex: 1 1 280px;
+  min-width: 200px;
+  flex: 1 1 200px;
 }
 
 .composer-compact {
@@ -48,6 +48,10 @@
 .composer-compact input,
 .composer-compact select {
   width: auto;
+}
+
+.composer-date {
+  flex: 0 0 168px;
 }
 
 .composer-toggle {
@@ -141,3 +145,18 @@
 .weekday-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
 .weekday-options { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding-top: var(--space-2); }
 .weekday-option { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); }
+
+/* Telefono: le azioni di riga scendono sotto il testo, così il titolo usa tutta la larghezza */
+@media (max-width: 560px) {
+  .task-row { flex-wrap: wrap; row-gap: var(--space-2); }
+  .task-row > .row-main { flex: 1 1 calc(100% - 40px); }
+  .task-row > .row-actions { width: 100%; gap: var(--space-2); padding-left: 40px; }
+  .composer-toggle { min-height: var(--target-min); }
+  .task-row .row-reveal { opacity: 1; }
+}
+
+/* Pulsanti-etichetta (In corso, difficoltà): più alti al tocco */
+@media (max-width: 560px) {
+  .tag-button { min-height: 36px; padding: 0 var(--space-3); }
+  .row-actions { gap: var(--space-2); }
+}

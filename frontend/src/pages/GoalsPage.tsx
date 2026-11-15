@@ -13,7 +13,8 @@ import { errorMessage } from '../utils/errors'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import SubjectDot from '../components/ui/SubjectDot'
-import { formatDay, relativeDay } from '../utils/dates'
+import { formatDay, relativeDay, todayIso } from '../utils/dates'
+import DatePicker from '../components/ui/DatePicker'
 
 /** Unità di misura di ogni tipo di obiettivo, per i campi e per le righe. */
 const goalKindKeys: Record<GoalKind, TranslationKey> = {
@@ -150,10 +151,10 @@ function GoalsPage() {
                 {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </label>
-            <label className="field">
+            <div className="field">
               <span className="field-label">{t('goals.deadline')} <em>{t('common.optional')}</em></span>
-              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-            </label>
+              <DatePicker value={deadline} onChange={setDeadline} min={todayIso()} aria-label={t('goals.deadline')} />
+            </div>
           </div>
           <div className="form-actions">
             <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>

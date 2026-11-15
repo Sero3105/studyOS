@@ -4,6 +4,7 @@ import type { CreateExamPayload } from '../../services/examService'
 import { errorMessage } from '../../utils/errors'
 import { useLanguage } from '../../i18n/useLanguage'
 import { getSubjects } from '../../services/subjectService'
+import DatePicker from '../ui/DatePicker'
 
 interface ExamFormProps {
   onSave: (payload: CreateExamPayload) => Promise<void>
@@ -28,6 +29,8 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
   // Suggerimenti: con lo stesso nome di una materia, l'esame le viene collegato (per id) dal backend.
   const [subjectNames, setSubjectNames] = useState<string[]>([])
   const listId = useId()
+  const dateId = useId()
+  const dateHintId = useId()
   useEffect(() => { getSubjects().then((list) => setSubjectNames(list.map((s) => s.name))).catch(() => {}) }, [])
 
   const handleChange = (
@@ -90,15 +93,16 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
       <fieldset className="form-block">
         <legend>{t('exams.formWhenWhere')}</legend>
         <div className="form-grid form-grid-3">
-          <label className="field">
-            <span className="field-label">{t('exams.formDate')} <em>{t('exams.formDateHint')}</em></span>
-            <input
-              name="exam_date"
-              type="date"
+          <div className="field">
+            <label className="field-label" htmlFor={dateId}>{t('exams.formDate')} <em>{t('common.optional')}</em></label>
+            <DatePicker
+              id={dateId}
+              aria-describedby={dateHintId}
               value={data.exam_date ?? ''}
-              onChange={handleChange}
+              onChange={(exam_date) => setData((d) => ({ ...d, exam_date }))}
             />
-          </label>
+            <span className="field-hint" id={dateHintId}>{t('exams.formDateHint')}</span>
+          </div>
           <label className="field">
             <span className="field-label">{t('exams.formTime')} <em>{t('common.optional')}</em></span>
             <input
@@ -123,50 +127,50 @@ function ExamForm({ onSave, onCancel, initial }: ExamFormProps) {
 
       <fieldset className="form-block">
         <legend>{t('exams.formPreparation')}</legend>
-        <label className="field form-narrow">
-          <span className="field-label">{t('exams.formStatus')}</span>
-          <select name="status" value={data.status} onChange={handleChange}>
-            <option value="planned">{t('exams.status.planned')}</option>
-            <option value="in_progress">{t('exams.status.in_progress')}</option>
-            <option value="passed">{t('exams.status.passed')}</option>
-            <option value="failed">{t('exams.status.failed')}</option>
-          </select>
-        </label>
         <div className="form-grid form-grid-3">
           <label className="field">
+            <span className="field-label">{t('exams.formStatus')}</span>
+            <select name="status" value={data.status} onChange={handleChange}>
+              <option value="planned">{t('exams.status.planned')}</option>
+              <option value="in_progress">{t('exams.status.in_progress')}</option>
+              <option value="passed">{t('exams.status.passed')}</option>
+              <option value="failed">{t('exams.status.failed')}</option>
+            </select>
+          </label>
+          <label className="field">
             <span className="field-label">{t('exams.formCfu')} <em>{t('common.optional')}</em></span>
-            <input name="cfu" type="number" min={1} max={30} inputMode="numeric" value={data.cfu ?? ''} onChange={handleChange} />
+            <input name="cfu" type="number" min={1} max={30} inputMode="numeric" placeholder="6" value={data.cfu ?? ''} onChange={handleChange} />
           </label>
           {data.status === 'passed' && (
-            <>
-              <label className="field">
-                <span className="field-label">{t('exams.formGrade')}</span>
-                <input name="grade" type="number" min={18} max={30} inputMode="numeric" value={data.grade ?? ''} onChange={handleChange} />
-              </label>
-              <label className="settings-toggle exam-honors">
-                <input
-                  className="check"
-                  type="checkbox"
-                  checked={Boolean(data.honors) && Number(data.grade) === 30}
-                  disabled={Number(data.grade) !== 30}
-                  onChange={(e) => setData((d) => ({ ...d, honors: e.target.checked }))}
-                />
-                <span>{t('exams.formHonors')}</span>
-              </label>
-            </>
+            <label className="field">
+              <span className="field-label">{t('exams.formGrade')}</span>
+              <input name="grade" type="number" min={18} max={30} inputMode="numeric" placeholder="18–30" value={data.grade ?? ''} onChange={handleChange} />
+            </label>
           )}
+          {data.status === 'passed' && (
+            <label className="settings-toggle field-full">
+              <input
+                className="check"
+                type="checkbox"
+                checked={Boolean(data.honors) && Number(data.grade) === 30}
+                disabled={Number(data.grade) !== 30}
+                onChange={(e) => setData((d) => ({ ...d, honors: e.target.checked }))}
+              />
+              <span>{t('exams.formHonors')}</span>
+            </label>
+          )}
+          <label className="field field-full">
+            <span className="field-label">{t('exams.formNotes')} <em>{t('common.optional')}</em></span>
+            <textarea
+              name="notes"
+              maxLength={2000}
+              placeholder={t('exams.formNotesPlaceholder')}
+              value={data.notes ?? ''}
+              onChange={handleChange}
+              rows={3}
+            />
+          </label>
         </div>
-        <label className="field">
-          <span className="field-label">{t('exams.formNotes')} <em>{t('common.optional')}</em></span>
-          <textarea
-            name="notes"
-            maxLength={2000}
-            placeholder={t('exams.formNotesPlaceholder')}
-            value={data.notes ?? ''}
-            onChange={handleChange}
-            rows={3}
-          />
-        </label>
       </fieldset>
 
       {error && <p className="notice notice-error" role="alert">{error}</p>}

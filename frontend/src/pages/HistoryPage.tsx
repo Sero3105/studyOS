@@ -13,6 +13,7 @@ import type { Subject } from '../services/subjectService'
 import { daysUntil, formatDay, formatMinutes, relativeDay, todayIso } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
+import DatePicker from '../components/ui/DatePicker'
 
 /** Sessione inserita o corretta a mano: studio senza timer (lezione, biblioteca) o blocco registrato male. */
 function SessionForm({ subjects, initial, onSave, onCancel }: {
@@ -53,10 +54,10 @@ function SessionForm({ subjects, initial, onSave, onCancel }: {
   return (
     <form className="history-form" onSubmit={(e) => void submit(e)} noValidate>
       <div className="form-grid">
-        <label className="field">
+        <div className="field">
           <span className="field-label">{t('history.date')}</span>
-          <input type="date" required max={todayIso()} value={studiedOn} onChange={(e) => setStudiedOn(e.target.value)} />
-        </label>
+          <DatePicker required max={todayIso()} value={studiedOn} onChange={setStudiedOn} aria-label={t('history.date')} />
+        </div>
         <label className="field">
           <span className="field-label">{t('history.minutes')}</span>
           <input type="number" inputMode="numeric" min="1" max="1440" step="1" required value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-invalid={Boolean(error)} />

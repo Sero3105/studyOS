@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Task } from '../../services/taskService'
 import { useLanguage } from '../../i18n/useLanguage'
+import DatePicker from '../ui/DatePicker'
 
 const DURATIONS = [25, 50, 90, 120, 180]
 
@@ -34,10 +35,10 @@ function BlockEditor({ task, defaultDay, onSave, onCancel }: {
 
   return (
     <form className="block-editor" onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}>
-      <label className="field">
+      <div className="field">
         <span className="field-label">{t('calendar.blockDay')}</span>
-        <input type="date" required value={day} onChange={(e) => setDay(e.target.value)} />
-      </label>
+        <DatePicker required value={day} onChange={setDay} aria-label={t('calendar.blockDay')} />
+      </div>
       <div className="block-editor-row">
         <label className="field">
           <span className="field-label">{t('calendar.blockTime')}</span>

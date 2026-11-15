@@ -95,11 +95,6 @@
   font-size: var(--text-xs);
 }
 
-.field-error {
-  color: var(--danger);
-  font-size: var(--text-sm);
-}
-
 @media (max-width: 560px) {
   .timer-setup-panel {
     padding: var(--space-5);
