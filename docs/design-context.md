@@ -19,7 +19,7 @@ concise, Italian UI. Dark-first interface.
 3. Systems over tweaks: single spacing scale, single surface language, semantic color only.
 4. No decoration: flat surfaces, no gradients/glow/glassmorphism, no cards-in-cards.
 5. Honest data: empty states teach; never fabricate content.
-6. Calm motion: 160ms ease transitions only, `prefers-reduced-motion` respected.
+6. Calm motion (tasteskill numbers): 150ms in, 120ms out, buttons step up 1px on hover and press to .985, `prefers-reduced-motion` respected.
 
 ## Implementation defaults
 React + TypeScript + Vite frontend, vanilla CSS with centralized tokens in

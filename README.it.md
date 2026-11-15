@@ -198,7 +198,7 @@ docker compose up -d
 | **Database** | SQLite (file nel volume Docker, `database/studyos.db` in locale) |
 | **Deploy** | Docker Compose · nginx (file statici + proxy `/api`) · immagini multi-stage |
 
-**Design:** dark-first, superfici quasi nere, un solo accento lime, piatto (niente gradienti), transizioni da 160 ms, `prefers-reduced-motion` rispettato, target touch da 44 px, breakpoint a 700/900 px. I token sono in `frontend/src/styles/base/tokens.css`.
+**Design:** dark-first su fondo nero, un solo accento menta (niente blu né viola), Funnel Display / Funnel Sans / DM Mono, piatto (niente gradienti), transizioni da 150 ms con gradino di 1 px in hover e pressione, `prefers-reduced-motion` rispettato, target touch da 44 px, breakpoint a 700/900 px. I token sono in `frontend/src/styles/base/tokens.css`.
 
 ---
 

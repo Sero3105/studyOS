@@ -304,7 +304,8 @@ Test:
 
 ## 14. Design system (redesign UI/UX)
 
-Direzione: dark-first (con tema chiaro), superfici quasi-nere, accento lime unico, stile piatto
+Direzione (tasteskill): dark-first (con tema chiaro), fondo nero, accento menta unico
+(niente blu né viola, anche nelle materie), font Funnel Display/Sans + DM Mono, stile piatto
 (niente gradienti/glow), transizioni 150-200ms, `prefers-reduced-motion`
 rispettato. Tutti i valori vivono in `frontend/src/styles/base/tokens.css`:
 superfici, testo, accento, colori semantici, tipografia, spaziature, raggi,
@@ -314,6 +315,11 @@ Convenzioni: target touch minimi 44px, focus visibile su ogni controllo
 interattivo, contrasto testo almeno 4.5:1, stati loading/vuoto/errore per
 ogni pagina dati. Breakpoint principale 700px: sotto, la sidebar parte
 compressa a icone.
+
+Form: etichetta su una riga sola (`.field-label`, "opzionale" come `<em>`),
+spiegazioni sotto il controllo in `.field-hint`, controlli alti 44px. Per le
+date si usa `components/ui/DatePicker`, mai `<input type="date">`. Un solo
+pulsante pieno (`.btn-primary`) per vista; il resto è `.btn-secondary` (tonale).
 
 ## 15. Layout e gerarchia (redesign strutturale)
 
