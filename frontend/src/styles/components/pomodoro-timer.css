@@ -60,8 +60,10 @@
 
 .timer-time {
   color: var(--text-strong);
+  font-family: var(--display);
   font-size: clamp(3.5rem, 11vw, 6.5rem);
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
   letter-spacing: var(--tracking-display);
   line-height: 1;
 }
