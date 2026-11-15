@@ -80,8 +80,9 @@
 
 .goal-percent {
   color: var(--accent);
+  font-family: var(--display);
   font-size: var(--text-xl);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: var(--tracking-tight);
   line-height: 1.1;
 }
@@ -128,6 +129,11 @@
   .history-filter,
   .history-filter select {
     width: 100%;
+    min-width: 0;
+  }
+
+  .page-header-actions > .history-filter {
+    flex-basis: 100%;
   }
 
   .goal {

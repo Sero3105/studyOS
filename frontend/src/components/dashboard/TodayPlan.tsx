@@ -61,7 +61,7 @@ function TodayPlan() {
         <EmptyState compact title={t('today.emptyTitle')}>{t('today.emptyBody')}</EmptyState>
       ) : (
         <ol className="rows today-plan-list">
-          {items.map((s, index) => {
+          {items.map((s) => {
             const Icon = ICONS[s.kind]
             const { title, meta } = label(s)
             const subject = s.kind === 'cards' ? undefined : s.subject
@@ -76,7 +76,7 @@ function TodayPlan() {
                     <span>{subject ? `${subject.name} · ${meta}` : meta}</span>
                   </span>
                 </span>
-                <button className={`btn ${index === 0 ? 'btn-primary' : 'btn-secondary'} today-plan-go`} type="button" onClick={() => start(s)}
+                <button className="btn btn-secondary today-plan-go" type="button" onClick={() => start(s)}
                   aria-label={s.kind === 'cards' ? t('today.openCards') : t('today.startOn', { title })}>
                   {s.kind === 'cards' ? <Layers aria-hidden="true" /> : <Play aria-hidden="true" />}
                   <span className="today-plan-go-label">{s.kind === 'cards' ? t('today.review_') : t('today.start')}</span>

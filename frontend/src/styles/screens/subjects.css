@@ -41,7 +41,12 @@
 }
 
 .subject-nav-item[aria-current='true'] {
-  background: var(--surface-3);
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.subject-nav-item[aria-current='true'] .progress {
+  background: var(--line-strong);
 }
 
 .subject-nav-name {
@@ -66,6 +71,10 @@
   display: grid;
   gap: var(--space-5);
   padding: var(--space-6);
+}
+
+.subject-study svg {
+  color: var(--accent);
 }
 
 .subject-detail-head {
@@ -139,7 +148,7 @@
     width: 100%;
   }
 
-  .subject-detail-head .btn-primary {
+  .subject-detail-head .subject-study {
     flex: 1;
   }
 }
@@ -151,7 +160,7 @@
 .topic-notes { display: grid; flex-basis: 100%; gap: var(--space-2); padding: 0 0 var(--space-2) calc(24px + var(--space-3)); }
 .topic-notes-tabs { display: flex; gap: var(--space-1); }
 .topic-notes-skeleton { height: 140px; }
-.topic-notes textarea { min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--text-sm); }
+.topic-notes textarea { min-height: 140px; font-family: var(--mono); font-size: var(--text-sm); }
 
 /* Materie dagli esami da sostenere */
 
@@ -262,7 +271,7 @@
 .markdown ul, .markdown ol { padding-left: 1.4em; }
 .markdown ul { list-style: disc; }
 .markdown ol { list-style: decimal; }
-.markdown code { padding: 1px 4px; border-radius: 4px; background: var(--surface-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+.markdown code { padding: 1px 4px; border-radius: 4px; background: var(--surface-2); font-family: var(--mono); font-size: 0.92em; }
 .markdown pre { padding: var(--space-3); border-radius: var(--radius-s); background: var(--surface-2); overflow-x: auto; }
 .markdown pre code { padding: 0; background: none; }
 .markdown blockquote { padding-left: var(--space-3); border-left: 3px solid var(--line); color: var(--text-muted); }

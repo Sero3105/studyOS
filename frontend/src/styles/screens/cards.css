@@ -13,8 +13,9 @@
 
 .card-today-count {
   color: var(--text-strong);
+  font-family: var(--display);
   font-size: var(--text-display);
-  font-weight: 600;
+  font-weight: var(--display-weight);
   line-height: 1;
   margin: var(--space-2) 0;
 }
@@ -133,7 +134,7 @@
 
 .card-tools label.btn { cursor: pointer; }
 .card-tools label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-.card-tools .is-disabled { opacity: 0.5; pointer-events: none; }
+.card-tools .is-disabled { color: var(--text-muted); background: var(--surface-3); pointer-events: none; }
 
 /* Quaderno degli errori */
 .mistake-row { align-items: flex-start; }

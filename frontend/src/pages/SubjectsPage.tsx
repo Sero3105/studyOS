@@ -318,7 +318,7 @@ function SubjectsPage() {
                   </p>
                 </div>
                 <div className="row-actions">
-                  <button className="btn btn-primary" type="button" onClick={() => startSession(selected)}>
+                  <button className="btn btn-secondary subject-study" type="button" onClick={() => startSession(selected)}>
                     <Play aria-hidden="true" /> {t('subjects.study25')}
                   </button>
                   <button className="icon-btn" type="button" onClick={() => setEditing({ name: selected.name, color: subjectColor(selected) })} aria-label={t('subjects.editLabel', { name: selected.name })} title={t('subjects.edit')}>

@@ -26,8 +26,9 @@
 .figure-value {
   margin: 0;
   color: var(--text-strong);
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 500;
   letter-spacing: var(--tracking-tight);
 }
 
@@ -38,6 +39,7 @@
 }
 
 .figure-lead .figure-value {
+  font-family: var(--display);
   font-size: var(--text-display);
   letter-spacing: var(--tracking-display);
   line-height: 1;
@@ -87,7 +89,7 @@
 .stats-pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: var(--space-5);
 }
 
@@ -181,6 +183,16 @@
 
   .figure-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Classifiche: nome su una riga intera, sotto barra e valore */
+  .ranked-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--space-1);
+  }
+
+  .ranked-name {
+    grid-column: 1 / -1;
   }
 
   .goal-stat {

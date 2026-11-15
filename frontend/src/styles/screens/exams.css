@@ -36,8 +36,9 @@
 }
 
 .next-exam-days {
+  font-family: var(--display);
   font-size: var(--text-display);
-  font-weight: 600;
+  font-weight: var(--display-weight);
   letter-spacing: var(--tracking-display);
   line-height: 1;
 }
@@ -164,10 +165,12 @@
 
   .next-exam-count {
     display: flex;
+    justify-self: start;
     align-items: baseline;
     justify-content: flex-start;
     gap: var(--space-2);
-    padding: var(--space-4) var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
   }
 
   .next-exam-days {
@@ -183,10 +186,14 @@
   }
 
   .exam-row-status {
-    flex: 1;
+    flex: 1 1 calc(100% - 68px);
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-2) var(--space-3);
     margin-left: 68px;
+  }
+
+  .exam-row > .row-actions {
+    margin: calc(var(--space-2) * -1) 0 0 auto;
   }
 }
 
@@ -194,14 +201,17 @@
 
 .grade-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-4);
   margin: var(--space-3) 0 0;
 }
 
+@media (max-width: 700px) {
+  .grade-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .grade-stats dt { color: var(--text-muted); font-size: var(--text-sm); }
-.grade-stats dd { margin: var(--space-1) 0 0; color: var(--text-strong); font-size: 1.5rem; font-weight: 600; }
-.exam-honors { align-self: end; }
+.grade-stats dd { margin: var(--space-1) 0 0; color: var(--text-strong); font-family: var(--display); font-size: 1.5rem; font-weight: 500; }
 
 .date-block-pending { width: 18px; height: 18px; margin: auto; color: var(--text-muted); }
 
@@ -224,7 +234,6 @@
 .grade-trend-point { stroke: var(--surface); stroke-width: 2; fill: var(--text-muted); }
 .grade-trend-point.is-up { fill: var(--success); }
 .grade-trend-point.is-down { fill: var(--danger); }
-.grade-trend-chart .recharts-surface:focus { outline: none; }
 
 .grade-trend-tooltip {
   display: grid;
@@ -292,6 +301,7 @@
 }
 
 .grade-sim summary {
+  padding: 10px 0;
   color: var(--text-strong);
   font-weight: 600;
   cursor: pointer;
@@ -348,7 +358,9 @@
 .readiness-track { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
 .readiness-track span { display: block; height: 100%; border-radius: 3px; background: var(--readiness-color); }
 .readiness-details { color: var(--text-muted); font-size: var(--text-xs); }
-.readiness, .readiness-chip { --readiness-color: var(--danger); }
+/* Bassa prontezza non è un errore: grigio neutro, ambra a metà, menta quando ci sei */
+.readiness, .readiness-chip { --readiness-color: var(--text-muted); }
 .readiness.is-mid, .readiness-chip.is-mid { --readiness-color: var(--warning); }
 .readiness.is-good, .readiness-chip.is-good { --readiness-color: var(--success); }
 .readiness-chip { color: var(--readiness-color); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; cursor: help; }
+.readiness-chip.is-low { color: var(--text); }

@@ -72,7 +72,7 @@ function SecretLink({ kind, busy, run, prefix }: { kind: LinkKind; busy: boolean
       )}
       {active && !link && <p className="panel-meta">{t('settings.linkActive')}</p>}
       <div className="settings-actions">
-        <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void create()}>{active ? t('settings.linkRotate') : t(key('Create'))}</button>
+        <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void create()}>{active ? t('settings.linkRotate') : t(key('Create'))}</button>
         {active && <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void revoke()}>{t('settings.linkRevoke')}</button>}
       </div>
     </>
@@ -129,7 +129,7 @@ function AccountSection({ busy, run }: { busy: boolean; run: Run }) {
           </label>
         </div>
         <div className="settings-actions">
-          <button className="btn btn-primary" type="submit" disabled={busy || !current || !next}>{t('settings.passwordSubmit')}</button>
+          <button className="btn btn-secondary" type="submit" disabled={busy || !current || !next}>{t('settings.passwordSubmit')}</button>
         </div>
       </form>
 
@@ -307,7 +307,7 @@ function SettingsPage() {
 
       <Section id="settings-data-title" title={t('settings.dataTitle')} description={t('settings.dataDescription')}>
         <div className="settings-actions">
-          <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void downloadBackup()}>{t('settings.exportButton')}</button>
+          <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void downloadBackup()}>{t('settings.exportButton')}</button>
           <label className={`btn btn-secondary${busy ? ' is-disabled' : ''}`}>
             {t('settings.importButton')}
             <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={(e) => uploadBackup(e, false)} />
@@ -321,7 +321,7 @@ function SettingsPage() {
 
       <Section id="settings-synapse-title" title={t('settings.synapseTitle')} description={t('settings.synapseDescription')}>
         <div className="settings-actions">
-          <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void downloadVault()}>{t('subjects.vaultButton')}</button>
+          <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void downloadVault()}>{t('subjects.vaultButton')}</button>
           <a className="btn btn-secondary" href={SYNAPSE_URL} target="_blank" rel="noopener noreferrer">
             {t('settings.synapseDownload')} <ExternalLink aria-hidden="true" />
           </a>
