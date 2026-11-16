@@ -1,13 +1,14 @@
-import { Archive, CalendarClock, CalendarDays, CalendarPlus, Clock3, MapPin, Plus } from 'lucide-react'
+import { Archive, CalendarClock, CalendarDays, Clock3, MapPin, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import { ExamActions, StatusTag } from './ExamParts'
 import OutcomePrompt from './OutcomePrompt'
+import PlanStarter from './PlanStarter'
 import ReadinessMeter from './ReadinessMeter'
 import CoverageMap from './CoverageMap'
 import type { ExamCoverage } from './CoverageMap'
 import { isDated } from '../../services/examService'
-import type { Exam } from '../../services/examService'
+import type { Exam, PlanRequest } from '../../services/examService'
 import type { Readiness } from '../../utils/planning'
 import { daysUntil, formatDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
@@ -19,12 +20,14 @@ interface SubjectExamProps {
   onAdd: () => void
   onEdit: (exam: Exam) => void
   onDelete: (exam: Exam) => Promise<void>
-  onPlan: (exam: Exam) => void
+  onPlan: (exam: Exam, request: PlanRequest) => void
+  /** Cambia con argomenti, stato e difficoltà: i suggerimenti del piano si ricalcolano. */
+  topicsKey: string
   onOutcome: (request: () => Promise<Exam>) => Promise<void>
 }
 
 /** L'esame della materia, dentro la sua scheda: conto alla rovescia, prontezza, copertura; superato → archivio. */
-function SubjectExam({ exams, readiness, coverage, onAdd, onEdit, onDelete, onPlan, onOutcome }: SubjectExamProps) {
+function SubjectExam({ exams, readiness, coverage, onAdd, onEdit, onDelete, onPlan, onOutcome, topicsKey }: SubjectExamProps) {
   const { t, locale } = useLanguage()
   const open = exams.filter((e) => e.status === 'planned' || e.status === 'in_progress')
   const awaiting = open.filter((e) => isDated(e) && daysUntil(e.exam_date) < 0)
@@ -75,14 +78,7 @@ function SubjectExam({ exams, readiness, coverage, onAdd, onEdit, onDelete, onPl
               </ul>
             </div>
           </div>
-          {isDated(active) && daysUntil(active.exam_date) > 1 && (
-            <div className="flex flex-col gap-3 rounded-lg border border-primary/25 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-muted-foreground">{t('exams.planExplain')}</p>
-              <Button size="sm" className="shrink-0" onClick={() => onPlan(active)}>
-                <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
-              </Button>
-            </div>
-          )}
+          {isDated(active) && daysUntil(active.exam_date) > 1 && <PlanStarter key={active.id} exam={active} topicsKey={topicsKey} onPlan={onPlan} />}
           {readiness && <ReadinessMeter readiness={readiness} />}
           {coverage && <CoverageMap coverage={coverage} />}
         </>

@@ -64,7 +64,7 @@ function Toggle({ id, label, checked, disabled, onChange }: { id: string; label:
   )
 }
 
-const choiceItem = 'data-[state=on]:bg-accent data-[state=on]:text-foreground'
+const choiceItem = 'data-[state=on]:bg-primary/10 data-[state=on]:text-primary'
 
 function FileButton({ label, variant, disabled, onChange }: { label: string; variant: 'outline' | 'ghost'; disabled: boolean; onChange: (event: ChangeEvent<HTMLInputElement>) => void }) {
   return (

@@ -38,7 +38,7 @@ function BlockPrompt() {
         className="w-full [&>*]:flex-1"
       >
         {FOCUS.map((value) => (
-          <ToggleGroupItem key={value} value={String(value)} className="data-[state=on]:bg-accent">{t(`session.focus.${value}`)}</ToggleGroupItem>
+          <ToggleGroupItem key={value} value={String(value)} className="data-[state=on]:bg-primary/10 data-[state=on]:text-primary">{t(`session.focus.${value}`)}</ToggleGroupItem>
         ))}
       </ToggleGroup>
       <Field>

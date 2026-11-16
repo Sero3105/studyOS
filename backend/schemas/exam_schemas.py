@@ -58,6 +58,18 @@ class AttemptResponse(AttemptCreate):
 class PlanRequest(BaseModel):
     # Giorni della settimana senza studio, 1 = lunedì ... 7 = domenica.
     rest_days: list[Annotated[int, Field(ge=1, le=7)]] = Field(default=[], max_length=7)
+    # Preferenze dello studente: l'algoritmo si adatta (vedi services/study_plan.PlanPrefs).
+    start_date: date | None = None  # primo giorno del piano; vuoto = domani
+    days_off: list[date] = Field(default=[], max_length=120)  # giorni precisi senza studio
+    limit_unit: Literal['tasks', 'hours'] = 'tasks'
+    limit_value: float | None = Field(default=None, gt=0, le=24)  # attività o ore al giorno; vuoto = automatico
+    reviews: Literal['light', 'standard', 'intense'] = 'standard'
+    final_days: int | None = Field(default=None, ge=1, le=14)
+    rest_before_exam: bool = False  # il giorno prima dell'esame resta libero
+    order: Literal['course', 'hardest'] = 'course'
+    study_minutes: int = Field(default=50, ge=15, le=180)
+class PlanAdviceResponse(BaseModel):
+    ideal_start: date; latest_start: date; ideal_days: int; min_days: int; full_items: int; min_items: int; full_minutes: int; min_minutes: int
 class ExamResponse(BaseModel):
     id:int; user_id:int; title:str; subject:str; subject_id:int|None=None; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
     attempts: list[AttemptResponse] = []

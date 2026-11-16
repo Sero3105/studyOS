@@ -6,12 +6,14 @@ import type { Theme } from './theme'
  * Preferenze dell'interfaccia. Il valore buono sta sul server (`/settings`: segue l'utente su ogni
  * browser e finisce nel backup); il localStorage è la cache letta in modo sincrono dai componenti.
  */
-type Value = boolean | number | number[] | string
+type Value = boolean | number | number[] | string | string[]
 const KEYS = {
   reviews: 'studyos.reviews',
   timerAlerts: 'studyos.timerAlerts',
   degreeCfu: 'studyos.degreeCfu',
   restDays: 'studyos.restDays',
+  planPrefs: 'studyos.planPrefs',
+  planDaysOff: 'studyos.planDaysOff',
 } as const
 type Name = keyof typeof KEYS | 'theme'
 
@@ -47,6 +49,30 @@ export const setDegreeCfu = (cfu: number): void => save('degreeCfu', cfu)
 /** Giorni della settimana senza studio nel piano d'esame (1 = lunedì ... 7 = domenica). */
 export const restDays = (): number[] => (read(KEYS.restDays) ?? '').split(',').map(Number).filter((d) => d >= 1 && d <= 7)
 export const setRestDays = (days: number[]): void => save('restDays', days)
+
+/**
+ * Preferenze del piano d'esame scelte dallo studente (l'algoritmo si adatta a queste).
+ * Le scelte in una stringa JSON corta, i giorni liberi a parte come lista di date (il server limita le stringhe a 200 caratteri).
+ */
+export interface PlanPrefs {
+  daysOff: string[]
+  limitUnit: 'auto' | 'tasks' | 'hours'
+  limitValue: number
+  reviews: 'light' | 'standard' | 'intense'
+  finalDays: number // 0 = automatico
+  restBeforeExam: boolean
+  order: 'course' | 'hardest'
+  studyMinutes: 25 | 50 | 90
+}
+export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50 }
+export function planPrefs(): PlanPrefs {
+  const daysOff = (read(KEYS.planDaysOff) ?? '').split(',').filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+  try { return { ...PLAN_DEFAULTS, ...JSON.parse(read(KEYS.planPrefs) ?? '{}'), daysOff } } catch { return { ...PLAN_DEFAULTS, daysOff } }
+}
+export function setPlanPrefs({ daysOff, ...rest }: PlanPrefs): void {
+  save('planPrefs', JSON.stringify(rest))
+  save('planDaysOff', daysOff)
+}
 
 /** Tema: lo applica `utils/theme`, qui solo il salvataggio sul server. */
 export function chooseTheme(theme: Theme): void {

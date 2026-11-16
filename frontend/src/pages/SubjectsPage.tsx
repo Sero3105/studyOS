@@ -31,7 +31,7 @@ import { SUBJECT_BG } from '@/lib/subjectColors'
 import { getStatsSummary } from '../services/statsService'
 import { exportNotesVault } from '../services/dataService'
 import { createExam, deleteExam, getExams, planExam, updateExam } from '../services/examService'
-import type { CreateExamPayload, Exam } from '../services/examService'
+import type { CreateExamPayload, Exam, PlanRequest } from '../services/examService'
 import { getSessions } from '../services/sessionService'
 import type { StudySession } from '../services/sessionService'
 import { getCards, getMistakes } from '../services/cardService'
@@ -43,7 +43,7 @@ import type { TranslationKey } from '../i18n/translations'
 import { examReadiness, topicCoverage } from '../utils/planning'
 import { daysUntil, relativeDay, todayIso, urgencyClass } from '../utils/dates'
 import { saveBlob } from '../utils/download'
-import { restDays, reviewsEnabled } from '../utils/preferences'
+import { reviewsEnabled } from '../utils/preferences'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { archivedSubjectIds } from '../utils/grades'
@@ -153,10 +153,10 @@ function SubjectsPage() {
   const removeExam = (exam: Exam) =>
     run(async () => { await deleteExam(exam.id); setExams((list) => list.filter((x) => x.id !== exam.id)) }, t('exams.deleteError'))
 
-  const planFor = (exam: Exam) =>
+  const planFor = (exam: Exam, request: PlanRequest) =>
     run(async () => {
       try {
-        const tasks = await planExam(exam.id, restDays())
+        const tasks = await planExam(exam.id, request)
         const studies = tasks.filter((x) => x.review_interval === null).length
         toast.success(tasks.length ? t('exams.planDoneDetail', { study: studies, reviews: tasks.length - studies }) : t('exams.planNothing'))
       } catch (e) {
@@ -393,7 +393,8 @@ function SubjectsPage() {
                   onAdd={() => setExamDialog({ mode: 'add', subject: selected })}
                   onEdit={(exam) => setExamDialog({ mode: 'edit', exam })}
                   onDelete={removeExam}
-                  onPlan={(exam) => void planFor(exam)}
+                  onPlan={(exam, request) => void planFor(exam, request)}
+                  topicsKey={selected.topics.map((x) => `${x.id}:${x.mastery}:${x.difficulty}`).join(',')}
                   onOutcome={recordOutcome}
                 />
 

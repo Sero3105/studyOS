@@ -29,7 +29,7 @@ def test_adaptive_review_chain(client):
     h = _headers(client, "r2@example.com")
     s = client.post("/subjects", json={"name": "Storia"}, headers=h).json()
     t = client.post(f"/subjects/{s['id']}/topics", json={"title": "Roma"}, headers=h).json()
-    client.patch(f"/topics/{t['id']}", json={"completed": True, "schedule_reviews": True}, headers=h)
+    client.patch(f"/topics/{t['id']}", json={"mastery": 1, "schedule_reviews": True}, headers=h)  # studiato una volta
 
     def complete_open(rating=None):
         task = next(x for x in client.get("/tasks", headers=h).json() if x["status"] != "done")
@@ -37,46 +37,91 @@ def test_adaptive_review_chain(client):
         assert client.patch(f"/tasks/{task['id']}", json=body, headers=h).status_code == 200
         return [(x["due_date"], x["review_interval"]) for x in client.get("/tasks", headers=h).json() if x["status"] != "done"]
 
-    mastery = lambda: client.get("/subjects", headers=h).json()[0]["topics"][0]["mastery"]
-    assert mastery() == 1
+    mastery = lambda: (lambda x: (x["mastery"], x["completed"]))(client.get("/subjects", headers=h).json()[0]["topics"][0])
+    assert mastery() == (1, False)  # da ripassare: non ancora completato
     assert complete_open("easy") == [(_day(4), 4)]
-    assert mastery() == 2  # ripassato
+    assert mastery() == (2, True)  # ripassato: ora è completato
     assert complete_open() == [(_day(10), 10)]  # senza valutazione vale "ok"
     assert complete_open("hard") == [(_day(1), 1)]
-    assert mastery() == 1  # difficile: torna "studiato"
+    assert mastery() == (1, False)  # difficile: torna "da ripassare"
     for _ in range(3): complete_open("easy")  # 4, 16, poi 64 > 60: argomento consolidato
     assert [x for x in client.get("/tasks", headers=h).json() if x["status"] != "done"] == []
-    assert mastery() == 3  # sicuro
+    assert mastery() == (3, True)  # sicuro
 
 
-def test_exam_plan_spreads_open_topics(client):
+def test_exam_plan_studies_reviews_and_replans(client):
     h = _headers(client, "p1@example.com")
     s = client.post("/subjects", json={"name": "Fisica"}, headers=h).json()
-    for title in ["Cinematica", "Dinamica", "Energia"]:
-        client.post(f"/subjects/{s['id']}/topics", json={"title": title}, headers=h)
-    exam = client.post("/exams", json={"title": "Scritto", "subject": "fisica", "exam_date": _day(7)}, headers=h).json()
+    ids = [client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h).json()["id"] for x in ["Cinematica", "Dinamica", "Energia"]]
+    client.patch(f"/topics/{ids[1]}", json={"difficulty": 3}, headers=h)
+    exam = client.post("/exams", json={"title": "Scritto", "subject": "fisica", "exam_date": _day(21)}, headers=h).json()
     tasks = client.post(f"/exams/{exam['id']}/plan", headers=h).json()
-    assert [t["due_date"] for t in tasks] == [_day(1), _day(3), _day(5)]
-    assert client.post(f"/exams/{exam['id']}/plan", headers=h).json() == []  # niente doppioni
+    studies = [t for t in tasks if t["review_interval"] is None]
+    assert [t["title"] for t in studies] == ["Studia: Cinematica", "Studia: Dinamica (1/2)", "Studia: Dinamica (2/2)", "Studia: Energia"]
+    assert all(_day(1) <= t["due_date"] < _day(21) for t in tasks)
+    # Ripassano tutti, il difficile di più; ogni argomento ha anche il ripasso finale.
+    reviews = lambda tid: [t for t in tasks if t["topic_id"] == tid and t["review_interval"] is not None]
+    assert len(reviews(ids[1])) > len(reviews(ids[0])) >= 2
+    # Rigenerare sostituisce i task del piano ancora aperti, senza doppioni.
+    again = client.post(f"/exams/{exam['id']}/plan", headers=h).json()
+    assert len(again) == len(tasks) and len(client.get("/tasks", headers=h).json()) == len(tasks)
+    # Fatto lo studio, l'argomento è "da ripassare"; i ripassi sono già in calendario, nessuno in più.
+    first = next(t for t in again if t["title"] == "Studia: Cinematica")
+    client.patch(f"/tasks/{first['id']}", json={"status": "done"}, headers=h)
+    topic = next(x for x in client.get("/subjects", headers=h).json()[0]["topics"] if x["id"] == ids[0])
+    assert (topic["mastery"], topic["completed"]) == (1, False)
+    assert len(client.get("/tasks", headers=h).json()) == len(tasks)
+
     near = client.post("/exams", json={"title": "X", "subject": "Fisica", "exam_date": _day(1)}, headers=h).json()
     assert client.post(f"/exams/{near['id']}/plan", headers=h).json()["detail"] == "too_close"
     other = client.post("/exams", json={"title": "Y", "subject": "Storia", "exam_date": _day(9)}, headers=h).json()
     assert client.post(f"/exams/{other['id']}/plan", headers=h).json()["detail"] == "no_subject"
 
 
-def test_exam_plan_weights_and_rest_days(client):
+def test_exam_plan_skips_rest_days(client):
     h = _headers(client, "p2@example.com")
     s = client.post("/subjects", json={"name": "Chimica"}, headers=h).json()
-    ids = [client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h).json()["id"] for x in "ABC"]
-    client.patch(f"/topics/{ids[0]}", json={"difficulty": 3}, headers=h)
-    client.patch(f"/topics/{ids[1]}", json={"difficulty": 1}, headers=h)
-    # C resta media (2) ma con 2 ore già studiate pesa come una facile: pesi 3, 1, 1.
-    client.post("/sessions", json={"topic_id": ids[2], "duration_minutes": 120, "studied_on": _day(0)}, headers=h)
+    for x in "ABC": client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h)
     exam = client.post("/exams", json={"title": "Orale", "subject": "Chimica", "exam_date": _day(11)}, headers=h).json()
-    rest = (date.today() + timedelta(days=1)).isoweekday()  # liberi i giorni 1 e 8: restano 2-7, 9, 10
+    rest = (date.today() + timedelta(days=1)).isoweekday()  # liberi i giorni 1 e 8
     tasks = client.post(f"/exams/{exam['id']}/plan", json={"rest_days": [rest]}, headers=h).json()
-    assert [t["due_date"] for t in tasks] == [_day(2), _day(6), _day(9)]
+    assert tasks and not {t["due_date"] for t in tasks} & {_day(1), _day(8)}
     assert client.post(f"/exams/{exam['id']}/plan", json={"rest_days": [8]}, headers=h).status_code == 422
+
+
+def test_exam_plan_start_date_and_advice(client):
+    h = _headers(client, "p3@example.com")
+    s = client.post("/subjects", json={"name": "Reti"}, headers=h).json()
+    for x in "ABCD": client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h)
+    exam = client.post("/exams", json={"title": "Reti", "subject": "Reti", "exam_date": _day(30)}, headers=h).json()
+    advice = client.post(f"/exams/{exam['id']}/plan/advice", json={"rest_days": [7]}, headers=h).json()
+    assert advice["ideal_start"] < advice["latest_start"] < _day(30)
+    # Il piano parte dal giorno scelto, non prima.
+    tasks = client.post(f"/exams/{exam['id']}/plan", json={"start_date": _day(10)}, headers=h).json()
+    assert min(t["due_date"] for t in tasks) == _day(10) and max(t["due_date"] for t in tasks) < _day(30)
+    # Una data passata vale come oggi; una dopo l'esame non lascia giorni.
+    assert min(t["due_date"] for t in client.post(f"/exams/{exam['id']}/plan", json={"start_date": _day(-5)}, headers=h).json()) == _day(0)
+    assert client.post(f"/exams/{exam['id']}/plan", json={"start_date": _day(31)}, headers=h).json()["detail"] == "too_close"
+
+
+def test_exam_plan_follows_preferences(client):
+    h = _headers(client, "p4@example.com")
+    s = client.post("/subjects", json={"name": "Ottica"}, headers=h).json()
+    for x in "ABCDEF": client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h)
+    exam = client.post("/exams", json={"title": "Ottica", "subject": "Ottica", "exam_date": _day(25)}, headers=h).json()
+    prefs = {"days_off": [_day(5), _day(6)], "rest_before_exam": True, "limit_unit": "hours", "limit_value": 1.5, "study_minutes": 25}
+    tasks = client.post(f"/exams/{exam['id']}/plan", json=prefs, headers=h).json()
+    days = {t["due_date"] for t in tasks}
+    assert not days & {_day(5), _day(6), _day(24)}  # giorni liberi e giorno prima dell'esame
+    assert {t["planned_minutes"] for t in tasks if t["review_interval"] is None} == {25}
+    per_day = {}
+    for t in tasks: per_day[t["due_date"]] = per_day.get(t["due_date"], 0) + t["planned_minutes"]
+    assert max(per_day.values()) <= 90  # un'ora e mezza al giorno
+    # Le preferenze cambiano anche la data ideale: più ripassi, più giorni.
+    light = client.post(f"/exams/{exam['id']}/plan/advice", json={"reviews": "light"}, headers=h).json()
+    intense = client.post(f"/exams/{exam['id']}/plan/advice", json={"reviews": "intense"}, headers=h).json()
+    assert light["full_items"] < intense["full_items"]
+    assert client.post(f"/exams/{exam['id']}/plan", json={"limit_value": 0}, headers=h).status_code == 422
 
 
 def test_exam_grades_validation(client):
@@ -148,10 +193,12 @@ def test_topic_mastery_stays_in_sync_with_completed(client):
     url = f"/topics/{t['id']}"
     assert (t["mastery"], t["completed"]) == (0, False)
     patch = lambda body: (lambda r: (r["mastery"], r["completed"]))(client.patch(url, json=body, headers=h).json())
+    assert patch({"mastery": 1}) == (1, False)  # studiato una volta: da ripassare
+    assert patch({"mastery": 2}) == (2, True)  # ripassato: completato
     assert patch({"mastery": 3}) == (3, True)
     assert patch({"completed": True}) == (3, True)  # già fatto: lo stato non scende
     assert patch({"completed": False}) == (0, False)
-    assert patch({"completed": True}) == (1, True)
+    assert patch({"completed": True}) == (2, True)
     assert patch({"mastery": 0}) == (0, False)
     assert client.patch(url, json={"mastery": 4}, headers=h).status_code == 422
     # Il primo "studiato" da qualunque strada programma il ripasso.

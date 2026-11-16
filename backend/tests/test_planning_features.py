@@ -12,18 +12,21 @@ def _h(client, email):
 def test_rename_subject_keeps_exam_link(client):
     h = _h(client, "rename@example.com")
     exam = client.post("/exams", json={"title": "Scritto", "subject": "Analisi I"}, headers=h).json()
-    assert exam["subject_id"] is None
-    s = client.post("/subjects", json={"name": "analisi i"}, headers=h).json()  # adotta l'esame con lo stesso nome
-    assert client.get("/exams", headers=h).json()[0]["subject_id"] == s["id"]
+    [s] = client.get("/subjects", headers=h).json()  # l'esame crea la sua materia
+    assert (s["name"], exam["subject_id"]) == ("Analisi I", s["id"])
+    # Un secondo esame con lo stesso nome (maiuscole diverse) riusa la materia.
+    client.post("/exams", json={"title": "Orale", "subject": " analisi i "}, headers=h)
+    assert len(client.get("/subjects", headers=h).json()) == 1
+    assert {e["subject_id"] for e in client.get("/exams", headers=h).json()} == {s["id"]}
 
     r = client.patch(f"/subjects/{s['id']}", json={"name": "Analisi 1", "color": "blue"}, headers=h)
     assert r.status_code == 200 and r.json()["name"] == "Analisi 1" and r.json()["color"] == "blue"
-    assert client.get("/exams", headers=h).json()[0]["subject"] == "Analisi 1"
+    assert {e["subject"] for e in client.get("/exams", headers=h).json()} == {"Analisi 1"}
     assert client.patch(f"/subjects/{s['id']}", json={"color": "magenta"}, headers=h).status_code == 422
     assert client.patch(f"/subjects/{s['id']}", json={"name": None}, headers=h).status_code == 422
 
     client.delete(f"/subjects/{s['id']}", headers=h)
-    assert client.get("/exams", headers=h).json()[0]["subject_id"] is None
+    assert client.get("/exams", headers=h).json() == []  # la materia si porta via i suoi esami
 
 
 def test_recurring_task_creates_next_once(client):
@@ -76,3 +79,16 @@ def test_import_replace_restores_without_duplicates(client):
     assert client.get("/tasks", headers=h).json()[0]["recurrence"] == "weekly:2"
     assert client.get("/goals", headers=h).json()[0]["subject_id"] == subjects[0]["id"]
     assert [x["created_at"] for x in client.get("/sessions", headers=h).json()] == [x["created_at"] for x in backup["sessions"]]
+
+
+def test_old_exams_without_subject_get_one(client):
+    from sqlalchemy import update
+    from dependencies.database_dependency import SessionLocal
+    from models.exam_models import Exam
+    h = _h(client, "orphan@example.com")
+    exam = client.post("/exams", json={"title": "Scritto", "subject": "Chimica"}, headers=h).json()
+    with SessionLocal() as db:  # esame salvato prima dell'unione materia-esame
+        db.execute(update(Exam).where(Exam.id == exam["id"]).values(subject_id=None)); db.commit()
+    [listed] = client.get("/exams", headers=h).json()
+    [subject] = client.get("/subjects", headers=h).json()
+    assert listed["subject_id"] == subject["id"] and subject["name"] == "Chimica"

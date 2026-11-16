@@ -48,8 +48,9 @@ def delete_subject(subject_id: int, user_id: int, db: Session) -> None:
     subject = get_owned_subject(subject_id, user_id, db)
     _unlink(user_id, db, 'subject_id', [subject.id])
     _unlink(user_id, db, 'topic_id', [t.id for t in subject.topics])
-    for model in (Exam, Goal):
-        db.execute(update(model).where(model.user_id == user_id, model.subject_id == subject.id).values(subject_id=None))
+    # Materia ed esame sono una scheda sola: eliminando la materia se ne vanno anche i suoi esami.
+    for exam in db.scalars(select(Exam).where(Exam.user_id == user_id, Exam.subject_id == subject.id)): db.delete(exam)
+    db.execute(update(Goal).where(Goal.user_id == user_id, Goal.subject_id == subject.id).values(subject_id=None))
     db.delete(subject); db.commit()
 
 def create_topic(subject_id: int, data: TopicCreate, user_id: int, db: Session) -> Topic:
@@ -67,15 +68,16 @@ def _owned_topic(topic_id: int, user_id: int, db: Session) -> Topic:
 def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) -> Topic:
     topic = _owned_topic(topic_id, user_id, db)
     values = {k: v for k, v in data.model_dump(exclude_unset=True, exclude={'schedule_reviews'}).items() if v is not None}
-    # Stato e "completato" restano allineati, qualunque dei due arrivi.
-    if 'mastery' in values: values['completed'] = values['mastery'] >= 1
-    elif 'completed' in values: values['mastery'] = max(topic.mastery, 1) if values['completed'] else 0
-    newly_completed = values.get('completed') is True and not topic.completed
-    reopened = values.get('completed') is False and topic.completed
+    # Metodo di studio: da fare → da ripassare (studiato una volta) → ripassato → sicuro.
+    # "Completato" vuol dire almeno ripassato: studiarlo una volta sola non basta.
+    if 'mastery' in values: values['completed'] = values['mastery'] >= 2
+    elif 'completed' in values: values['mastery'] = max(topic.mastery, 2) if values['completed'] else 0
+    newly_studied = values.get('mastery', 0) >= 1 and topic.mastery == 0
+    reopened = values.get('mastery') == 0 and topic.mastery > 0
     open_reviews = (Task.user_id == user_id, Task.topic_id == topic.id, Task.title.startswith('↻'), Task.status != 'done')
     for field, value in values.items(): setattr(topic, field, value)
     if reopened: db.execute(delete(Task).where(*open_reviews))
-    if newly_completed and data.schedule_reviews and db.scalar(select(Task.id).where(*open_reviews).limit(1)) is None:
+    if newly_studied and data.schedule_reviews and db.scalar(select(Task.id).where(*open_reviews).limit(1)) is None:
         # Solo il primo ripasso: i successivi li crea il completamento, in base a com'è andato (vedi task_service).
         db.add(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=date.today() + timedelta(days=1),
                     priority='medium', subject_id=topic.subject_id, topic_id=topic.id, review_interval=1))
