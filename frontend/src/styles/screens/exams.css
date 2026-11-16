@@ -364,3 +364,32 @@
 .readiness.is-good, .readiness-chip.is-good { --readiness-color: var(--success); }
 .readiness-chip { color: var(--readiness-color); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; cursor: help; }
 .readiness-chip.is-low { color: var(--text); }
+
+/* Copertura: cosa manca, argomento per argomento. "Mai toccato" è una traccia vuota, non un errore.
+   Ordine e colori validati con dataviz (ambra e corallo mai affiancati) */
+.coverage { display: grid; gap: var(--space-3); max-width: 720px; margin-top: var(--space-4); }
+.coverage-total { color: var(--text-muted); }
+.coverage-bar { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; }
+.coverage-bar span { flex-basis: 0; background: var(--coverage-color); }
+.coverage-groups { display: grid; gap: var(--space-3); margin: 0; }
+.coverage-group { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: start; gap: var(--space-3); }
+.coverage-group dt { display: flex; align-items: center; gap: var(--space-2); min-height: 32px; color: var(--text); font-size: var(--text-sm); }
+.coverage-group dt .num { color: var(--text-muted); }
+.coverage-group dd { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.coverage-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--coverage-color); }
+.coverage-topic { min-height: 32px; color: var(--text-strong); background: var(--surface-2); box-shadow: inset 3px 0 0 var(--coverage-color); }
+.coverage-topic:hover { background: var(--surface-3); }
+/* Vuoto: niente striscia, solo un contorno tratteggiato */
+.coverage-dot.is-untouched, .coverage-topic.is-untouched { box-shadow: none; outline: 1px dashed var(--control-border); outline-offset: -1px; }
+.coverage-topic.is-untouched:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.coverage-chip { color: var(--text); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; cursor: help; }
+.coverage .is-weak { --coverage-color: var(--danger); }
+.coverage .is-untouched { --coverage-color: var(--surface-3); }
+.coverage .is-stale { --coverage-color: var(--warning); }
+.coverage .is-progress { --coverage-color: var(--coverage-progress); }
+.coverage .is-solid { --coverage-color: var(--success); }
+
+@media (max-width: 560px) {
+  .coverage-group { grid-template-columns: 1fr; gap: var(--space-2); }
+  .coverage-group dt { min-height: 0; }
+}

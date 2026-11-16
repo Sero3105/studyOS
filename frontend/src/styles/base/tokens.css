@@ -53,6 +53,8 @@
   --line-strong: #333331;
   /* Bordo dei controlli di modulo: almeno 3:1 sul fondo (WCAG 1.4.11) */
   --control-border: #5f5f5b;
+  /* Copertura esami, "in corso": grigio distinto dall'ambra accanto (validato per daltonismo) */
+  --coverage-progress: #5f5f5b;
   --control-bg: #0d0d0d;
 
   /* Testo: inchiostro caldo, mai bianco puro */
@@ -167,6 +169,7 @@
   --line: #e2e2dc;
   --line-strong: #cbcbc4;
   --control-border: #85857f;
+  --coverage-progress: #a8a8a2;
   --control-bg: #ffffff;
 
   --text-strong: #0f0f0e;

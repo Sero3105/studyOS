@@ -6,6 +6,8 @@ import type { DatedExam, Exam, ExamStatus } from '../../services/examService'
 import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 import ReadinessMeter from './ReadinessMeter'
+import CoverageMap from './CoverageMap'
+import type { ExamCoverage } from './CoverageMap'
 import type { Readiness } from '../../utils/planning'
 import type { TranslationKey } from '../../i18n/translations'
 
@@ -29,6 +31,7 @@ interface ExamActionsProps {
   onDelete: (exam: Exam) => Promise<void>
   onPlan?: (exam: Exam) => void
   readiness?: Readiness
+  coverage?: ExamCoverage
 }
 
 function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
@@ -69,7 +72,7 @@ function StatusTag({ exam }: { exam: Exam }) {
  * Il prossimo esame, in grande: il numero di giorni mancanti è l'elemento
  * dominante, i dettagli pratici (data, ora, luogo) stanno in una riga sola.
  */
-export function NextExam({ exam, onEdit, onDelete, onPlan, readiness }: ExamActionsProps & { exam: DatedExam }) {
+export function NextExam({ exam, onEdit, onDelete, onPlan, readiness, coverage }: ExamActionsProps & { exam: DatedExam }) {
   const { t, locale } = useLanguage()
   const days = daysUntil(exam.exam_date)
   return (
@@ -93,6 +96,7 @@ export function NextExam({ exam, onEdit, onDelete, onPlan, readiness }: ExamActi
           <li><StatusTag exam={exam} /></li>
         </ul>
         {readiness && <ReadinessMeter readiness={readiness} />}
+        {coverage && <CoverageMap coverage={coverage} />}
         {exam.notes && <p className="next-exam-notes">{exam.notes}</p>}
       </div>
     </article>
@@ -105,10 +109,11 @@ interface ExamListProps {
   onDelete: (exam: Exam) => Promise<void>
   onPlan?: (exam: Exam) => void
   readiness?: Record<number, Readiness>
+  coverage?: Record<number, ExamCoverage>
 }
 
 /** Elenco compatto: blocco data a sinistra, dettagli al centro, azioni a destra. */
-function ExamList({ exams, onEdit, onDelete, onPlan, readiness }: ExamListProps) {
+function ExamList({ exams, onEdit, onDelete, onPlan, readiness, coverage }: ExamListProps) {
   const { t, locale } = useLanguage()
   return (
     <ul className="panel rows exam-rows">
@@ -143,6 +148,7 @@ function ExamList({ exams, onEdit, onDelete, onPlan, readiness }: ExamListProps)
                 : days! >= 0 && <span className={`exam-row-days num ${urgencyClass(days!)}`}>{relativeDay(date, locale)}</span>}
               <StatusTag exam={exam} />
               {readiness?.[exam.id] && <ReadinessMeter readiness={readiness[exam.id]} compact />}
+              {coverage?.[exam.id] && <CoverageMap coverage={coverage[exam.id]} compact />}
             </span>
             <ExamActions exam={exam} onEdit={onEdit} onDelete={onDelete} onPlan={onPlan} />
           </li>

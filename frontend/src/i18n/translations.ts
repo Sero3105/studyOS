@@ -812,6 +812,21 @@ const it = {
   'topic.mastery.3': 'Sicuro',
   'subjects.masteryLabel': 'Stato di {title}: {level}. Cambia stato',
   'subjects.masteryHint': 'Studiato → ripassato → sicuro. I ripassi lo aggiornano da soli.',
+  'coverage.title': 'Copertura degli argomenti',
+  'coverage.topics': '{count} argomenti',
+  'coverage.count': '{count} {label}',
+  'coverage.missing': '{count} da recuperare',
+  'coverage.untouched': 'Mai toccati',
+  'coverage.weak': 'Deboli',
+  'coverage.stale': 'Da riprendere',
+  'coverage.progress': 'In corso',
+  'coverage.solid': 'Sicuri',
+  'coverage.reason.focus': 'focus basso',
+  'coverage.reason.mistakes': 'errori nel quaderno',
+  'coverage.reason.cards': 'flashcard difficili',
+  'coverage.last': 'ultima volta {day}',
+  'coverage.study': 'Avvia il timer',
+  'coverage.studyTopic': 'Studia {title} ({detail})',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1459,6 +1474,21 @@ const en: Record<TranslationKey, string> = {
   'topic.mastery.3': 'Confident',
   'subjects.masteryLabel': '{title} status: {level}. Change status',
   'subjects.masteryHint': 'Studied → reviewed → confident. Reviews update it on their own.',
+  'coverage.title': 'Topic coverage',
+  'coverage.topics': '{count} topics',
+  'coverage.count': '{count} {label}',
+  'coverage.missing': '{count} to catch up',
+  'coverage.untouched': 'Never studied',
+  'coverage.weak': 'Weak',
+  'coverage.stale': 'Getting rusty',
+  'coverage.progress': 'In progress',
+  'coverage.solid': 'Confident',
+  'coverage.reason.focus': 'low focus',
+  'coverage.reason.mistakes': 'mistakes in the notebook',
+  'coverage.reason.cards': 'hard flashcards',
+  'coverage.last': 'last studied {day}',
+  'coverage.study': 'Start the timer',
+  'coverage.studyTopic': 'Study {title} ({detail})',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

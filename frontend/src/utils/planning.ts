@@ -1,4 +1,4 @@
-import type { Card } from '../services/cardService'
+import type { Card, Mistake } from '../services/cardService'
 import type { Exam } from '../services/examService'
 import type { StudySession } from '../services/sessionService'
 import type { Subject, Topic } from '../services/subjectService'
@@ -103,4 +103,55 @@ export function examReadiness(
     topics, cards, plan,
     minutes: subject ? data.sessions.filter((s) => s.subject_id === subject.id).reduce((sum, s) => sum + s.duration_minutes, 0) : 0,
   }
+}
+
+/** Dopo quanti giorni senza studiarlo un argomento non "sicuro" va ripreso. */
+export const STALE_DAYS = 14
+
+export type CoverageStatus = 'untouched' | 'weak' | 'stale' | 'progress' | 'solid'
+// Prima ciò che va affrontato: deboli, mai toccati, da riprendere.
+export const COVERAGE_ORDER: CoverageStatus[] = ['weak', 'untouched', 'stale', 'progress', 'solid']
+export type WeakReason = 'focus' | 'mistakes' | 'cards'
+
+export interface TopicCoverage {
+  topic: Topic
+  status: CoverageStatus
+  /** Perché è debole: focus basso, errori nel quaderno, flashcard sbagliate. */
+  reasons: WeakReason[]
+  minutes: number
+  lastStudied: Day | null
+}
+
+/**
+ * Cosa manca per un esame, argomento per argomento:
+ * - sicuro: segnato "sicuro" (vince su tutto, è una scelta dello studente);
+ * - mai toccato: nessuna sessione, nessun errore, nessuna flashcard sbagliata e ancora "da fare";
+ * - debole: focus medio sotto "ok", almeno 2 errori nel quaderno o una flashcard ripassata come "difficile" (intervallo 1);
+ * - da riprendere: l'ultima sessione è di più di STALE_DAYS giorni fa;
+ * - in corso: tutto il resto.
+ */
+export function topicCoverage(
+  subject: Subject,
+  data: { sessions: Pick<StudySession, 'topic_id' | 'duration_minutes' | 'studied_on' | 'focus'>[]; cards: Pick<Card, 'topic_id' | 'interval'>[]; mistakes: Pick<Mistake, 'topic_id'>[] },
+  today: Day,
+): TopicCoverage[] {
+  return subject.topics.map((topic) => {
+    const sessions = data.sessions.filter((s) => s.topic_id === topic.id)
+    const rated = sessions.filter((s) => s.focus !== null)
+    const focus = rated.length ? rated.reduce((sum, s) => sum + (s.focus ?? 0), 0) / rated.length : null
+    const mistakes = data.mistakes.filter((m) => m.topic_id === topic.id).length
+    const reasons: WeakReason[] = [
+      ...(focus !== null && focus < 2 ? ['focus' as const] : []),
+      ...(mistakes >= 2 ? ['mistakes' as const] : []),
+      ...(data.cards.some((c) => c.topic_id === topic.id && c.interval === 1) ? ['cards' as const] : []),
+    ]
+    const lastStudied = sessions.reduce<Day | null>((last, s) => (last === null || s.studied_on > last ? s.studied_on : last), null)
+    const status: CoverageStatus =
+      topic.mastery === 3 ? 'solid'
+        : !sessions.length && !mistakes && !reasons.length && topic.mastery === 0 ? 'untouched'
+          : reasons.length ? 'weak'
+            : lastStudied !== null && daysBetween(lastStudied, today) > STALE_DAYS ? 'stale'
+              : 'progress'
+    return { topic, status, reasons, minutes: sessions.reduce((sum, s) => sum + s.duration_minutes, 0), lastStudied }
+  })
 }

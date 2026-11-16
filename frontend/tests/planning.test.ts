@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { examReadiness, todaySuggestions } from '../src/utils/planning.ts'
+import { examReadiness, todaySuggestions, topicCoverage } from '../src/utils/planning.ts'
 
-const topic = (id: number, completed = false) => ({ id, subject_id: 1, title: `T${id}`, completed, notes: null, difficulty: 2 as const, created_at: '' })
+const topic = (id: number, completed = false, mastery: 0 | 1 | 2 | 3 = completed ? 1 : 0) => ({ id, subject_id: 1, title: `T${id}`, completed, notes: null, difficulty: 2 as const, mastery, created_at: '' })
 const subject = { id: 1, user_id: 1, name: 'Analisi', color: null, created_at: '', topics: [topic(1, true), topic(2), topic(3)] }
 const task = (id: number, extra: object) => ({
   id, user_id: 1, title: `task ${id}`, description: null, due_date: '2026-11-01', priority: 'medium' as const, status: 'todo' as const,
@@ -40,4 +40,19 @@ test('exam readiness weights topics, cards and plan', () => {
   assert.equal(Math.round(r.score! * 1000), Math.round(((2 / 3) + 0.5 + 0.5) / 4 * 1000))
   assert.deepEqual([r.topics, r.cards, r.plan, r.minutes], [{ done: 1, total: 3 }, { mastered: 1, total: 2 }, { late: 1, total: 2 }, 50])
   assert.equal(examReadiness({ subject_id: null }, { subjects: [], cards: [], tasks: [], sessions: [] }, '2026-11-01').score, null)
+})
+
+test('coverage: solid, untouched, weak with reasons, stale, in progress', () => {
+  const sub = { ...subject, topics: [topic(1, true, 3), topic(2), topic(3, true), topic(4, true), topic(5, true), topic(6)] }
+  const session = (topic_id: number, studied_on: string, focus: 1 | 2 | 3 | null = null) => ({ topic_id, studied_on, focus, duration_minutes: 25 })
+  const coverage = topicCoverage(sub, {
+    sessions: [session(1, '2026-11-15', 1), session(3, '2026-11-10', 1), session(3, '2026-11-12', 2), session(4, '2026-10-01', 3), session(5, '2026-11-14', 3)],
+    cards: [{ topic_id: 6, interval: 1 }, { topic_id: 5, interval: 0 }],
+    mistakes: [{ topic_id: 3 }, { topic_id: 3 }],
+  }, '2026-11-16')
+  assert.deepEqual(coverage.map((c) => [c.topic.id, c.status, c.reasons]), [
+    [1, 'solid', ['focus']], [2, 'untouched', []], [3, 'weak', ['focus', 'mistakes']], [4, 'stale', []], [5, 'progress', []], [6, 'weak', ['cards']],
+  ])
+  assert.equal(coverage[2].minutes, 50)
+  assert.equal(coverage[2].lastStudied, '2026-11-12')
 })

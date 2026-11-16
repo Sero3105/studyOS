@@ -5,15 +5,16 @@ import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import ExamCreateModal from '../components/exams/ExamCreateModal'
 import ExamList, { NextExam } from '../components/exams/ExamList'
+import type { ExamCoverage } from '../components/exams/CoverageMap'
 import { createExam, deleteExam, getExams, isDated, planExam, recordAttempt, updateExam } from '../services/examService'
 import type { CreateExamPayload, DatedExam, Exam } from '../services/examService'
 import { daysUntil, relativeDay, todayIso } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { restDays } from '../utils/preferences'
-import { examReadiness } from '../utils/planning'
+import { examReadiness, topicCoverage } from '../utils/planning'
 import type { Readiness } from '../utils/planning'
 import { getSubjects } from '../services/subjectService'
-import { getCards } from '../services/cardService'
+import { getCards, getMistakes } from '../services/cardService'
 import { getTasks } from '../services/taskService'
 import { getSessions } from '../services/sessionService'
 import RecordBook from '../components/exams/RecordBook'
@@ -76,14 +77,20 @@ function ExamsPage() {
   const [notice, setNotice] = useState('')
 
   const [readiness, setReadiness] = useState<Record<number, Readiness>>({})
+  const [coverage, setCoverage] = useState<Record<number, ExamCoverage>>({})
 
-  // Prontezza degli esami da sostenere: di contorno, se qualcosa fallisce la pagina resta.
+  // Prontezza e copertura degli esami da sostenere: di contorno, se qualcosa fallisce la pagina resta.
   const loadReadiness = useCallback(async (list: Exam[]) => {
     try {
-      const [subjects, cards, tasks, sessions] = await Promise.all([getSubjects(), getCards(), getTasks(), getSessions()])
+      const [subjects, cards, tasks, sessions, mistakes] = await Promise.all([getSubjects(), getCards(), getTasks(), getSessions(), getMistakes().catch(() => [])])
       const data = { subjects, cards, tasks, sessions }
-      setReadiness(Object.fromEntries(list.filter(isUpcoming).map((e) => [e.id, examReadiness(e, data, todayIso())])))
-    } catch { setReadiness({}) }
+      const upcoming = list.filter(isUpcoming)
+      setReadiness(Object.fromEntries(upcoming.map((e) => [e.id, examReadiness(e, data, todayIso())])))
+      setCoverage(Object.fromEntries(upcoming.flatMap((e) => {
+        const subject = subjects.find((s) => s.id === e.subject_id)
+        return subject ? [[e.id, { subject, topics: topicCoverage(subject, { sessions, cards, mistakes }, todayIso()) }]] : []
+      })))
+    } catch { setReadiness({}); setCoverage({}) }
   }, [])
 
   const loadExams = useCallback(async () => {
@@ -225,11 +232,11 @@ function ExamsPage() {
           {filter === 'upcoming' ? (
             upcoming.length > 0 ? (
               <>
-                {next && <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness[next.id]} />}
+                {next && <NextExam exam={next} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness[next.id]} coverage={coverage[next.id]} />}
                 {rest.length > 0 && (
                   <div className="page-section">
                     {next && <h2 className="section-title">{t('exams.comingLater')}</h2>}
-                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness} />
+                    <ExamList exams={rest} onEdit={openEdit} onDelete={handleDelete} onPlan={(e) => void handlePlan(e)} readiness={readiness} coverage={coverage} />
                   </div>
                 )}
               </>
