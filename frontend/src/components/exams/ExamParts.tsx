@@ -1,14 +1,11 @@
-import { CalendarClock, CalendarDays, CalendarPlus, Clock3, MapPin, Pencil } from 'lucide-react'
+import { CalendarPlus, Pencil } from 'lucide-react'
 import ConfirmButton from '../ui/ConfirmButton'
-import Meta from '../ui/Meta'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
 import { isDated } from '../../services/examService'
-import type { DatedExam, Exam, ExamStatus } from '../../services/examService'
-import { daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass } from '../../utils/dates'
+import type { Exam, ExamStatus } from '../../services/examService'
+import { daysUntil, formatDay } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
-import ReadinessMeter from './ReadinessMeter'
-import CoverageMap from './CoverageMap'
-import type { ExamCoverage } from './CoverageMap'
-import type { Readiness } from '../../utils/planning'
 import type { TranslationKey } from '../../i18n/translations'
 
 const statusKeys: Record<ExamStatus, TranslationKey> = {
@@ -18,144 +15,50 @@ const statusKeys: Record<ExamStatus, TranslationKey> = {
   failed: 'exams.status.failed',
 }
 
-const statusTone: Record<ExamStatus, string> = {
-  planned: '',
-  in_progress: 'tag-accent',
-  passed: 'tag-success',
-  failed: 'tag-danger',
-}
+const statusTone = {
+  planned: 'outline',
+  in_progress: 'accent',
+  passed: 'success',
+  failed: 'destructive',
+} as const satisfies Record<ExamStatus, string>
 
 interface ExamActionsProps {
   exam: Exam
   onEdit: (exam: Exam) => void
   onDelete: (exam: Exam) => Promise<void>
   onPlan?: (exam: Exam) => void
-  readiness?: Readiness
-  coverage?: ExamCoverage
 }
 
-function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
+export function ExamActions({ exam, onEdit, onDelete, onPlan }: ExamActionsProps) {
   const { t } = useLanguage()
   const canPlan = onPlan && isDated(exam) && (exam.status === 'planned' || exam.status === 'in_progress') && daysUntil(exam.exam_date) > 1
   return (
-    <div className="row-actions">
+    <div className="flex shrink-0 items-center gap-0.5">
       {canPlan && (
-        <button className="icon-btn" type="button" onClick={() => onPlan(exam)} aria-label={t('exams.planLabel', { title: exam.title })} title={t('exams.planTitle')}>
+        <Button variant="ghost" size="icon-sm" onClick={() => onPlan(exam)} aria-label={t('exams.planLabel', { title: exam.title })} title={t('exams.planTitle')}>
           <CalendarPlus aria-hidden="true" />
-        </button>
+        </Button>
       )}
-      <button className="icon-btn" type="button" onClick={() => onEdit(exam)} aria-label={t('exams.editLabel', { title: exam.title })} title={t('exams.editTitle')}>
+      <Button variant="ghost" size="icon-sm" onClick={() => onEdit(exam)} aria-label={t('exams.editLabel', { title: exam.title })} title={t('exams.editTitle')}>
         <Pencil aria-hidden="true" />
-      </button>
+      </Button>
       <ConfirmButton label={t('exams.deleteLabel', { title: exam.title })} onConfirm={() => onDelete(exam)} />
     </div>
   )
 }
 
-function StatusTag({ exam }: { exam: Exam }) {
+export function StatusTag({ exam }: { exam: Exam }) {
   const { t, locale } = useLanguage()
   const grade = exam.status === 'passed' && exam.grade ? ` · ${exam.grade}${exam.honors ? 'L' : ''}` : ''
   const attempts = exam.attempts.map((a) => `${formatDay(a.exam_date, 'long', locale)} · ${t(`exams.attempt.${a.outcome}`)}${a.grade ? ` ${a.grade}` : ''}`)
   return (
     <>
-      <span className={`tag ${statusTone[exam.status]}`}>{t(statusKeys[exam.status])}{grade}</span>
+      <Badge variant={statusTone[exam.status]}>{t(statusKeys[exam.status])}{grade}</Badge>
       {attempts.length > 0 && (
-        <span className="tag exam-attempts" title={`${t('exams.previousAttempts')}\n${attempts.join('\n')}`}>
+        <Badge variant="outline" className="cursor-help" title={`${t('exams.previousAttempts')}\n${attempts.join('\n')}`}>
           {t('exams.attemptNumber', { n: attempts.length + 1 })}
-        </span>
+        </Badge>
       )}
     </>
   )
 }
-
-/**
- * Il prossimo esame, in grande: il numero di giorni mancanti è l'elemento
- * dominante, i dettagli pratici (data, ora, luogo) stanno in una riga sola.
- */
-export function NextExam({ exam, onEdit, onDelete, onPlan, readiness, coverage }: ExamActionsProps & { exam: DatedExam }) {
-  const { t, locale } = useLanguage()
-  const days = daysUntil(exam.exam_date)
-  return (
-    <article className={`panel next-exam ${urgencyClass(days)}`} aria-labelledby={`next-exam-${exam.id}`}>
-      <div className="next-exam-count">
-        <span className="next-exam-days num">{days === 0 ? t('common.today') : days}</span>
-        {days > 0 && <span className="next-exam-unit">{days === 1 ? t('dashboard.day') : t('dashboard.days')}</span>}
-      </div>
-      <div className="next-exam-body">
-        <div className="next-exam-head">
-          <div>
-            <p className="next-exam-subject">{exam.subject}</p>
-            <h2 id={`next-exam-${exam.id}`}>{exam.title}</h2>
-          </div>
-          <ExamActions exam={exam} onEdit={onEdit} onDelete={onDelete} onPlan={onPlan} />
-        </div>
-        <ul className="exam-facts">
-          <li><CalendarDays aria-hidden="true" />{formatDay(exam.exam_date, 'full', locale)}</li>
-          {exam.exam_time && <li><Clock3 aria-hidden="true" />{exam.exam_time.slice(0, 5)}</li>}
-          {exam.location && <li><MapPin aria-hidden="true" />{exam.location}</li>}
-          <li><StatusTag exam={exam} /></li>
-        </ul>
-        {readiness && <ReadinessMeter readiness={readiness} />}
-        {coverage && <CoverageMap coverage={coverage} />}
-        {exam.notes && <p className="next-exam-notes">{exam.notes}</p>}
-      </div>
-    </article>
-  )
-}
-
-interface ExamListProps {
-  exams: Exam[]
-  onEdit: (exam: Exam) => void
-  onDelete: (exam: Exam) => Promise<void>
-  onPlan?: (exam: Exam) => void
-  readiness?: Record<number, Readiness>
-  coverage?: Record<number, ExamCoverage>
-}
-
-/** Elenco compatto: blocco data a sinistra, dettagli al centro, azioni a destra. */
-function ExamList({ exams, onEdit, onDelete, onPlan, readiness, coverage }: ExamListProps) {
-  const { t, locale } = useLanguage()
-  return (
-    <ul className="panel rows exam-rows">
-      {exams.map((exam) => {
-        const date = exam.exam_date
-        const days = date ? daysUntil(date) : null
-        return (
-          <li className="row exam-row" key={exam.id}>
-            <span className="date-block" aria-hidden="true">
-              {date ? (
-                <>
-                  <span className="date-block-day num">{parseDay(date).getDate()}</span>
-                  <span className="date-block-month">{monthShort(date, locale)}</span>
-                </>
-              ) : <CalendarClock className="date-block-pending" />}
-            </span>
-            <span className="row-main">
-              <span className="row-title">{exam.title}</span>
-              <Meta
-                items={[
-                  <>
-                    {exam.subject !== exam.title && exam.subject}
-                    <span className="visually-hidden">, {date ? formatDay(date, 'long', locale) : t('exams.noDate')}</span>
-                  </>,
-                  exam.exam_time?.slice(0, 5),
-                  exam.location,
-                ]}
-              />
-            </span>
-            <span className="exam-row-status">
-              {date === null ? <span className="exam-row-days">{t('exams.noDate')}</span>
-                : days! >= 0 && <span className={`exam-row-days num ${urgencyClass(days!)}`}>{relativeDay(date, locale)}</span>}
-              <StatusTag exam={exam} />
-              {readiness?.[exam.id] && <ReadinessMeter readiness={readiness[exam.id]} compact />}
-              {coverage?.[exam.id] && <CoverageMap coverage={coverage[exam.id]} compact />}
-            </span>
-            <ExamActions exam={exam} onEdit={onEdit} onDelete={onDelete} onPlan={onPlan} />
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-export default ExamList

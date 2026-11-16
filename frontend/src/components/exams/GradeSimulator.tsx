@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '../ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
+import { NativeSelect, NativeSelectOption } from '../ui/native-select'
 import type { Exam } from '../../services/examService'
 import { gradeSummary, requiredAverage } from '../../utils/grades'
 import { degreeCfu } from '../../utils/preferences'
@@ -24,44 +29,53 @@ function GradeSimulator({ exams }: { exams: Exam[] }) {
   const fmt = (value: number) => value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <details className="grade-sim">
-      <summary>{t('exams.simTitle')}</summary>
-      <p className="panel-meta">{t('exams.simIntro', { total })}</p>
-      <ul className="grade-sim-targets">
-        {TARGETS.map((target) => {
-          const needed = requiredAverage(simulated, total, target)
-          const text = needed === null ? '—' : needed > 30 ? t('exams.simOut') : needed < 18 ? t('exams.simSafe') : fmt(needed)
-          return (
-            <li key={target} className={needed !== null && needed > 30 ? 'is-out' : needed !== null && needed < 18 ? 'is-safe' : undefined}>
-              <span className="grade-sim-target num">{target}/110</span>
-              <span className="grade-sim-needed num">{text}</span>
-            </li>
-          )
-        })}
-      </ul>
-      {toTake.length > 0 && (
-        <>
-          <h3 className="settings-subtitle">{t('exams.simGuess')}</h3>
-          <ul className="rows grade-sim-exams">
-            {toTake.map((exam) => (
-              <li className="row" key={exam.id}>
-                <span className="row-main">
-                  <span className="row-title">{exam.title}</span>
-                  <span className="row-meta">{exam.cfu} CFU</span>
-                </span>
-                <select className="input grade-sim-select" value={guesses[exam.id] ?? ''} onChange={(e) => setGuesses((g) => ({ ...g, [exam.id]: e.target.value }))} aria-label={t('exams.outcomeGrade', { title: exam.title })}>
-                  <option value="">—</option>
-                  {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
+    <Collapsible className="border-t pt-4">
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" className="group/sim -ml-2.5 font-semibold">
+          <ChevronRight data-icon="inline-start" className="transition-transform group-data-[state=open]/sim:rotate-90" aria-hidden="true" />
+          {t('exams.simTitle')}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-4 pt-2">
+        <p className="text-sm text-muted-foreground">{t('exams.simIntro', { total })}</p>
+        <ul className="grid grid-cols-3 gap-2">
+          {TARGETS.map((target) => {
+            const needed = requiredAverage(simulated, total, target)
+            const out = needed !== null && needed > 30
+            const safe = needed !== null && needed < 18
+            const text = needed === null ? '—' : out ? t('exams.simOut') : safe ? t('exams.simSafe') : fmt(needed)
+            return (
+              <li key={target} className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
+                <span className="font-mono text-xs text-muted-foreground tabular-nums">{target}/110</span>
+                <span className={cn('font-mono font-semibold tabular-nums', out ? 'text-sm text-destructive' : safe ? 'text-sm text-success' : 'text-lg')}>{text}</span>
               </li>
-            ))}
-          </ul>
-          <p className="grade-sim-result">
-            {t('exams.simResult', { average: projected.cfu ? fmt(projected.weightedAverage) : '—', base: projected.cfu ? projected.graduationBase.toLocaleString(locale, { maximumFractionDigits: 1 }) : '—' })}
-          </p>
-        </>
-      )}
-    </details>
+            )
+          })}
+        </ul>
+        {toTake.length > 0 && (
+          <>
+            <h3 className="text-sm font-medium">{t('exams.simGuess')}</h3>
+            <ul className="flex flex-col divide-y">
+              {toTake.map((exam) => (
+                <li className="flex items-center gap-3 py-2" key={exam.id}>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm">{exam.title}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{exam.cfu} CFU</span>
+                  </span>
+                  <NativeSelect className="w-24" value={guesses[exam.id] ?? ''} onChange={(e) => setGuesses((g) => ({ ...g, [exam.id]: e.target.value }))} aria-label={t('exams.outcomeGrade', { title: exam.title })}>
+                    <NativeSelectOption value="">—</NativeSelectOption>
+                    {GRADES.map((g) => <NativeSelectOption key={g} value={g}>{g}</NativeSelectOption>)}
+                  </NativeSelect>
+                </li>
+              ))}
+            </ul>
+            <p className="rounded-lg border border-primary/25 bg-primary/5 p-3 text-sm font-medium">
+              {t('exams.simResult', { average: projected.cfu ? fmt(projected.weightedAverage) : '—', base: projected.cfu ? projected.graduationBase.toLocaleString(locale, { maximumFractionDigits: 1 }) : '—' })}
+            </p>
+          </>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

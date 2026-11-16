@@ -1,4 +1,6 @@
 import { apiRequest } from './apiClient'
+import { getExams } from './examService'
+import { archivedSubjectIds } from '../utils/grades'
 
 export interface Topic { id: number; subject_id: number; title: string; completed: boolean; notes: string | null; difficulty: Difficulty; mastery: Mastery; created_at: string }
 /** 1 facile, 2 media, 3 difficile: pesa nel piano d'esame. */
@@ -13,6 +15,11 @@ export interface Subject { id: number; user_id: number; name: string; color: Sub
 export const subjectColor = (subject: { id: number; color: SubjectColor | null }): SubjectColor => subject.color ?? SUBJECT_COLORS[subject.id % SUBJECT_COLORS.length]
 
 export const getSubjects = () => apiRequest<Subject[]>('/subjects')
+/** Materie senza esame superato, per i selettori (timer, obiettivi). Se gli esami non arrivano, tutte. */
+export const getActiveSubjects = async () => {
+  const [subjects, archived] = await Promise.all([getSubjects(), getExams().then(archivedSubjectIds).catch(() => new Set<number>())])
+  return subjects.filter((s) => !archived.has(s.id))
+}
 export const createSubject = (name: string) => apiRequest<Subject>('/subjects', { method: 'POST', body: JSON.stringify({ name }) })
 export const updateSubject = (id: number, patch: { name?: string; color?: SubjectColor }) => apiRequest<Subject>(`/subjects/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
 export const deleteSubject = (id: number) => apiRequest<void>(`/subjects/${id}`, { method: 'DELETE' })
