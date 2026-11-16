@@ -806,6 +806,12 @@ const it = {
   'history.sittingDetails': 'Mostra o nascondi i dettagli della sessione',
   'history.itemDone': 'Fatto:',
   'history.itemOpen': 'Non fatto:',
+  'topic.mastery.0': 'Da fare',
+  'topic.mastery.1': 'Studiato',
+  'topic.mastery.2': 'Ripassato',
+  'topic.mastery.3': 'Sicuro',
+  'subjects.masteryLabel': 'Stato di {title}: {level}. Cambia stato',
+  'subjects.masteryHint': 'Studiato → ripassato → sicuro. I ripassi lo aggiornano da soli.',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1447,6 +1453,12 @@ const en: Record<TranslationKey, string> = {
   'history.sittingDetails': 'Show or hide session details',
   'history.itemDone': 'Done:',
   'history.itemOpen': 'Not done:',
+  'topic.mastery.0': 'To do',
+  'topic.mastery.1': 'Studied',
+  'topic.mastery.2': 'Reviewed',
+  'topic.mastery.3': 'Confident',
+  'subjects.masteryLabel': '{title} status: {level}. Change status',
+  'subjects.masteryHint': 'Studied → reviewed → confident. Reviews update it on their own.',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

@@ -24,6 +24,8 @@ class Topic(Base):
     completed = Column(Boolean, nullable=False, default=False)
     notes = Column(Text, nullable=True)
     difficulty = Column(Integer, nullable=False, default=2, server_default='2')  # 1 facile, 2 media, 3 difficile
+    # 0 da fare, 1 studiato, 2 ripassato, 3 sicuro. `completed` resta = mastery >= 1 (piani, obiettivi, condivisione).
+    mastery = Column(Integer, nullable=False, default=0, server_default='0')
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     subject = relationship('Subject', back_populates='topics')
     cards = relationship('Card', back_populates='topic', cascade='all, delete-orphan')

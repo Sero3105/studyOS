@@ -42,6 +42,7 @@ class TopicUpdate(BaseModel):
     completed: bool | None = None
     notes: str | None = Field(default=None, max_length=20000)
     difficulty: int | None = Field(default=None, ge=1, le=3)
+    mastery: int | None = Field(default=None, ge=0, le=3)
     # Non salvato: se il topic diventa completato, crea i task di ripasso.
     schedule_reviews: bool = False
     @field_validator('title', mode='before')
@@ -49,7 +50,7 @@ class TopicUpdate(BaseModel):
     def trim(cls, value): return _trim(value)
 
 class TopicResponse(BaseModel):
-    id: int; subject_id: int; title: str; completed: bool; notes: str | None = None; difficulty: int = 2; created_at: datetime
+    id: int; subject_id: int; title: str; completed: bool; notes: str | None = None; difficulty: int = 2; mastery: int = 0; created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 class SubjectResponse(BaseModel):

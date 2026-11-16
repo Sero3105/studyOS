@@ -26,7 +26,7 @@ def _owned(model, user_id: int, db: Session):
 def export_user_data(user_id: int, db: Session) -> StudyData:
     rows = lambda model, schema: [schema.model_validate(r, from_attributes=True) for r in _owned(model, user_id, db)]
     return StudyData(
-        subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes, 'difficulty': t.difficulty} for t in s.topics]}
+        subjects=[{'id': s.id, 'name': s.name, 'color': s.color, 'topics': [{'id': t.id, 'title': t.title, 'completed': t.completed, 'notes': t.notes, 'difficulty': t.difficulty, 'mastery': t.mastery} for t in s.topics]}
                   for s in list_subjects(user_id, db)],
         tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamData),
         sessions=rows(StudySession, SessionData), goals=rows(Goal, GoalCreate), cards=rows(Card, CardData),
@@ -54,7 +54,8 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
             db.add(subject)
             if s.id is not None: subject_ids[s.id] = subject
             for t in s.topics:
-                topic = Topic(subject=subject, title=t.title, completed=t.completed, notes=t.notes, difficulty=t.difficulty)
+                mastery = t.mastery if t.mastery is not None else int(t.completed)
+                topic = Topic(subject=subject, title=t.title, completed=mastery >= 1, notes=t.notes, difficulty=t.difficulty, mastery=mastery)
                 db.add(topic); topics += 1
                 if t.id is not None: topic_ids[t.id] = topic
         db.flush()

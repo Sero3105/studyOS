@@ -9,7 +9,7 @@ import ConfirmButton from '../components/ui/ConfirmButton'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import type { StudySessionConfig } from '../components/timer/types'
 import { createSubject, createTopic, deleteSubject, deleteTopic, getSubjects, SUBJECT_COLORS, subjectColor, updateSubject, updateTopic } from '../services/subjectService'
-import type { Difficulty, Subject, SubjectColor, Topic } from '../services/subjectService'
+import type { Difficulty, Mastery, Subject, SubjectColor, Topic } from '../services/subjectService'
 import SubjectDot from '../components/ui/SubjectDot'
 import type { CSSProperties } from 'react'
 import { getStatsSummary } from '../services/statsService'
@@ -136,6 +136,10 @@ function SubjectsPage() {
       replaceTopic(subjectId, await updateTopic(topicId, { completed, schedule_reviews: scheduleReviews }))
       setNotice(scheduleReviews ? t('subjects.reviewsScheduled') : '')
     }, t('subjects.updateTopicError'))
+
+  // Studiato → ripassato → sicuro → studiato; i ripassi adattivi lo aggiornano anche da soli.
+  const cycleMastery = (subjectId: number, topic: Topic) =>
+    void run(async () => replaceTopic(subjectId, await updateTopic(topic.id, { mastery: ((topic.mastery % 3) + 1) as Mastery })), t('subjects.updateTopicError'))
 
   // Facile → media → difficile → facile: pesa nel piano d'esame.
   const cycleDifficulty = (subjectId: number, topic: Topic) =>
@@ -398,7 +402,7 @@ function SubjectsPage() {
                         />
                       )}
                       <span className="row-actions">
-                        {!topic.completed && (
+                        {topic.mastery < 3 && (
                           <button className="icon-btn row-reveal" type="button" onClick={() => startSession(selected, topic)} aria-label={t('subjects.studyTopic', { title: topic.title })} title={t('subjects.studyTopicTitle')}>
                             <Play aria-hidden="true" />
                           </button>
@@ -420,6 +424,17 @@ function SubjectsPage() {
                         <span className="row-reveal">
                           <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
                         </span>
+                        {topic.completed && (
+                          <button
+                            className={`tag tag-button topic-mastery is-${topic.mastery}`}
+                            type="button"
+                            onClick={() => cycleMastery(selected.id, topic)}
+                            aria-label={t('subjects.masteryLabel', { title: topic.title, level: t(`topic.mastery.${topic.mastery}`) })}
+                            title={t('subjects.masteryHint')}
+                          >
+                            {t(`topic.mastery.${topic.mastery}`)}
+                          </button>
+                        )}
                         {!topic.completed && (
                           <button
                             className={`tag tag-button topic-difficulty is-${topic.difficulty}${topic.difficulty === 2 ? ' row-reveal' : ''}`}

@@ -66,12 +66,14 @@ def _owned_topic(topic_id: int, user_id: int, db: Session) -> Topic:
 
 def update_topic(topic_id: int, data: TopicUpdate, user_id: int, db: Session) -> Topic:
     topic = _owned_topic(topic_id, user_id, db)
-    values = data.model_dump(exclude_unset=True, exclude={'schedule_reviews'})
+    values = {k: v for k, v in data.model_dump(exclude_unset=True, exclude={'schedule_reviews'}).items() if v is not None}
+    # Stato e "completato" restano allineati, qualunque dei due arrivi.
+    if 'mastery' in values: values['completed'] = values['mastery'] >= 1
+    elif 'completed' in values: values['mastery'] = max(topic.mastery, 1) if values['completed'] else 0
     newly_completed = values.get('completed') is True and not topic.completed
     reopened = values.get('completed') is False and topic.completed
     open_reviews = (Task.user_id == user_id, Task.topic_id == topic.id, Task.title.startswith('↻'), Task.status != 'done')
-    for field, value in values.items():
-        if value is not None: setattr(topic, field, value)
+    for field, value in values.items(): setattr(topic, field, value)
     if reopened: db.execute(delete(Task).where(*open_reviews))
     if newly_completed and data.schedule_reviews and db.scalar(select(Task.id).where(*open_reviews).limit(1)) is None:
         # Solo il primo ripasso: i successivi li crea il completamento, in base a com'è andato (vedi task_service).

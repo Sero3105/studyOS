@@ -17,7 +17,7 @@ def test_export_import_roundtrip_relinks_ids(client):
     exam = client.post("/exams", json={"title": "Scritto", "subject": "Fisica", "exam_date": "2026-01-10"}, headers=a).json()
     client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "rejected", "grade": 19}, headers=a)
     client.post("/goals", json={"title": "Ore", "kind": "total_minutes", "target": 600}, headers=a)
-    client.patch(f"/topics/{topic['id']}", json={"difficulty": 3}, headers=a)
+    client.patch(f"/topics/{topic['id']}", json={"difficulty": 3, "mastery": 2}, headers=a)
     client.post("/cards", json={"topic_id": topic["id"], "front": "Snell?", "back": "n1 sin = n2 sin"}, headers=a)
 
     dump = client.get("/data/export", headers=a).json()
@@ -30,7 +30,7 @@ def test_export_import_roundtrip_relinks_ids(client):
     assert client.get("/mistakes", headers=b).json()[0]["mistake"] == "Segno invertito"
     assert (client.get("/sessions", headers=b).json()[0]["kind"], client.get("/sessions", headers=b).json()[0]["focus"]) == ("lesson", 3)
     new_subject = client.get("/subjects", headers=b).json()[0]
-    assert new_subject["topics"][0]["difficulty"] == 3
+    assert (new_subject["topics"][0]["difficulty"], new_subject["topics"][0]["mastery"]) == (3, 2)
     assert client.get("/cards", headers=b).json()[0]["topic_id"] == new_subject["topics"][0]["id"]
     attempts = client.get("/exams", headers=b).json()[0]["attempts"]
     assert [(x["exam_date"], x["outcome"], x["grade"]) for x in attempts] == [("2026-01-10", "rejected", 19)]

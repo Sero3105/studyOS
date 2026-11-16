@@ -253,6 +253,24 @@
   background: var(--danger-bg);
 }
 
+/* Stato di un argomento completato: studiato (neutro), ripassato, sicuro */
+.topic-mastery {
+  min-width: 88px;
+  justify-content: center;
+}
+
+/* Ripassato: stesso accento di "sicuro", ma solo il contorno */
+.topic-mastery.is-2 {
+  color: var(--accent);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.topic-mastery.is-3 {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
 /* Anteprima delle note: Markdown con formule KaTeX */
 .markdown {
   min-height: 140px;

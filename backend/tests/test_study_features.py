@@ -37,11 +37,16 @@ def test_adaptive_review_chain(client):
         assert client.patch(f"/tasks/{task['id']}", json=body, headers=h).status_code == 200
         return [(x["due_date"], x["review_interval"]) for x in client.get("/tasks", headers=h).json() if x["status"] != "done"]
 
+    mastery = lambda: client.get("/subjects", headers=h).json()[0]["topics"][0]["mastery"]
+    assert mastery() == 1
     assert complete_open("easy") == [(_day(4), 4)]
+    assert mastery() == 2  # ripassato
     assert complete_open() == [(_day(10), 10)]  # senza valutazione vale "ok"
     assert complete_open("hard") == [(_day(1), 1)]
+    assert mastery() == 1  # difficile: torna "studiato"
     for _ in range(3): complete_open("easy")  # 4, 16, poi 64 > 60: argomento consolidato
     assert [x for x in client.get("/tasks", headers=h).json() if x["status"] != "done"] == []
+    assert mastery() == 3  # sicuro
 
 
 def test_exam_plan_spreads_open_topics(client):
@@ -134,3 +139,21 @@ def test_change_password_and_delete_account(client):
     with SessionLocal() as db:
         assert db.query(Card).filter(Card.front == "cancellami").count() == 0
         assert db.query(ExamAttempt).filter(ExamAttempt.exam_id == exam["id"]).count() == 0
+
+
+def test_topic_mastery_stays_in_sync_with_completed(client):
+    h = _headers(client, "m1@example.com")
+    s = client.post("/subjects", json={"name": "Chimica"}, headers=h).json()
+    t = client.post(f"/subjects/{s['id']}/topics", json={"title": "Legami"}, headers=h).json()
+    url = f"/topics/{t['id']}"
+    assert (t["mastery"], t["completed"]) == (0, False)
+    patch = lambda body: (lambda r: (r["mastery"], r["completed"]))(client.patch(url, json=body, headers=h).json())
+    assert patch({"mastery": 3}) == (3, True)
+    assert patch({"completed": True}) == (3, True)  # già fatto: lo stato non scende
+    assert patch({"completed": False}) == (0, False)
+    assert patch({"completed": True}) == (1, True)
+    assert patch({"mastery": 0}) == (0, False)
+    assert client.patch(url, json={"mastery": 4}, headers=h).status_code == 422
+    # Il primo "studiato" da qualunque strada programma il ripasso.
+    client.patch(url, json={"mastery": 2, "schedule_reviews": True}, headers=h)
+    assert len(client.get("/tasks", headers=h).json()) == 1

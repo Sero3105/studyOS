@@ -15,6 +15,7 @@ class TopicData(TopicCreate):
     completed: bool = False
     notes: str | None = Field(default=None, max_length=20000)
     difficulty: int = Field(default=2, ge=1, le=3)
+    mastery: int | None = Field(default=None, ge=0, le=3)  # assente nei file vecchi: dedotto da `completed`
 
 class SubjectData(SubjectCreate):
     id: int | None = None
