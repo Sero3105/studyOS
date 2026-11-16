@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import Modal from '../ui/Modal'
+import Figures from '../ui/Figures'
+import { Button } from '../ui/button'
+import { Spinner } from '../ui/spinner'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import SubjectDot from '../ui/SubjectDot'
 import { ErrorNotice, LoadingRows } from '../ui/Feedback'
 import { getTasks, updateTask } from '../../services/taskService'
@@ -20,7 +25,6 @@ function WeeklyReview({ onClose }: { onClose: () => void }) {
   const { t, locale } = useLanguage()
   const [data, setData] = useState<{ tasks: Task[]; sessions: StudySession[]; subjects: Subject[] } | null>(null)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [moving, setMoving] = useState(false)
 
   const load = useCallback(() => {
@@ -35,10 +39,10 @@ function WeeklyReview({ onClose }: { onClose: () => void }) {
 
   const moveOverdue = async () => {
     if (!review) return
-    setMoving(true); setError(''); setNotice('')
+    setMoving(true); setError('')
     try {
       await Promise.all(review.overdue.map((task) => updateTask(task.id, { due_date: postponeByWeeks(task.due_date!, today) })))
-      setNotice(t('review.moved', { count: review.overdue.length }))
+      toast.success(t('review.moved', { count: review.overdue.length }))
     } catch (e) { setError(errorMessage(e, t('review.moveError'))) }
     finally { setMoving(false); load() }
   }
@@ -50,48 +54,49 @@ function WeeklyReview({ onClose }: { onClose: () => void }) {
       description={review ? t('review.range', { from: formatDay(review.from, 'short', locale), to: formatDay(review.to, 'long', locale) }) : undefined}
       onClose={onClose}
     >
-      <div className="weekly-review">
+      <div className="flex flex-col gap-6">
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
-      {notice && <div className="notice notice-success" role="status">{notice}</div>}
       {!review ? (!error && <LoadingRows label={t('review.loading')} />) : (
         <>
-          <dl className="figure-grid">
-            <div className="figure"><dt className="figure-label">{t('review.tasksDone')}</dt><dd className="figure-value num">{review.done}/{review.planned}</dd></div>
-            <div className="figure"><dt className="figure-label">{t('review.skipped')}</dt><dd className="figure-value num">{review.skipped}</dd></div>
-            <div className="figure">
-              <dt className="figure-label">{t('review.studied')}</dt>
-              <dd className="figure-value num">{formatMinutes(review.minutes)}</dd>
-              <dd className="panel-meta num">{review.minutes === review.previousMinutes ? t('review.sameAsLastWeek') : t('review.vsLastWeek', { delta: delta(review.minutes, review.previousMinutes) })}</dd>
-            </div>
-          </dl>
+          <Figures items={[
+            { label: t('review.tasksDone'), value: `${review.done}/${review.planned}` },
+            { label: t('review.skipped'), value: review.skipped },
+            {
+              label: t('review.studied'),
+              value: formatMinutes(review.minutes),
+              sub: review.minutes === review.previousMinutes ? t('review.sameAsLastWeek') : t('review.vsLastWeek', { delta: delta(review.minutes, review.previousMinutes) }),
+            },
+          ]} />
 
           {review.bySubject.length > 0 && (
-            <table className="plan-table">
-              <thead>
-                <tr>
-                  <th scope="col">{t('planner.subject')}</th>
-                  <th scope="col">{t('review.thisWeek')}</th>
-                  <th scope="col">{t('review.lastWeek')}</th>
-                  <th scope="col">{t('review.difference')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead scope="col">{t('planner.subject')}</TableHead>
+                  <TableHead scope="col" className="text-right">{t('review.thisWeek')}</TableHead>
+                  <TableHead scope="col" className="text-right">{t('review.lastWeek')}</TableHead>
+                  <TableHead scope="col" className="text-right">{t('review.difference')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {review.bySubject.map((row) => (
-                  <tr key={row.subjectId}>
-                    <th scope="row"><SubjectDot subject={data.subjects.find((s) => s.id === row.subjectId)} />{row.name}</th>
-                    <td className="num">{row.minutes ? formatMinutes(row.minutes) : '—'}</td>
-                    <td className="num">{row.previous ? formatMinutes(row.previous) : '—'}</td>
-                    <td className="num">{delta(row.minutes, row.previous)}</td>
-                  </tr>
+                  <TableRow key={row.subjectId}>
+                    <TableHead scope="row" className="font-normal text-foreground">
+                      <span className="flex items-center gap-2"><SubjectDot subject={data.subjects.find((s) => s.id === row.subjectId)} />{row.name}</span>
+                    </TableHead>
+                    <TableCell className="text-right font-mono tabular-nums">{row.minutes ? formatMinutes(row.minutes) : '—'}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground tabular-nums">{row.previous ? formatMinutes(row.previous) : '—'}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{delta(row.minutes, row.previous)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
 
-          <div className="weekly-review-overdue">
-            <p>{review.overdue.length ? t('review.overdue', { count: review.overdue.length }) : t('review.noOverdue')}</p>
+          <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">{review.overdue.length ? t('review.overdue', { count: review.overdue.length }) : t('review.noOverdue')}</p>
             {review.overdue.length > 0 && (
-              <button className="btn btn-primary" type="button" disabled={moving} onClick={() => void moveOverdue()}>{t('review.moveOverdue')}</button>
+              <Button disabled={moving} onClick={() => void moveOverdue()}>{moving && <Spinner data-icon="inline-start" />}{t('review.moveOverdue')}</Button>
             )}
           </div>
         </>
