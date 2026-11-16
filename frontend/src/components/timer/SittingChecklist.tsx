@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Plus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '../ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Checkbox } from '../ui/checkbox'
+import { Input } from '../ui/input'
 import { useTimer } from '../../context/useTimer'
 import { useLanguage } from '../../i18n/useLanguage'
 import { CHECKLIST_MAX, ITEM_MAX } from '../../utils/sitting'
@@ -23,34 +28,36 @@ function SittingChecklist() {
   }
 
   return (
-    <section className="panel sitting-panel" aria-labelledby="sitting-checklist-title">
-      <div className="panel-head">
-        <h2 id="sitting-checklist-title" className="panel-title">{config.goal || t('sitting.checklist')}</h2>
-        {sitting.checklist.length > 0 && <span className="panel-meta num">{t('sitting.progress', { done, total: sitting.checklist.length })}</span>}
-      </div>
-      {sitting.checklist.length > 0 && (
-        <ul className="sitting-checklist">
-          {sitting.checklist.map((item, index) => (
-            <li key={index}>
-              <label className="sitting-item">
-                <input className="check" type="checkbox" checked={item.done} onChange={() => toggleItem(index)} />
-                <span className={item.done ? 'is-done' : undefined}>{item.text}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      )}
-      {sitting.checklist.length < CHECKLIST_MAX && (
-        <form className="sitting-add" onSubmit={add}>
-          <label className="visually-hidden" htmlFor="sitting-add-item">{t('sitting.addItem')}</label>
-          <input id="sitting-add-item" className="input" value={draft} maxLength={ITEM_MAX}
-            onChange={(e) => setDraft(e.target.value)} placeholder={t('sitting.addItemPlaceholder')} />
-          <button className="btn btn-secondary" type="submit" disabled={!draft.trim()}>
-            <Plus aria-hidden="true" /> {t('sitting.add')}
-          </button>
-        </form>
-      )}
-    </section>
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle><h2 id="sitting-checklist-title">{config.goal || t('sitting.checklist')}</h2></CardTitle>
+        {sitting.checklist.length > 0 && <CardAction className="font-mono text-xs text-muted-foreground tabular-nums">{t('sitting.progress', { done, total: sitting.checklist.length })}</CardAction>}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {sitting.checklist.length > 0 && (
+          <ul className="flex flex-col gap-1" aria-labelledby="sitting-checklist-title">
+            {sitting.checklist.map((item, index) => (
+              <li key={index}>
+                <label className="flex cursor-pointer items-start gap-3 rounded-md px-1 py-1.5 text-sm hover:bg-muted/50">
+                  <Checkbox className="mt-0.5" checked={item.done} onCheckedChange={() => toggleItem(index)} />
+                  <span className={cn('break-words', item.done && 'text-muted-foreground line-through')}>{item.text}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+        {sitting.checklist.length < CHECKLIST_MAX && (
+          <form className="flex gap-2" onSubmit={add}>
+            <label className="sr-only" htmlFor="sitting-add-item">{t('sitting.addItem')}</label>
+            <Input id="sitting-add-item" value={draft} maxLength={ITEM_MAX}
+              onChange={(e) => setDraft(e.target.value)} placeholder={t('sitting.addItemPlaceholder')} />
+            <Button type="submit" variant="secondary" disabled={!draft.trim()}>
+              <Plus data-icon="inline-start" aria-hidden="true" /> {t('sitting.add')}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

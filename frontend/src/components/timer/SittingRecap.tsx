@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { Check, ListPlus } from 'lucide-react'
 import SittingChecklist from './SittingChecklist'
+import Figures from '../ui/Figures'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Field, FieldDescription, FieldLabel } from '../ui/field'
+import { Spinner } from '../ui/spinner'
+import { Textarea } from '../ui/textarea'
 import { DistractionList } from './Distractions'
 import { useTimer } from '../../context/useTimer'
 import { useLanguage } from '../../i18n/useLanguage'
@@ -39,73 +45,65 @@ function SittingRecap() {
   }
 
   return (
-    <div className="sitting-recap">
-      <section className="panel figures recap-figures" aria-label={t('sitting.recapTitle')}>
-        <div className="figure figure-lead">
-          <span className="figure-label">{t('sitting.studied')}</span>
-          <span className="figure-value num">{formatMinutes(summary.minutes)}</span>
-        </div>
-        <dl className="figure-grid">
-          <div className="figure">
-            <dt className="figure-label">{t('sitting.blocks')}</dt>
-            <dd className="figure-value num">{summary.blocks}{summary.partial > 0 && <span className="figure-sub"> · {t('sitting.partialCount', { count: summary.partial })}</span>}</dd>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <Figures label={t('sitting.recapTitle')} items={[
+          { label: t('sitting.studied'), value: formatMinutes(summary.minutes) },
+          { label: t('sitting.blocks'), value: summary.blocks, sub: summary.partial > 0 ? t('sitting.partialCount', { count: summary.partial }) : undefined },
+          { label: t('session.focus'), value: summary.focus === null ? '—' : t(`session.focus.${Math.round(summary.focus) as 1 | 2 | 3}`) },
+          { label: t('sitting.checklist'), value: summary.total ? `${summary.done}/${summary.total}` : '—' },
+        ]} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle><h2 id="recap-blocks-title">{t('sitting.whatYouDid')}</h2></CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="flex flex-col divide-y" aria-labelledby="recap-blocks-title">
+              {sitting.blocks.map((block, index) => (
+                <li className="flex items-center gap-4 py-3 first:pt-0 last:pb-0" key={index}>
+                  <span className="w-14 shrink-0 font-mono text-sm text-primary tabular-nums">{formatMinutes(block.minutes)}</span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-sm font-medium break-words">{block.note || t('sitting.blockN', { n: index + 1 })}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {[block.partial && t('sitting.partial'), block.focus && t(`session.focus.${block.focus}`)].filter(Boolean).join(' · ') || t('sitting.notRated')}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Field>
+              <FieldLabel htmlFor="recap-resume">{t('sitting.resume')} <span className="font-normal text-muted-foreground">{t('common.optional')}</span></FieldLabel>
+              <Textarea id="recap-resume" rows={2} maxLength={1000} value={sitting.resume} onChange={(e) => setResume(e.target.value)} placeholder={t('sitting.resumePlaceholder')} />
+              <FieldDescription>{t('sitting.resumeHint')}</FieldDescription>
+            </Field>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-4">
+        <SittingChecklist />
+        {left.length > 0 && (
+          <div className="flex flex-col gap-2" aria-live="polite">
+            {tasks === 'done' ? (
+              <p className="flex items-center gap-2 text-sm text-success" role="status"><Check className="size-4" aria-hidden="true" /> {t('sitting.tasksCreated', { count: left.length })}</p>
+            ) : (
+              <Button variant="secondary" onClick={() => void leftToTasks()} disabled={tasks === 'busy'}>
+                {tasks === 'busy' ? <Spinner data-icon="inline-start" /> : <ListPlus data-icon="inline-start" aria-hidden="true" />} {t('sitting.leftToTasks', { count: left.length })}
+              </Button>
+            )}
+            {tasks === 'error' && <p className="text-sm text-destructive" role="alert">{t('planner.saveError')}</p>}
           </div>
-          <div className="figure">
-            <dt className="figure-label">{t('session.focus')}</dt>
-            <dd className="figure-value">{summary.focus === null ? '—' : t(`session.focus.${Math.round(summary.focus) as 1 | 2 | 3}`)}</dd>
-          </div>
-          <div className="figure">
-            <dt className="figure-label">{t('sitting.checklist')}</dt>
-            <dd className="figure-value num">{summary.total ? `${summary.done}/${summary.total}` : '—'}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="panel sitting-panel" aria-labelledby="recap-blocks-title">
-        <h2 id="recap-blocks-title" className="panel-title panel-head">{t('sitting.whatYouDid')}</h2>
-        <ol className="rows">
-          {sitting.blocks.map((block, index) => (
-            <li className="row" key={index}>
-              <span className="history-duration num">{formatMinutes(block.minutes)}</span>
-              <span className="row-main">
-                <span className="row-title">{block.note || t('sitting.blockN', { n: index + 1 })}</span>
-                <span className="row-meta">
-                  {[block.partial && t('sitting.partial'), block.focus && t(`session.focus.${block.focus}`)].filter(Boolean).join(' · ') || t('sitting.notRated')}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <SittingChecklist />
-      {left.length > 0 && (
-        <div className="recap-tasks" aria-live="polite">
-          {tasks === 'done' ? (
-            <p className="notice notice-success" role="status"><Check aria-hidden="true" /> {t('sitting.tasksCreated', { count: left.length })}</p>
-          ) : (
-            <button className="btn btn-secondary" type="button" onClick={() => void leftToTasks()} disabled={tasks === 'busy'}>
-              <ListPlus aria-hidden="true" /> {t('sitting.leftToTasks', { count: left.length })}
-            </button>
-          )}
-          {tasks === 'error' && <p className="field-error" role="alert">{t('planner.saveError')}</p>}
-        </div>
-      )}
-
-      <DistractionList />
-
-      <section className="panel sitting-panel">
-        <label className="field">
-          <span className="field-label">{t('sitting.resume')} <em>{t('common.optional')}</em></span>
-          <textarea rows={2} maxLength={1000} value={sitting.resume} onChange={(e) => setResume(e.target.value)} placeholder={t('sitting.resumePlaceholder')} />
-          <span className="field-hint">{t('sitting.resumeHint')}</span>
-        </label>
-      </section>
-
-      <div className="form-actions">
-        <button className="btn btn-primary btn-lg" type="button" onClick={clear}>
-          <Check aria-hidden="true" /> {t('sitting.close')}
-        </button>
+        )}
+        <DistractionList />
+        <Button size="lg" onClick={clear} className="w-full">
+          <Check data-icon="inline-start" aria-hidden="true" /> {t('sitting.close')}
+        </Button>
       </div>
     </div>
   )

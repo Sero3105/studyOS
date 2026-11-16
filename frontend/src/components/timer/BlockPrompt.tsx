@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '../ui/button'
+import { Field, FieldLabel } from '../ui/field'
+import { Input } from '../ui/input'
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { useTimer } from '../../context/useTimer'
 import { useLanguage } from '../../i18n/useLanguage'
 import type { Focus } from '../../services/sessionService'
@@ -22,22 +26,28 @@ function BlockPrompt() {
   }
 
   return (
-    <form className="panel timer-prompt block-prompt" onSubmit={save}>
-      <p>{t('timer.focusQuestion')}</p>
-      <div className="segmented" role="group" aria-label={t('session.focus')}>
+    <form className="flex flex-col gap-4 rounded-lg border bg-muted/30 p-4" onSubmit={save}>
+      <p className="text-sm font-medium">{t('timer.focusQuestion')}</p>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        spacing={0}
+        value={focus === null ? '' : String(focus)}
+        onValueChange={(value) => setFocus(value ? (Number(value) as Focus) : null)}
+        aria-label={t('session.focus')}
+        className="w-full [&>*]:flex-1"
+      >
         {FOCUS.map((value) => (
-          <button key={value} type="button" aria-pressed={focus === value} onClick={() => setFocus(focus === value ? null : value)}>
-            {t(`session.focus.${value}`)}
-          </button>
+          <ToggleGroupItem key={value} value={String(value)} className="data-[state=on]:bg-accent">{t(`session.focus.${value}`)}</ToggleGroupItem>
         ))}
-      </div>
-      <label className="field block-prompt-note">
-        <span className="field-label">{t('sitting.blockNote')} <em>{t('common.optional')}</em></span>
-        <input value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} placeholder={t('sitting.blockNotePlaceholder')} />
-      </label>
-      <div className="timer-prompt-actions">
-        <button className="btn btn-ghost" type="button" onClick={() => rateBlock(null, '')}>{t('timer.skip')}</button>
-        <button className="btn btn-secondary" type="submit" disabled={focus === null && !note.trim()}>{t('sitting.saveBlock')}</button>
+      </ToggleGroup>
+      <Field>
+        <FieldLabel htmlFor="block-note">{t('sitting.blockNote')} <span className="font-normal text-muted-foreground">{t('common.optional')}</span></FieldLabel>
+        <Input id="block-note" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} placeholder={t('sitting.blockNotePlaceholder')} />
+      </Field>
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={() => rateBlock(null, '')}>{t('timer.skip')}</Button>
+        <Button type="submit" variant="secondary" disabled={focus === null && !note.trim()}>{t('sitting.saveBlock')}</Button>
       </div>
     </form>
   )

@@ -3,6 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Check, CircleStop, History } from 'lucide-react'
 import PomodoroTimer from '../components/PomodoroTimer'
 import PageHeader from '../components/ui/PageHeader'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../components/ui/alert-dialog'
 import SessionSetupForm from '../components/timer/SessionSetupForm'
 import BlockPrompt from '../components/timer/BlockPrompt'
 import SittingChecklist from '../components/timer/SittingChecklist'
@@ -71,14 +76,16 @@ function TimerPage() {
 
   if (!sessionConfig) {
     return (
-      <div className="page timer-setup">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
         <PageHeader
           title={t('timer.newSession')}
           description={t('timer.setupDescription')}
         />
-        <section className="panel timer-setup-panel" aria-label={t('timer.sessionSettings')}>
-          <SessionSetupForm onSubmit={start} />
-        </section>
+        <Card aria-label={t('timer.sessionSettings')}>
+          <CardContent>
+            <SessionSetupForm onSubmit={start} />
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -94,7 +101,7 @@ function TimerPage() {
 
   if (config && sitting?.ended) {
     return (
-      <div className="page timer-page">
+      <div className="flex flex-col gap-8">
         <PageHeader title={title} description={[sessionConfig.topic, t('sitting.recapTitle')].filter(Boolean).join(' · ')} />
         <SittingRecap />
       </div>
@@ -109,64 +116,73 @@ function TimerPage() {
     .join(' · ')
 
   return (
-    <div className="page timer-page">
+    <div className="flex flex-col gap-8">
       <PageHeader
         title={title}
         description={context}
         actions={
-          <button className="btn btn-ghost" type="button" onClick={askFinish} disabled={!config}>
-            <CircleStop aria-hidden="true" />
+          <Button variant="outline" onClick={askFinish} disabled={!config}>
+            <CircleStop data-icon="inline-start" aria-hidden="true" />
             {t('sitting.finish')}
-          </button>
+          </Button>
         }
       />
 
-      {confirmFinish && (
-        <div className="panel timer-prompt" role="alertdialog" aria-labelledby="finish-question">
-          <p id="finish-question">{t('sitting.partialQuestion', { minutes: partialMinutes })}</p>
-          <div className="timer-prompt-actions">
-            <button className="btn btn-ghost" type="button" onClick={() => setConfirmFinish(false)}>{t('common.cancel')}</button>
-            <button className="btn btn-secondary" type="button" onClick={() => end(false)}>{t('sitting.discardPartial')}</button>
-            <button className="btn btn-secondary" type="button" onClick={() => end(true)} autoFocus>{t('sitting.savePartial')}</button>
-          </div>
-        </div>
-      )}
+      <AlertDialog open={confirmFinish} onOpenChange={setConfirmFinish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('sitting.finish')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('sitting.partialQuestion', { minutes: partialMinutes })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <Button variant="outline" onClick={() => end(false)}>{t('sitting.discardPartial')}</Button>
+            <AlertDialogAction onClick={() => end(true)} autoFocus>{t('sitting.savePartial')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {config && <PomodoroTimer />}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="lg:sticky lg:top-20">
+          <CardContent className="flex flex-col gap-6 py-4">
+            {config && <PomodoroTimer />}
 
-      <div className="timer-footer" aria-live="polite">
-        {lastBlockId !== null && <BlockPrompt key={lastBlockId} />}
-        {taskId !== null && completedBlocks > 0 && closedTask !== taskId && (
-          <div className="panel timer-prompt">
-            <p>{t('timer.taskQuestion', { title: sessionConfig.taskTitle ?? '' })}</p>
-            <div className="timer-prompt-actions">
-              <button className="btn btn-primary" type="button" onClick={closeTask}><Check aria-hidden="true" /> {t('timer.taskDone')}</button>
+            <div className="flex flex-col gap-3 empty:hidden" aria-live="polite">
+              {lastBlockId !== null && <BlockPrompt key={lastBlockId} />}
+              {taskId !== null && completedBlocks > 0 && closedTask !== taskId && (
+                <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm">{t('timer.taskQuestion', { title: sessionConfig.taskTitle ?? '' })}</p>
+                  <Button onClick={closeTask}><Check data-icon="inline-start" aria-hidden="true" /> {t('timer.taskDone')}</Button>
+                  {taskError && <p className="text-sm text-destructive" role="alert">{t('planner.updateError')}</p>}
+                </div>
+              )}
+              {closedTask !== null && closedTask === taskId && <p className="text-sm text-success" role="status">{t('timer.taskClosed')}</p>}
+              {resume?.resume_note && (
+                <p className="flex gap-3 rounded-lg border border-dashed p-4 text-sm">
+                  <History className="mt-0.5 size-4 shrink-0 text-info" aria-hidden="true" />
+                  <span><strong className="font-medium">{t('sitting.lastTime', { day: formatDay(resume.started_on, 'long', locale) })}</strong> {resume.resume_note}</span>
+                </p>
+              )}
+              {saveState === 'saved' && (
+                <p className="text-center text-sm text-success" role="status">
+                  {t('timer.savedNotice')} <Link className="font-medium underline underline-offset-4" to="/history">{t('timer.openHistory')}</Link>
+                </p>
+              )}
+              {saveState === 'error' && (
+                <p className="text-center text-sm text-destructive" role="alert">
+                  {t('timer.saveErrorNotice')}
+                </p>
+              )}
             </div>
-            {taskError && <p className="field-error" role="alert">{t('planner.updateError')}</p>}
-          </div>
-        )}
-        {closedTask !== null && closedTask === taskId && <p className="notice notice-success" role="status">{t('timer.taskClosed')}</p>}
-        {resume?.resume_note && (
-          <p className="timer-note timer-resume">
-            <History aria-hidden="true" />
-            <span><strong>{t('sitting.lastTime', { day: formatDay(resume.started_on, 'long', locale) })}</strong> {resume.resume_note}</span>
-          </p>
-        )}
-        {saveState === 'saved' && (
-          <p className="notice notice-success" role="status">
-            {t('timer.savedNotice')} <Link className="text-link" to="/history">{t('timer.openHistory')}</Link>
-          </p>
-        )}
-        {saveState === 'error' && (
-          <p className="notice notice-error" role="alert">
-            {t('timer.saveErrorNotice')}
-          </p>
-        )}
-      </div>
+          </CardContent>
+        </Card>
 
-      {config && mode === 'Work' && <DistractionCapture />}
-      {config && <SittingChecklist />}
-      {config && mode === 'Break' && <DistractionList />}
+        <div className="flex min-w-0 flex-col gap-4">
+          {config && mode === 'Work' && <DistractionCapture />}
+          {config && <SittingChecklist />}
+          {config && mode === 'Break' && <DistractionList />}
+        </div>
+      </div>
     </div>
   )
 }

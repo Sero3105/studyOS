@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Check, ListPlus, Plus, X } from 'lucide-react'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Field, FieldDescription, FieldLabel } from '../ui/field'
+import { Input } from '../ui/input'
 import { useTimer } from '../../context/useTimer'
 import { useLanguage } from '../../i18n/useLanguage'
 import { createTask } from '../../services/taskService'
@@ -25,17 +30,23 @@ export function DistractionCapture() {
   }
 
   return (
-    <form className="distraction-capture" onSubmit={add}>
-      <label className="field-label" htmlFor="distraction-input">{t('sitting.distractionLabel')}</label>
-      <div className="sitting-add">
-        <input id="distraction-input" className="input" value={draft} maxLength={DISTRACTION_MAX}
-          onChange={(e) => { setDraft(e.target.value); setNoted(false) }} placeholder={t('sitting.distractionPlaceholder')} />
-        <button className="btn btn-secondary" type="submit" disabled={!draft.trim()}>
-          <Plus aria-hidden="true" /> {t('sitting.note')}
-        </button>
-      </div>
-      <p className="field-hint" role="status">{noted ? t('sitting.distractionNoted') : ''}</p>
-    </form>
+    <Card size="sm">
+      <CardContent>
+        <form onSubmit={add}>
+          <Field>
+            <FieldLabel htmlFor="distraction-input">{t('sitting.distractionLabel')}</FieldLabel>
+            <div className="flex gap-2">
+              <Input id="distraction-input" value={draft} maxLength={DISTRACTION_MAX}
+                onChange={(e) => { setDraft(e.target.value); setNoted(false) }} placeholder={t('sitting.distractionPlaceholder')} />
+              <Button type="submit" variant="secondary" disabled={!draft.trim()}>
+                <Plus data-icon="inline-start" aria-hidden="true" /> {t('sitting.note')}
+              </Button>
+            </div>
+            <FieldDescription role="status" className="min-h-4">{noted ? t('sitting.distractionNoted') : ''}</FieldDescription>
+          </Field>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -55,34 +66,34 @@ export function DistractionList() {
   }
 
   return (
-    <section className="panel sitting-panel" aria-labelledby="distractions-title">
-      <div className="panel-head">
-        <h2 id="distractions-title" className="panel-title">{t('sitting.distractionsTitle')}</h2>
-        <span className="panel-meta num">{sitting.distractions.length}</span>
-      </div>
-      <ul className="rows">
-        {sitting.distractions.map((d, index) => (
-          <li className="row" key={`${index}-${d.text}`}>
-            <span className="row-main">
-              <span className="row-title">{d.text}</span>
-              <span className="row-meta">{t('sitting.duringBlock', { block: d.block })}</span>
-            </span>
-            <span className="row-actions">
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle><h2 id="distractions-title">{t('sitting.distractionsTitle')}</h2></CardTitle>
+        <CardAction className="font-mono text-xs text-muted-foreground tabular-nums">{sitting.distractions.length}</CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y" aria-labelledby="distractions-title">
+          {sitting.distractions.map((d, index) => (
+            <li className="flex items-center gap-2 py-2 first:pt-0 last:pb-0" key={`${index}-${d.text}`}>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-sm break-words">{d.text}</span>
+                <span className="text-xs text-muted-foreground">{t('sitting.duringBlock', { block: d.block })}</span>
+              </span>
               {created.includes(d.text) ? (
-                <span className="tag tag-success"><Check aria-hidden="true" /> {t('sitting.taskCreated')}</span>
+                <Badge variant="success"><Check data-icon="inline-start" aria-hidden="true" /> {t('sitting.taskCreated')}</Badge>
               ) : (
-                <button className="icon-btn" type="button" onClick={() => toTask(d.text)} aria-label={t('sitting.toTask', { title: d.text })} title={t('sitting.toTaskShort')}>
+                <Button variant="ghost" size="icon-sm" onClick={() => toTask(d.text)} aria-label={t('sitting.toTask', { title: d.text })} title={t('sitting.toTaskShort')}>
                   <ListPlus aria-hidden="true" />
-                </button>
+                </Button>
               )}
-              <button className="icon-btn" type="button" onClick={() => removeDistraction(index)} aria-label={t('sitting.removeDistraction')} title={t('sitting.removeDistraction')}>
+              <Button variant="ghost" size="icon-sm" onClick={() => removeDistraction(index)} aria-label={t('sitting.removeDistraction')} title={t('sitting.removeDistraction')}>
                 <X aria-hidden="true" />
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
-      {error && <p className="field-error" role="alert">{t('planner.saveError')}</p>}
-    </section>
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {error && <p className="text-sm text-destructive" role="alert">{t('planner.saveError')}</p>}
+      </CardContent>
+    </Card>
   )
 }
