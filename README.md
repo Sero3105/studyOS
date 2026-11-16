@@ -193,12 +193,12 @@ docker compose up -d
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · Recharts · marked + KaTeX + DOMPurify (notes) · vanilla CSS with design tokens |
+| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · Recharts · marked + KaTeX + DOMPurify (notes) · Tailwind CSS v4 · shadcn/ui (Radix) · Sonner · cmdk |
 | **Backend** | FastAPI · SQLAlchemy · Alembic · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
 | **Database** | SQLite (file in the Docker volume, `database/studyos.db` locally) |
 | **Deployment** | Docker Compose · nginx (static files + `/api` proxy) · multi-stage images |
 
-**Design:** dark-first on a black ground, a single mint accent (no blue, no violet), Funnel Display / Funnel Sans / DM Mono, flat (no gradients), 150 ms transitions with a 1 px hover step and press, `prefers-reduced-motion` respected, 44 px touch targets, 700/900 px breakpoints. Tokens are in `frontend/src/styles/base/tokens.css`.
+**Design:** dark-first futuristic minimal: neutral black ground (no blue tint), a single electric-lime accent, bright signal colours only (cyan, amber, red; no dark blue, no violet), Geist Sans + Geist Mono for numbers, `prefers-reduced-motion` respected, 40 px touch targets on mobile, bottom tab bar on phones. No hand-written CSS: Tailwind utilities plus shadcn/ui components; theme tokens live in `frontend/src/index.css`.
 
 ---
 
@@ -223,7 +223,8 @@ StudyOS/
 │       ├── components/   # sidebar, Pomodoro, forms, UI kit
 │       ├── context/      # auth, persistent timer, undo after delete
 │       ├── utils/        # tested pure logic: dates, grades, today plan, readiness, CSV, Anki
-│       └── styles/       # base / layout / components / screens
+│       ├── components/ui/ # shadcn/ui components + small house components
+│       └── index.css     # Tailwind entry and theme tokens (light/dark)
 ├── database/             # local studyos.db (never touched by Docker)
 └── docs/                 # screenshots, demo, design notes
 ```

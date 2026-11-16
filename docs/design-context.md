@@ -17,11 +17,11 @@ concise, Italian UI. Dark-first interface.
 1. Hierarchy first: one primary action per screen, visible within 2 seconds.
 2. Feature before shell: timer countdown and today's focus dominate; chrome recedes.
 3. Systems over tweaks: single spacing scale, single surface language, semantic color only.
-4. No decoration: flat surfaces, no gradients/glow/glassmorphism, no cards-in-cards.
+4. Minimal decoration: flat surfaces, at most one soft accent glow on a hero card, no glassmorphism, no cards-in-cards.
 5. Honest data: empty states teach; never fabricate content.
 6. Calm motion (tasteskill numbers): 150ms in, 120ms out, buttons step up 1px on hover and press to .985, `prefers-reduced-motion` respected.
 
 ## Implementation defaults
-React + TypeScript + Vite frontend, vanilla CSS with centralized tokens in
-`frontend/src/styles/base/tokens.css`. No UI framework. Breakpoints: 900px
-(grids collapse), 700px (nav compresses, single column).
+React + TypeScript + Vite frontend, Tailwind CSS v4 + shadcn/ui (Radix), theme
+tokens in `frontend/src/index.css`. No hand-written CSS. Dark futuristic minimal:
+neutral black, electric-lime accent, bright signal colours only. Breakpoints: md 768px (sidebar vs bottom tab bar), lg 1024px (two-column layouts).
