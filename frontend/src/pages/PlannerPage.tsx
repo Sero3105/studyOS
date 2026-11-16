@@ -313,7 +313,7 @@ function PlannerPage() {
                               className="w-full [&>*]:flex-1 [&>*]:px-0"
                             >
                               {ISO_WEEKDAYS.map((day) => (
-                                <ToggleGroupItem key={day} value={String(day)} className="data-[state=on]:bg-accent data-[state=on]:text-primary">{isoWeekdayName(day, locale)}</ToggleGroupItem>
+                                <ToggleGroupItem key={day} value={String(day)} className="data-[state=on]:bg-primary/10 data-[state=on]:text-primary">{isoWeekdayName(day, locale)}</ToggleGroupItem>
                               ))}
                             </ToggleGroup>
                           </FieldSet>

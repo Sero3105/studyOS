@@ -26,7 +26,7 @@ function Segmented<T extends string>({ label, value, options, onChange }: Segmen
       className="max-w-full overflow-x-auto"
     >
       {options.map((option) => (
-        <ToggleGroupItem key={option.value} value={option.value} className="data-[state=on]:bg-accent data-[state=on]:text-foreground">
+        <ToggleGroupItem key={option.value} value={option.value} className="data-[state=on]:bg-primary/10 data-[state=on]:text-primary">
           {option.label}
           {option.count !== undefined && <span className="font-mono text-xs text-muted-foreground tabular-nums">{option.count}</span>}
         </ToggleGroupItem>
