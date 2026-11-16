@@ -88,3 +88,27 @@ export function lastResume(sittings: SavedSitting[], config: Pick<StudySessionCo
       && (config.topicId !== null ? s.topic_id === config.topicId : s.subject_id === config.subjectId))
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null
 }
+
+export type HistoryEntry<S> = { kind: 'session'; session: S } | { kind: 'sitting'; uid: string; sessions: S[] }
+
+/**
+ * Storico di un giorno: i blocchi della stessa seduta diventano una voce sola, al posto del
+ * primo blocco. Un blocco da solo resta una riga normale, a meno che la seduta abbia qualcosa
+ * da mostrare (obiettivo, checklist, distrazioni, "riparto da qui").
+ */
+export function groupBySitting<S extends { sitting_id: string | null }>(sessions: S[], hasDetails: (uid: string) => boolean): HistoryEntry<S>[] {
+  const byUid = new Map<string, S[]>()
+  for (const s of sessions) if (s.sitting_id) byUid.set(s.sitting_id, [...(byUid.get(s.sitting_id) ?? []), s])
+  const entries: HistoryEntry<S>[] = []
+  const seen = new Set<string>()
+  for (const s of sessions) {
+    const group = s.sitting_id ? byUid.get(s.sitting_id) ?? [] : []
+    if (!s.sitting_id || (group.length < 2 && !hasDetails(s.sitting_id))) entries.push({ kind: 'session', session: s })
+    else if (!seen.has(s.sitting_id)) { seen.add(s.sitting_id); entries.push({ kind: 'sitting', uid: s.sitting_id, sessions: group }) }
+  }
+  return entries
+}
+
+export function hasDetails(sitting: SavedSitting | undefined): boolean {
+  return Boolean(sitting && (sitting.goal || sitting.resume_note || sitting.checklist.length || sitting.distractions.length))
+}

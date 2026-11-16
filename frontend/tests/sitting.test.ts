@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { interruptionsIn, lastResume, newSitting, parseChecklist, sittingId, sittingPayload, sittingSummary } from '../src/utils/sitting.ts'
+import { groupBySitting, interruptionsIn, lastResume, newSitting, parseChecklist, sittingId, sittingPayload, sittingSummary } from '../src/utils/sitting.ts'
 import type { SavedSitting } from '../src/utils/sitting.ts'
 
 const config = { focusMinutes: 25, breakMinutes: 5, goal: ' Cap. 3 ', subjectId: 1, topicId: 7, subject: 'Fisica', topic: 'Onde', checklist: ['es. 1-10', 'teoria'] }
@@ -57,4 +57,10 @@ test('last resume: same topic first, else same subject, never for free sessions'
   assert.equal(lastResume(list, { subjectId: 1, topicId: null }, 'cur')?.uid, 'b')
   assert.equal(lastResume(list, { subjectId: null, topicId: null }), null)
   assert.equal(lastResume(list, { subjectId: 2, topicId: null }), null)
+})
+
+test('history groups blocks of the same sitting where the first one was', () => {
+  const s = (id: number, sitting_id: string | null) => ({ id, sitting_id })
+  const entries = groupBySitting([s(1, 'a'), s(2, null), s(3, 'a'), s(4, 'b'), s(5, 'c')], (uid) => uid === 'c')
+  assert.deepEqual(entries.map((e) => (e.kind === 'session' ? e.session.id : e.sessions.map((x) => x.id))), [[1, 3], 2, 4, [5]])
 })

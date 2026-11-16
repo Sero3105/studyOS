@@ -801,6 +801,11 @@ const it = {
   'sitting.discardPartial': 'Non salvare',
   'sitting.savePartial': 'Salva e termina',
   'sitting.lastTime': 'Ultima volta ({day}):',
+  'history.interruptions': 'Distrazioni: {count}',
+  'history.blocks': 'Blocchi: {count}',
+  'history.sittingDetails': 'Mostra o nascondi i dettagli della sessione',
+  'history.itemDone': 'Fatto:',
+  'history.itemOpen': 'Non fatto:',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1437,6 +1442,11 @@ const en: Record<TranslationKey, string> = {
   'sitting.discardPartial': "Don't save",
   'sitting.savePartial': 'Save and end',
   'sitting.lastTime': 'Last time ({day}):',
+  'history.interruptions': 'Distractions: {count}',
+  'history.blocks': 'Blocks: {count}',
+  'history.sittingDetails': 'Show or hide session details',
+  'history.itemDone': 'Done:',
+  'history.itemOpen': 'Not done:',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

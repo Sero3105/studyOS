@@ -56,6 +56,68 @@
   background: var(--surface-2);
 }
 
+/* Seduta al timer: una riga che si apre su checklist, distrazioni e blocchi */
+.history-sitting-toggle svg {
+  transition: transform var(--duration) var(--ease);
+}
+
+.history-sitting-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.history-sitting-body {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3) calc(72px + var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.history-checklist {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.history-checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+}
+
+.history-checklist svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: var(--accent);
+}
+
+.history-checklist .is-open,
+.history-checklist .is-open svg {
+  color: var(--text-muted);
+}
+
+.history-sitting-line {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.history-sitting-line strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .history-sitting-body {
+    margin-left: 0;
+  }
+}
+
 /* Obiettivi */
 
 .goal-form {
