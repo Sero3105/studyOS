@@ -56,7 +56,7 @@ def test_import_drops_foreign_links_and_validates(client):
 
 
 def test_share_link_lifecycle(client):
-    a = _headers(client, "s1@example.com")
+    a = _headers(client, "share1@example.com")
     assert client.get("/share", headers=a).json()["active"] is False
     client.post("/exams", json={"title": "Orale", "subject": "Storia", "exam_date": "2099-01-01", "notes": "segreto", "location": "Aula"}, headers=a)
     client.post("/tasks", json={"title": "Ripasso", "description": "privato"}, headers=a)
@@ -66,7 +66,7 @@ def test_share_link_lifecycle(client):
     assert plan.status_code == 200
     body = plan.json()
     assert body["exams"][0]["title"] == "Orale" and body["tasks"][0]["title"] == "Ripasso"
-    assert "segreto" not in plan.text and "privato" not in plan.text and "s1@example.com" not in plan.text
+    assert "segreto" not in plan.text and "privato" not in plan.text and "share1@example.com" not in plan.text
 
     rotated = client.post("/share", headers=a).json()["token"]
     assert client.get(f"/share/public/{token}").status_code == 404

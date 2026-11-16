@@ -48,8 +48,9 @@ def delete_subject(subject_id: int, user_id: int, db: Session) -> None:
     subject = get_owned_subject(subject_id, user_id, db)
     _unlink(user_id, db, 'subject_id', [subject.id])
     _unlink(user_id, db, 'topic_id', [t.id for t in subject.topics])
-    for model in (Exam, Goal):
-        db.execute(update(model).where(model.user_id == user_id, model.subject_id == subject.id).values(subject_id=None))
+    # Materia ed esame sono una scheda sola: eliminando la materia se ne vanno anche i suoi esami.
+    for exam in db.scalars(select(Exam).where(Exam.user_id == user_id, Exam.subject_id == subject.id)): db.delete(exam)
+    db.execute(update(Goal).where(Goal.user_id == user_id, Goal.subject_id == subject.id).values(subject_id=None))
     db.delete(subject); db.commit()
 
 def create_topic(subject_id: int, data: TopicCreate, user_id: int, db: Session) -> Topic:

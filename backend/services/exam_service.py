@@ -8,8 +8,12 @@ from models.session_models import StudySession
 from models.task_models import Task
 from schemas.exam_schemas import ExamCreate
 def link_subject(exam:Exam, db:Session)->None:
-    """Collega l'esame per id alla materia con lo stesso nome; il nome resta quello scritto nell'esame."""
-    exam.subject_id=db.scalar(select(func.min(Subject.id)).where(Subject.user_id==exam.user_id, func.lower(func.trim(Subject.name))==exam.subject.strip().lower()))
+    """Collega l'esame per id alla materia con lo stesso nome; se non c'è, la crea: ogni esame ha sempre la sua materia."""
+    name=exam.subject.strip()
+    subject_id=db.scalar(select(func.min(Subject.id)).where(Subject.user_id==exam.user_id, func.lower(func.trim(Subject.name))==name.lower()))
+    if subject_id is None:
+        subject=Subject(user_id=exam.user_id, name=name); db.add(subject); db.flush(); subject_id=subject.id
+    exam.subject_id=subject_id
 def create_exam(data: ExamCreate, user_id:int, db:Session)->Exam:
     exam=Exam(user_id=user_id, **data.model_dump())
     link_subject(exam, db)
@@ -38,6 +42,10 @@ def record_attempt(exam_id:int, data, user_id:int, db:Session)->Exam:
 def delete_exam(exam_id:int, user_id:int, db:Session)->None:
     exam=_owned_exam(exam_id,user_id,db); db.delete(exam); db.commit()
 def list_user_exams(user_id:int, db:Session)->list[Exam]:
+    # Esami di prima dell'unione materia-esame: ricevono la loro materia alla prima lettura.
+    orphans=list(db.scalars(select(Exam).where(Exam.user_id==user_id, Exam.subject_id.is_(None))))
+    for exam in orphans: link_subject(exam, db)
+    if orphans: db.commit()
     return list(db.scalars(select(Exam).where(Exam.user_id==user_id).order_by(case((Exam.exam_date.is_(None),1),else_=0), Exam.exam_date, case((Exam.exam_time.is_(None),1),else_=0), Exam.exam_time, Exam.id)))
 
 def plan_exam(exam_id:int, user_id:int, db:Session, rest_days:set[int]=frozenset())->list[Task]:
@@ -46,7 +54,8 @@ def plan_exam(exam_id:int, user_id:int, db:Session, rest_days:set[int]=frozenset
     exam=_owned_exam(exam_id,user_id,db)
     if exam.exam_date is None: raise ValueError('no_date')
     subject=db.scalar(select(Subject).where(Subject.user_id==user_id, Subject.id==exam.subject_id))
-    if subject is None: raise ValueError('no_subject')
+    # Materia senza argomenti (es. creata dall'esame): niente da distribuire.
+    if subject is None or not subject.topics: raise ValueError('no_subject')
     today=date.today()
     days=[d for d in (today+timedelta(days=i) for i in range(1,(exam.exam_date-today).days)) if d.isoweekday() not in rest_days]
     if not days: raise ValueError('too_close')
