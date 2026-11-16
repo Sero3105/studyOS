@@ -4,7 +4,7 @@ from schemas.card_schemas import CardCreate, MistakeCreate
 from schemas.settings_schemas import Preferences
 from schemas.exam_schemas import AttemptCreate, ExamCreate
 from schemas.goal_schemas import GoalCreate
-from schemas.session_schemas import SessionCreate
+from schemas.session_schemas import UID_PATTERN, SessionCreate, SittingSave
 from schemas.subject_schemas import SubjectCreate, TopicCreate
 from schemas.task_schemas import TaskCreate
 
@@ -23,6 +23,9 @@ class SubjectData(SubjectCreate):
 class SessionData(SessionCreate):
     # Ora di fine della sessione: serve alle "ore migliori di studio", va conservata nel ripristino.
     created_at: datetime | None = None
+
+class SittingData(SittingSave):
+    uid: str = Field(pattern=UID_PATTERN)
 
 class AttemptData(AttemptCreate):
     exam_date: date
@@ -46,6 +49,7 @@ class StudyData(BaseModel):
     goals: list[GoalCreate] = Field(default=[], max_length=1000)
     cards: list[CardData] = Field(default=[], max_length=50000)
     mistakes: list[MistakeData] = Field(default=[], max_length=10000)
+    sittings: list[SittingData] = Field(default=[], max_length=50000)
     preferences: Preferences | None = None
 
 class ImportResult(BaseModel):

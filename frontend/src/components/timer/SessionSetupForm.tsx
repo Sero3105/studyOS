@@ -9,6 +9,7 @@ import type { TranslationKey } from '../../i18n/translations'
 import { LONG_BREAK_DEFAULTS } from '../../utils/pomodoro'
 import { SESSION_KINDS } from '../../services/sessionService'
 import type { SessionKind } from '../../services/sessionService'
+import { CHECKLIST_MAX, parseChecklist } from '../../utils/sitting'
 
 interface SessionSetupFormProps {
   onSubmit: (config: StudySessionConfig) => void
@@ -36,7 +37,8 @@ function SessionSetupForm({
   const [breakMinutes, setBreakMinutes] = useState('5')
   const [longBreakMinutes, setLongBreakMinutes] = useState(String(LONG_BREAK_DEFAULTS.longBreakMinutes))
   const [blocksBeforeLongBreak, setBlocksBeforeLongBreak] = useState(String(LONG_BREAK_DEFAULTS.blocksBeforeLongBreak))
-  const [notes, setNotes] = useState('')
+  const [goal, setGoal] = useState('')
+  const [checklist, setChecklist] = useState('')
   const [kind, setKind] = useState<SessionKind>('study')
   const [subjectId, setSubjectId] = useState('')
   const [topicId, setTopicId] = useState('')
@@ -68,7 +70,8 @@ function SessionSetupForm({
       breakMinutes: breakDuration,
       longBreakMinutes: longBreakDuration,
       blocksBeforeLongBreak: everyBlocks,
-      notes: notes.trim(),
+      goal: goal.trim(),
+      checklist: parseChecklist(checklist),
       subjectId: subjectId ? Number(subjectId) : null,
       topicId: topicId ? Number(topicId) : null,
       subject: selectedSubject?.name ?? '',
@@ -182,14 +185,23 @@ function SessionSetupForm({
             {SESSION_KINDS.map((value) => <option key={value} value={value}>{t(`session.kind.${value}`)}</option>)}
           </select>
         </label>
+      </fieldset>
+
+      <fieldset className="session-form-block">
+        <legend className="field-label">{t('sitting.plan')}</legend>
         <label className="field">
-          <span className="field-label">{t('timer.note')} <em>{t('common.optional')}</em></span>
+          <span className="field-label">{t('sitting.goal')} <em>{t('common.optional')}</em></span>
+          <input value={goal} maxLength={500} onChange={(event) => setGoal(event.target.value)} placeholder={t('sitting.goalPlaceholder')} />
+        </label>
+        <label className="field">
+          <span className="field-label">{t('sitting.checklist')} <em>{t('common.optional')}</em></span>
           <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder={t('timer.notePlaceholder')}
-            rows={2}
+            value={checklist}
+            onChange={(event) => setChecklist(event.target.value)}
+            placeholder={t('sitting.checklistPlaceholder')}
+            rows={3}
           />
+          <span className="field-hint">{t('sitting.checklistHint', { max: CHECKLIST_MAX })}</span>
         </label>
       </fieldset>
 

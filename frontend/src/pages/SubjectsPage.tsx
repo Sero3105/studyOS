@@ -188,7 +188,7 @@ function SubjectsPage() {
     const config: StudySessionConfig = {
       focusMinutes: 25,
       breakMinutes: 5,
-      notes: '',
+      goal: '',
       subjectId: subject.id,
       topicId: topic?.id ?? null,
       subject: subject.name,

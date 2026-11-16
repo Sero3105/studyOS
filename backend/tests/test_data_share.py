@@ -10,7 +10,8 @@ def test_export_import_roundtrip_relinks_ids(client):
     subject = client.post("/subjects", json={"name": "Fisica"}, headers=a).json()
     topic = client.post(f"/subjects/{subject['id']}/topics", json={"title": "Ottica"}, headers=a).json()
     client.post("/tasks", json={"title": "Esercizi", "subject_id": subject["id"], "topic_id": topic["id"]}, headers=a)
-    client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-10-01", "topic_id": topic["id"], "kind": "lesson", "focus": 3}, headers=a)
+    client.post("/sessions", json={"duration_minutes": 25, "studied_on": "2026-10-01", "topic_id": topic["id"], "kind": "lesson", "focus": 3, "sitting_id": "s-1"}, headers=a)
+    client.put("/sittings/s-1", json={"started_on": "2026-10-01", "topic_id": topic["id"], "goal": "Ottica", "resume_note": "lenti"}, headers=a)
     client.post("/mistakes", json={"topic_id": topic["id"], "mistake": "Segno invertito", "correction": "n1 > n2"}, headers=a)
     client.patch("/settings", json={"degreeCfu": 120, "restDays": [7]}, headers=a)
     exam = client.post("/exams", json={"title": "Scritto", "subject": "Fisica", "exam_date": "2026-01-10"}, headers=a).json()
@@ -36,6 +37,10 @@ def test_export_import_roundtrip_relinks_ids(client):
     task = client.get("/tasks", headers=b).json()[0]
     assert task["subject_id"] == new_subject["id"] and task["topic_id"] == new_subject["topics"][0]["id"]
     assert client.get("/sessions", headers=b).json()[0]["subject_id"] == new_subject["id"]
+    sitting = client.get("/sittings", headers=b).json()[0]
+    assert (sitting["goal"], sitting["resume_note"], sitting["topic_id"]) == ("Ottica", "lenti", new_subject["topics"][0]["id"])
+    # Uid nuovo, ma il blocco resta collegato alla sua seduta.
+    assert sitting["uid"] != "s-1" and client.get("/sessions", headers=b).json()[0]["sitting_id"] == sitting["uid"]
     # A non deve vedere nulla di B e viceversa.
     assert len(client.get("/subjects", headers=a).json()) == 1
 

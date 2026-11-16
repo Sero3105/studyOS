@@ -29,7 +29,7 @@ function Sidebar({ collapsed, mobileOpen, onToggleCollapsed, onCloseMobile, onOp
   const { t } = useLanguage()
   const timer = useTimer()
   const timerBadge =
-    timer.config && (timer.isRunning || timer.hasStarted)
+    timer.config && !timer.sitting?.ended && (timer.isRunning || timer.hasStarted)
       ? `${Math.floor(timer.remainingSeconds / 60)}:${String(timer.remainingSeconds % 60).padStart(2, '0')}`
       : null
   const navigate = useNavigate()

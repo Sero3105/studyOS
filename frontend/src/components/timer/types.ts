@@ -6,7 +6,10 @@ export interface StudySessionConfig {
   /** Assenti nelle sessioni create prima della pausa lunga: vedi `LONG_BREAK_DEFAULTS`. */
   longBreakMinutes?: number
   blocksBeforeLongBreak?: number
-  notes: string
+  /** Obiettivo della seduta (prima si chiamava `notes`: vedi `normalizeConfig`). */
+  goal: string
+  /** Voci della checklist scritte prima di partire. */
+  checklist?: string[]
   subjectId: number | null
   topicId: number | null
   subject: string

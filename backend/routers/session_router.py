@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
 from dependencies.auth_dependency import get_current_user
 from dependencies.database_dependency import get_db
 from models.user_models import User
-from schemas.session_schemas import SessionCreate, SessionResponse, SessionUpdate
+from schemas.session_schemas import UID_PATTERN, SessionCreate, SessionResponse, SessionUpdate, SittingResponse, SittingSave
 from services import session_service
 
 router = APIRouter(prefix='/sessions', tags=['Sessions'])
+sittings_router = APIRouter(prefix='/sittings', tags=['Sessions'])
 
 @router.post('', response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 def create_session(data: SessionCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -27,3 +28,12 @@ def update_session(session_id: int, data: SessionUpdate, user: User = Depends(ge
 def delete_session(session_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try: session_service.delete_session(session_id, user.id, db)
     except LookupError: raise HTTPException(status_code=404, detail='Session not found')
+
+@sittings_router.get('', response_model=list[SittingResponse])
+def list_sittings(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return session_service.list_sittings(user.id, db)
+
+@sittings_router.put('/{uid}', response_model=SittingResponse)
+def save_sitting(data: SittingSave, uid: str = Path(pattern=UID_PATTERN), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try: return session_service.save_sitting(uid, data, user.id, db)
+    except ValueError as error: raise HTTPException(status_code=422, detail=str(error))

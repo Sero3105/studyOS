@@ -1,6 +1,7 @@
 """Export/import of all of a user's study data as JSON, and topic notes as a Markdown vault."""
 import io
 import re
+import uuid
 import zipfile
 from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,11 +9,11 @@ from sqlalchemy.orm import Session
 from models.card_models import Card, Mistake
 from models.exam_models import Exam, ExamAttempt
 from models.goal_models import Goal
-from models.session_models import StudySession
+from models.session_models import StudySession, StudySitting
 from models.subject_models import Subject, Topic
 from models.task_models import Task
 from models.user_models import User
-from schemas.data_schemas import CardData, ExamData, ImportResult, MistakeData, SessionData, StudyData
+from schemas.data_schemas import CardData, ExamData, ImportResult, MistakeData, SessionData, SittingData, StudyData
 from schemas.goal_schemas import GoalCreate
 from schemas.subject_schemas import SubjectCreate
 from schemas.task_schemas import TaskCreate
@@ -29,7 +30,7 @@ def export_user_data(user_id: int, db: Session) -> StudyData:
                   for s in list_subjects(user_id, db)],
         tasks=rows(Task, TaskCreate), exams=rows(Exam, ExamData),
         sessions=rows(StudySession, SessionData), goals=rows(Goal, GoalCreate), cards=rows(Card, CardData),
-        mistakes=rows(Mistake, MistakeData), preferences=db.get(User, user_id).preferences,
+        mistakes=rows(Mistake, MistakeData), sittings=rows(StudySitting, SittingData), preferences=db.get(User, user_id).preferences,
     )
 
 def _delete_user_data(user_id: int, db: Session) -> None:
@@ -37,7 +38,7 @@ def _delete_user_data(user_id: int, db: Session) -> None:
     db.execute(delete(Card).where(Card.user_id == user_id))
     db.execute(delete(Mistake).where(Mistake.user_id == user_id))
     db.execute(delete(Topic).where(Topic.subject_id.in_(owned_subjects)))
-    for model in (Task, StudySession, ExamAttempt, Exam, Goal, Subject):
+    for model in (Task, StudySession, StudySitting, ExamAttempt, Exam, Goal, Subject):
         db.execute(delete(model).where(model.user_id == user_id))
 
 def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool = False) -> ImportResult:
@@ -68,8 +69,14 @@ def import_user_data(data: StudyData, user_id: int, db: Session, replace: bool =
 
         for t in data.tasks:
             db.add(Task(user_id=user_id, **(t.model_dump() | links(t))))
+        # Uid nuovi a ogni import: importare due volte lo stesso file non collide con le sedute già presenti.
+        sitting_uids = {s.uid: str(uuid.uuid4()) for s in data.sittings}
+        for s in {s.uid: s for s in data.sittings}.values():
+            db.add(StudySitting(user_id=user_id, **(s.model_dump() | links(s) | {'uid': sitting_uids[s.uid]})))
         for s in data.sessions:
-            db.add(StudySession(user_id=user_id, **(s.model_dump(exclude_none=True) | links(s))))
+            session = s.model_dump(exclude_none=True) | links(s)
+            if s.sitting_id: session['sitting_id'] = sitting_uids.get(s.sitting_id)
+            db.add(StudySession(user_id=user_id, **session))
         for e in data.exams:
             exam = Exam(user_id=user_id, **e.model_dump(exclude={'attempts'}))
             exam.attempts = [ExamAttempt(user_id=user_id, **a.model_dump()) for a in e.attempts]

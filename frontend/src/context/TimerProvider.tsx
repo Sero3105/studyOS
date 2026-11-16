@@ -3,13 +3,16 @@ import type { ReactNode } from 'react'
 import { TimerContext } from './timerContext'
 import type { TimerMode, TimerSaveState } from './timerContext'
 import type { StudySessionConfig } from '../components/timer/types'
-import { createSession, updateSession } from '../services/sessionService'
+import { createSession, saveSitting, updateSession } from '../services/sessionService'
 import type { CreateSessionPayload, Focus } from '../services/sessionService'
+import { ApiError } from '../services/apiClient'
 import { useAuth } from './useAuth'
 import { todayIso } from '../utils/dates'
-import { breakMinutes } from '../utils/pomodoro'
+import { breakMinutes, elapsedMinutes } from '../utils/pomodoro'
 import { timerAlertsEnabled } from '../utils/preferences'
 import { notificationsSupported } from '../utils/reminders'
+import { CHECKLIST_MAX, DISTRACTION_MAX, ITEM_MAX, fullBlock, interruptionsIn, newSitting, sittingPayload } from '../utils/sitting'
+import type { Sitting, SittingPayload } from '../utils/sitting'
 import { useLanguage } from '../i18n/useLanguage'
 
 /**
@@ -27,6 +30,10 @@ import { useLanguage } from '../i18n/useLanguage'
  * Ciclo: fine studio → pausa che parte da sola (lunga ogni N blocchi); fine pausa → studio, fermo.
  * A ogni fine fase suona un avviso e, con la finestra non in primo piano, arriva una notifica.
  * Ogni blocco di studio completato viene salvato una sola volta nello storico.
+ *
+ * La seduta (`sitting`) raccoglie i blocchi fatti di fila: checklist, distrazioni annotate,
+ * blocchi con focus e nota, "riparto da qui". Terminandola si può salvare il blocco a metà,
+ * poi la pagina Timer ne mostra il riepilogo finché non la si chiude.
  */
 
 interface TimerState {
@@ -38,6 +45,7 @@ interface TimerState {
   remainingMs: number
   now: number
   completedBlocks: number
+  sitting: Sitting | null
 }
 
 const TICK_MS = 250
@@ -53,6 +61,16 @@ const idleState: TimerState = {
   remainingMs: 0,
   now: 0,
   completedBlocks: 0,
+  sitting: null,
+}
+
+/** Stato salvato da una versione precedente: `notes` era l'obiettivo e la seduta non esisteva (blocchi già salvati). */
+function normalize(state: TimerState): TimerState {
+  if (!state.config) return { ...state, sitting: null }
+  const legacy = state.config as StudySessionConfig & { notes?: string }
+  const config = { ...state.config, goal: state.config.goal ?? legacy.notes ?? '' }
+  const sitting = state.sitting ?? { ...newSitting(config, todayIso()), blocks: Array.from({ length: state.completedBlocks }, () => fullBlock(config.focusMinutes)) }
+  return { ...state, config, sitting }
 }
 
 /**
@@ -69,6 +87,7 @@ function advance(state: TimerState, time: number): TimerState {
         mode: 'Break',
         endsAt: next.endsAt + minutesMs(breakMinutes(next.config, next.completedBlocks + 1)),
         completedBlocks: next.completedBlocks + 1,
+        sitting: next.sitting && { ...next.sitting, blocks: [...next.sitting.blocks, fullBlock(next.config.focusMinutes)] },
       }
     } else {
       next = {
@@ -85,6 +104,7 @@ function advance(state: TimerState, time: number): TimerState {
 
 // localStorage, una chiave per utente: il timer sopravvive a reload e chiusura della scheda
 // ed è condiviso tra le schede (pausa in una = pausa in tutte).
+// `savedBlocks` conta i blocchi della seduta già inviati al backend.
 interface Stored { state: TimerState; savedBlocks: number }
 
 function readJson<T>(key: string): T | null {
@@ -126,11 +146,15 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const { t } = useLanguage()
   const key = `studyos.timer.${user?.id ?? 0}`
   const queueKey = `${key}.unsaved`
+  const sittingQueueKey = `${key}.sittings`
   const [stored] = useState(() => readJson<Stored>(key))
   // I blocchi finiti mentre la pagina era chiusa vengono contati da `advance` e salvati sotto.
-  const [state, setState] = useState<TimerState>(() => (stored ? advance(stored.state, Date.now()) : idleState))
+  const [state, setState] = useState<TimerState>(() => (stored ? advance(normalize(stored.state), Date.now()) : idleState))
   const [saveState, setSaveState] = useState<TimerSaveState>('idle')
-  const [lastBlockId, setLastBlockId] = useState<number | null>(null)
+  // Ultimo blocco salvato da questa scheda e ancora da valutare: id sul server e posizione nella seduta.
+  const [lastBlock, setLastBlock] = useState<{ id: number; index: number; sitting: string } | null>(null)
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state }, [state])
   // Blocchi già inviati al backend, per sessione: evita salvataggi doppi (anche dopo un reload).
   const savedRef = useRef(stored ? { sessionId: stored.state.sessionId, blocks: stored.savedBlocks } : { sessionId: 0, blocks: 0 })
   const lastWrittenRef = useRef<string | null>(null)
@@ -144,18 +168,33 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, [state.isRunning])
 
   // Un blocco che non si riesce a salvare finisce in coda e viene riprovato dopo.
-  const saveBlock = useCallback(async (payload: CreateSessionPayload) => {
+  const saveBlock = useCallback(async (payload: CreateSessionPayload, index: number) => {
     try {
       const saved = await createSession(payload)
       setSaveState('saved')
-      setLastBlockId(saved.id)
+      setLastBlock({ id: saved.id, index, sitting: payload.sitting_id ?? '' })
     } catch {
       writeJson(queueKey, [...(readJson<CreateSessionPayload[]>(queueKey) ?? []), payload])
       setSaveState('error')
     }
   }, [queueKey])
 
+  // Seduta: il PUT sostituisce tutto, quindi in coda basta l'ultima versione di ognuna.
+  const syncSitting = useCallback(async (uid: string, payload: SittingPayload) => {
+    try {
+      await saveSitting(uid, payload)
+      const queued = readJson<Record<string, SittingPayload>>(sittingQueueKey) ?? {}
+      if (uid in queued) { delete queued[uid]; writeJson(sittingQueueKey, queued) }
+    } catch (error) {
+      // 422: dati non più validi (es. materia eliminata), riprovare non serve. Tutto il resto (anche 401) resta in coda.
+      if (error instanceof ApiError && error.status === 422) return
+      writeJson(sittingQueueKey, { ...(readJson<Record<string, SittingPayload>>(sittingQueueKey) ?? {}), [uid]: payload })
+    }
+  }, [sittingQueueKey])
+
   const retryUnsaved = useCallback(async () => {
+    const sittings = readJson<Record<string, SittingPayload>>(sittingQueueKey) ?? {}
+    for (const [uid, payload] of Object.entries(sittings)) await syncSitting(uid, payload)
     const queue = readJson<CreateSessionPayload[]>(queueKey) ?? []
     if (!queue.length) return
     // Svuota prima di inviare: le altre schede non riprovano gli stessi blocchi.
@@ -167,7 +206,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
     if (failed.length) writeJson(queueKey, [...(readJson<CreateSessionPayload[]>(queueKey) ?? []), ...failed])
     setSaveState(failed.length ? 'error' : 'saved')
-  }, [queueKey])
+  }, [queueKey, sittingQueueKey, syncSitting])
 
   useEffect(() => {
     const retry = () => { void retryUnsaved() }
@@ -181,28 +220,31 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
   }, [retryUnsaved])
 
-  // Salva nello storico ogni blocco di studio completato, poi scrive lo stato per reload e altre schede.
+  // Salva nello storico ogni blocco della seduta (completo o fermato a metà), poi scrive lo stato per reload e altre schede.
   useEffect(() => {
-    const { config, sessionId, completedBlocks } = state
-    if (config) {
+    const { config, sessionId, sitting } = state
+    if (config && sitting) {
       if (savedRef.current.sessionId !== sessionId) savedRef.current = { sessionId, blocks: 0 }
       // Un'altra scheda con lo stesso timer può aver già salvato questo blocco.
       // shortcut: due schede che chiudono il blocco nello stesso millisecondo lo salvano entrambe; raro, serve un lock (navigator.locks) se capita.
       const shared = readJson<Stored>(key)
       if (shared?.state.sessionId === sessionId) savedRef.current.blocks = Math.max(savedRef.current.blocks, shared.savedBlocks)
-      const pending = completedBlocks - savedRef.current.blocks
-      if (pending > 0) {
-        savedRef.current.blocks = completedBlocks
-        for (let i = 0; i < pending; i += 1) {
+      const from = savedRef.current.blocks
+      if (sitting.blocks.length > from) {
+        savedRef.current.blocks = sitting.blocks.length
+        sitting.blocks.slice(from).forEach((block, i) => {
+          const index = from + i
           void saveBlock({
             subject_id: config.subjectId ?? undefined,
             topic_id: config.topicId ?? undefined,
-            duration_minutes: config.focusMinutes,
+            duration_minutes: block.minutes,
             studied_on: todayIso(),
-            notes: config.notes || undefined,
             kind: config.kind,
-          })
-        }
+            sitting_id: sitting.id,
+            partial: block.partial,
+            interruptions: interruptionsIn(sitting, index + 1) || undefined,
+          }, index)
+        })
       }
     }
     // Senza `now` lo stato cambia solo a ogni azione o cambio di fase: niente scritture a ogni tick.
@@ -229,30 +271,47 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
   }, [state, t])
 
+  // La seduta finisce sul server appena ha un blocco; ritardo breve per non mandare un PUT a ogni spunta.
+  const { config: currentConfig, sitting: currentSitting } = state
+  useEffect(() => {
+    if (!currentConfig || !currentSitting?.blocks.length) return
+    const timeout = setTimeout(() => void syncSitting(currentSitting.id, sittingPayload(currentSitting, currentConfig)), 800)
+    return () => clearTimeout(timeout)
+  }, [currentConfig, currentSitting, syncSitting])
+
   // Avvio, pausa o reset fatti in un'altra scheda.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== key) return
       lastWrittenRef.current = event.newValue
       const next = readJson<Stored>(key)
-      setState(next ? advance(next.state, Date.now()) : idleState)
+      setState(next ? advance(normalize(next.state), Date.now()) : idleState)
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
   }, [key])
 
+  /** La seduta che si sta lasciando va sul server subito: il PUT ritardato verrebbe annullato. */
+  const flushSitting = useCallback(() => {
+    const { config, sitting } = stateRef.current
+    if (config && sitting?.blocks.length) void syncSitting(sitting.id, sittingPayload(sitting, config))
+  }, [syncSitting])
+
   const start = useCallback((config: StudySessionConfig) => {
     // Siamo dentro un clic: unico momento in cui il browser lascia chiedere il permesso.
     if (timerAlertsEnabled() && notificationsSupported() && Notification.permission === 'default') void Notification.requestPermission()
+    flushSitting()
     setSaveState('idle')
+    setLastBlock(null)
     setState((current) => ({
       ...idleState,
       sessionId: current.sessionId + 1,
       config,
       remainingMs: minutesMs(config.focusMinutes),
       now: Date.now(),
+      sitting: newSitting(config, todayIso()),
     }))
-  }, [])
+  }, [flushSitting])
 
   const toggle = useCallback(() => {
     const time = Date.now()
@@ -275,20 +334,73 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const clear = useCallback(() => {
+    flushSitting()
     setSaveState('idle')
+    setLastBlock(null)
     setState((current) => ({ ...idleState, sessionId: current.sessionId + 1 }))
+  }, [flushSitting])
+
+  const updateSitting = useCallback((change: (sitting: Sitting) => Sitting) => {
+    setState((current) => (current.sitting ? { ...current, sitting: change(current.sitting) } : current))
   }, [])
 
-  const rateFocus = useCallback((focus: Focus | null) => {
-    const id = lastBlockId
-    setLastBlockId(null)
+  const rateBlock = useCallback((focus: Focus | null, note: string) => {
+    const block = lastBlock
+    setLastBlock(null)
+    if (!block) return
+    const text = note.trim()
+    if (focus === null && !text) return
+    updateSitting((s) => (s.id !== block.sitting ? s : {
+      ...s, blocks: s.blocks.map((b, i) => (i === block.index ? { ...b, focus: focus ?? b.focus, note: text || b.note } : b)),
+    }))
     // Se il salvataggio fallisce si perde solo la valutazione, non il blocco.
-    if (id !== null && focus !== null) updateSession(id, { focus }).catch(() => {})
-  }, [lastBlockId])
+    updateSession(block.id, { ...(focus !== null && { focus }), ...(text && { notes: text }) }).catch(() => {})
+  }, [lastBlock, updateSitting])
 
-  const { config, mode, isRunning, endsAt, remainingMs, now, completedBlocks } = state
+  const { config, mode, isRunning, endsAt, remainingMs, now, completedBlocks, sitting } = state
   const totalMs = config ? minutesMs(mode === 'Work' ? config.focusMinutes : breakMinutes(config, completedBlocks)) : 0
   const leftMs = isRunning && endsAt !== null ? Math.max(0, endsAt - now) : remainingMs
+  // Minuti interi già studiati nel blocco in corso: quelli che "Termina" propone di salvare.
+  const partialMinutes = config && mode === 'Work' ? elapsedMinutes(config, leftMs) : 0
+
+  const finish = useCallback((savePartial: boolean) => {
+    const time = Date.now()
+    setState((current) => {
+      const synced = advance(current, time)
+      const { config, sitting } = synced
+      if (!config || !sitting) return current
+      const left = synced.isRunning && synced.endsAt !== null ? Math.max(0, synced.endsAt - time) : synced.remainingMs
+      const minutes = synced.mode === 'Work' ? elapsedMinutes(config, left) : 0
+      const blocks = savePartial && minutes >= 1 ? [...sitting.blocks, { ...fullBlock(minutes), partial: true }] : sitting.blocks
+      // Niente da riepilogare: si torna direttamente al modulo.
+      if (!blocks.length) return { ...idleState, sessionId: current.sessionId + 1 }
+      return { ...synced, isRunning: false, endsAt: null, remainingMs: left, sitting: { ...sitting, blocks, ended: true } }
+    })
+  }, [])
+
+  const toggleItem = useCallback((index: number) => updateSitting((s) => ({
+    ...s, checklist: s.checklist.map((item, i) => (i === index ? { ...item, done: !item.done } : item)),
+  })), [updateSitting])
+
+  const addItem = useCallback((text: string) => {
+    const value = text.trim().slice(0, ITEM_MAX)
+    if (value) updateSitting((s) => (s.checklist.length >= CHECKLIST_MAX ? s : { ...s, checklist: [...s.checklist, { text: value, done: false }] }))
+  }, [updateSitting])
+
+  const addDistraction = useCallback((text: string) => {
+    const value = text.trim().slice(0, DISTRACTION_MAX)
+    if (!value) return
+    setState((current) => (current.sitting ? {
+      ...current,
+      sitting: { ...current.sitting, distractions: [...current.sitting.distractions, { text: value, block: current.completedBlocks + 1 }].slice(-100) },
+    } : current))
+  }, [])
+
+  const removeDistraction = useCallback((index: number) => updateSitting((s) => ({
+    ...s, distractions: s.distractions.filter((_, i) => i !== index),
+  })), [updateSitting])
+
+  const setResume = useCallback((resume: string) => updateSitting((s) => ({ ...s, resume })), [updateSitting])
   const remainingSeconds = Math.ceil(leftMs / 1000)
   const totalSeconds = Math.round(totalMs / 1000)
 
@@ -303,8 +415,16 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         hasStarted: remainingSeconds < totalSeconds,
         completedBlocks,
         saveState,
-        lastBlockId,
-        rateFocus,
+        lastBlockId: lastBlock?.id ?? null,
+        rateBlock,
+        sitting,
+        partialMinutes,
+        finish,
+        toggleItem,
+        addItem,
+        addDistraction,
+        removeDistraction,
+        setResume,
         start,
         toggle,
         reset,

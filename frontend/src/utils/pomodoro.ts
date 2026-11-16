@@ -15,10 +15,15 @@ export function breakMinutes(config: StudySessionConfig, block: number): number 
   return block > 0 && block % blocksBeforeLongBreak === 0 ? longBreakMinutes : config.breakMinutes
 }
 
+/** Minuti interi già studiati nel blocco, dal tempo che manca alla fine: quelli che "Termina" salva. */
+export function elapsedMinutes(config: Pick<StudySessionConfig, 'focusMinutes'>, leftMs: number): number {
+  return Math.max(0, Math.floor((config.focusMinutes * 60000 - leftMs) / 60000))
+}
+
 /** Sessione Pomodoro classica su una materia/argomento, ed eventualmente un task da chiudere alla fine. */
 export function sessionFor(subject?: Subject, topic?: Topic, task?: Task): StudySessionConfig {
   return {
-    focusMinutes: 25, breakMinutes: 5, notes: '',
+    focusMinutes: 25, breakMinutes: 5, goal: '',
     subjectId: subject?.id ?? null, topicId: topic?.id ?? null,
     subject: subject?.name ?? '', topic: topic?.title ?? '',
     taskId: task?.id ?? null, taskTitle: task?.title,

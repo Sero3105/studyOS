@@ -131,3 +131,108 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* Seduta: checklist, distrazioni, domanda a fine blocco e riepilogo */
+
+.sitting-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sitting-panel .panel-head {
+  margin: 0;
+}
+
+.sitting-checklist {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sitting-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--target-min);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.sitting-add {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.sitting-add .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.distraction-capture {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.distraction-capture .field-hint:empty {
+  display: none;
+}
+
+.block-prompt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.block-prompt > p,
+.block-prompt-note {
+  grid-column: 1 / -1;
+}
+
+.block-prompt .segmented {
+  justify-self: start;
+}
+
+.timer-resume {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.timer-resume svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin-top: 3px;
+}
+
+.timer-resume strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.sitting-recap {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.figure-sub {
+  color: var(--text-muted);
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0;
+}
+
+.recap-tasks {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+@media (max-width: 700px) {
+  .block-prompt {
+    grid-template-columns: 1fr;
+  }
+}

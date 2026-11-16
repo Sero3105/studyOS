@@ -2,6 +2,8 @@
 from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 from models.auth_session_models import AuthSession
+from models.card_models import Card, Mistake
+from models.session_models import StudySitting
 from models.share_models import CalendarFeed, ShareLink
 from models.user_models import User
 from services.createUser import password_hasher
@@ -22,8 +24,8 @@ def change_password(user: User, current: str, new: str, refresh_token: str | Non
 
 def delete_account(user: User, password: str, db: Session) -> None:
     _check_password(user, password)
-    # Le relazioni di User cancellano a cascata sessioni, materie, task, esami, obiettivi; i link no.
-    db.execute(delete(ShareLink).where(ShareLink.user_id == user.id))
-    db.execute(delete(CalendarFeed).where(CalendarFeed.user_id == user.id))
+    # Le relazioni di User cancellano a cascata sessioni, materie, task, esami, obiettivi; il resto no.
+    for model in (ShareLink, CalendarFeed, Card, Mistake, StudySitting):
+        db.execute(delete(model).where(model.user_id == user.id))
     db.delete(user)
     db.commit()

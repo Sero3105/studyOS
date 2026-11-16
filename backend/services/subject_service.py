@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, selectinload
 from models.exam_models import Exam
 from models.goal_models import Goal
 from models.subject_models import Subject, Topic
-from models.session_models import StudySession
+from models.session_models import StudySession, StudySitting
 from models.task_models import Task
 from schemas.subject_schemas import SubjectCreate, SubjectUpdate, TopicCreate, TopicUpdate
 
@@ -40,8 +40,8 @@ def get_owned_subject(subject_id: int, user_id: int, db: Session) -> Subject:
     return subject
 
 def _unlink(user_id: int, db: Session, column: str, ids: list[int]) -> None:
-    """SQLite qui non applica le foreign key: task e sessioni vanno scollegati a mano, o restano con id orfani."""
-    for model in (Task, StudySession):
+    """SQLite qui non applica le foreign key: task, sessioni e sedute vanno scollegati a mano, o restano con id orfani."""
+    for model in (Task, StudySession, StudySitting):
         db.execute(update(model).where(model.user_id == user_id, getattr(model, column).in_(ids)).values({column: None}))
 
 def delete_subject(subject_id: int, user_id: int, db: Session) -> None:

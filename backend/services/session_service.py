@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from models.session_models import StudySession
-from schemas.session_schemas import SessionCreate, SessionUpdate
+from models.session_models import StudySession, StudySitting
+from schemas.session_schemas import SessionCreate, SessionUpdate, SittingSave
 from services.task_service import _check_links
 
 def create_session(data: SessionCreate, user_id: int, db: Session) -> StudySession:
@@ -29,3 +29,16 @@ def update_session(session_id: int, data: SessionUpdate, user_id: int, db: Sessi
 def delete_session(session_id: int, user_id: int, db: Session) -> None:
     session = _owned(session_id, user_id, db)
     db.delete(session); db.commit()
+
+def save_sitting(uid: str, data: SittingSave, user_id: int, db: Session) -> StudySitting:
+    """Crea o sostituisce la seduta `uid` dell'utente: idempotente, il browser la rimanda finché non riesce."""
+    _check_links(user_id, db, data.subject_id, data.topic_id)
+    sitting = db.scalar(select(StudySitting).where(StudySitting.user_id == user_id, StudySitting.uid == uid))
+    if sitting is None:
+        sitting = StudySitting(user_id=user_id, uid=uid); db.add(sitting)
+    for field, value in data.model_dump().items(): setattr(sitting, field, value)
+    db.commit(); db.refresh(sitting)
+    return sitting
+
+def list_sittings(user_id: int, db: Session) -> list[StudySitting]:
+    return list(db.scalars(select(StudySitting).where(StudySitting.user_id == user_id).order_by(StudySitting.updated_at.desc(), StudySitting.id.desc())))
