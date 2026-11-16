@@ -2,7 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Download, FileUp, Layers, NotebookPen, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import PageHeader from '../components/ui/PageHeader'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Field, FieldGroup, FieldLabel } from '../components/ui/field'
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '../components/ui/native-select'
+import { Textarea } from '../components/ui/textarea'
 import DeleteButton from '../components/ui/DeleteButton'
 import { useUndo } from '../context/undoContext'
 import ProgressBar from '../components/ui/ProgressBar'
@@ -12,7 +19,7 @@ import Segmented from '../components/ui/Segmented'
 import MistakesPanel from '../components/cards/MistakesPanel'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createCard, createCards, deleteCard, getCards, reviewCard } from '../services/cardService'
-import type { Card } from '../services/cardService'
+import type { Card as FlashCard } from '../services/cardService'
 import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import type { ReviewRating as Rating } from '../services/taskService'
@@ -32,7 +39,7 @@ const KEY_RATINGS: Record<string, Rating> = { 1: 'hard', 2: 'ok', 3: 'easy' }
 function CardsPage() {
   const { t, locale } = useLanguage()
   const { undoable } = useUndo()
-  const [cards, setCards] = useState<Card[]>([])
+  const [cards, setCards] = useState<FlashCard[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -41,11 +48,11 @@ function CardsPage() {
   const [back, setBack] = useState('')
   const [busy, setBusy] = useState(false)
   // Ripasso in corso: carte fissate all'avvio, così una carta "difficile" (domani) non riappare subito.
-  const [quiz, setQuiz] = useState<Card[] | null>(null)
+  const [quiz, setQuiz] = useState<FlashCard[] | null>(null)
   const [quizTotal, setQuizTotal] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [tab, setTab] = useState<'cards' | 'mistakes'>('cards')
-  const [notice, setNotice] = useState('')
+  const setNotice = (message: string) => { if (message) toast.success(message) }
 
   const load = useCallback(async () => {
     try {
@@ -58,7 +65,7 @@ function CardsPage() {
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const topics = subjects.flatMap((s) => s.topics.map((topic) => ({ ...topic, subject: s })))
-  const topicOf = (card: Card) => topics.find((x) => x.id === card.topic_id)
+  const topicOf = (card: FlashCard) => topics.find((x) => x.id === card.topic_id)
   const due = cards.filter((c) => c.due_date <= todayIso())
   const nextDue = cards.map((c) => c.due_date).filter((d) => d > todayIso()).sort()[0]
   const groups = topics.map((topic) => ({ topic, cards: cards.filter((c) => c.topic_id === topic.id) })).filter((g) => g.cards.length)
@@ -110,12 +117,12 @@ function CardsPage() {
     finally { setBusy(false) }
   }
 
-  const remove = (card: Card) => {
+  const remove = (card: FlashCard) => {
     setCards((c) => c.filter((x) => x.id !== card.id))
     undoable(t('common.deleted', { title: card.front }), () => deleteCard(card.id), () => setCards((c) => [...c, card]))
   }
 
-  const rate = useCallback(async (card: Card, rating: Rating) => {
+  const rate = useCallback(async (card: FlashCard, rating: Rating) => {
     setBusy(true)
     try {
       const updated = await reviewCard(card.id, rating)
@@ -147,161 +154,171 @@ function CardsPage() {
   const done = quizTotal - (quiz?.length ?? 0)
 
   return (
-    <div className="page cards-page">
+    <div className="flex flex-col gap-8">
       <PageHeader
         title={t('cards.title')}
         description={loading ? undefined : t('cards.description', { due: due.length, total: cards.length })}
         actions={cards.length > 0 && (
-          <button className="btn btn-secondary" type="button" onClick={exportAnki} title={t('cards.exportHint')}>
-            <Download aria-hidden="true" /> {t('cards.export')}
-          </button>
+          <Button variant="outline" onClick={exportAnki} title={t('cards.exportHint')}>
+            <Download data-icon="inline-start" aria-hidden="true" /> {t('cards.export')}
+          </Button>
         )}
       />
 
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
-      {notice && <div className="notice notice-success" role="status">{notice}</div>}
 
       {!loading && topics.length > 0 && (
-        <div className="toolbar">
-          <Segmented
-            label={t('cards.tabs')}
-            value={tab}
-            onChange={(value) => { setTab(value); setNotice('') }}
-            options={[{ value: 'cards', label: t('cards.title'), count: cards.length }, { value: 'mistakes', label: t('mistakes.title') }]}
-          />
-        </div>
+        <Segmented
+          label={t('cards.tabs')}
+          value={tab}
+          onChange={setTab}
+          options={[{ value: 'cards', label: t('cards.title'), count: cards.length }, { value: 'mistakes', label: t('mistakes.title') }]}
+        />
       )}
 
       {loading ? (
         <LoadingRows rows={4} label={t('cards.loading')} />
       ) : topics.length === 0 ? (
-        <section className="panel">
-          <EmptyState title={t('cards.noTopicsTitle')} action={<Link className="btn btn-primary" to="/subjects">{t('nav.subjects')}</Link>}>
-            {t('cards.noTopicsBody')}
-          </EmptyState>
-        </section>
+        <EmptyState title={t('cards.noTopicsTitle')} action={<Button asChild><Link to="/subjects">{t('nav.subjects')}</Link></Button>}>
+          {t('cards.noTopicsBody')}
+        </EmptyState>
       ) : tab === 'mistakes' ? (
         <MistakesPanel subjects={subjects} cards={cards} onCardCreated={(card) => setCards((c) => [...c, card])} />
       ) : (
         <>
           {current ? (
-            <section className="panel card-quiz" aria-labelledby="card-quiz-title">
-              <div className="card-quiz-head">
-                <h2 id="card-quiz-title" className="panel-meta">
-                  {currentTopic && <><SubjectDot subject={currentTopic.subject} /> {currentTopic.subject.name} / {currentTopic.title}</>}
-                </h2>
-                <span className="panel-meta num">{t('cards.progress', { done: done + 1, total: quizTotal })}</span>
-              </div>
-              <ProgressBar percent={(done / quizTotal) * 100} label={t('cards.quizLabel')} />
-              <p className="card-face" aria-live="polite">{current.front}</p>
-              {revealed ? (
-                <>
-                  <p className="card-face card-back">{current.back}</p>
-                  <div className="card-quiz-actions">
-                    <span className="panel-meta">{t('review.howDidItGo')}</span>
-                    <ReviewRating size="lg" disabled={busy} onRate={(rating) => void rate(current, rating)} />
-                  </div>
-                </>
-              ) : (
-                <div className="card-quiz-actions">
-                  <button className="btn btn-ghost" type="button" onClick={() => setQuiz(null)}>{t('cards.stop')}</button>
-                  <button className="btn btn-primary" type="button" onClick={() => setRevealed(true)} autoFocus>{t('cards.reveal')}</button>
+            <Card aria-labelledby="card-quiz-title" className="mx-auto w-full max-w-3xl">
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 id="card-quiz-title" className="flex min-w-0 items-center gap-2 truncate text-sm text-muted-foreground">
+                    {currentTopic && <><SubjectDot subject={currentTopic.subject} /> {currentTopic.subject.name} / {currentTopic.title}</>}
+                  </h2>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">{t('cards.progress', { done: done + 1, total: quizTotal })}</span>
                 </div>
-              )}
-              <p className="card-quiz-keys">{t(revealed ? 'cards.keysRate' : 'cards.keysReveal')}</p>
-            </section>
+                <ProgressBar percent={(done / quizTotal) * 100} label={t('cards.quizLabel')} className="h-1" />
+                <p className="min-h-24 py-4 text-center text-xl font-medium text-balance whitespace-pre-line md:text-2xl" aria-live="polite">{current.front}</p>
+                {revealed ? (
+                  <>
+                    <p className="rounded-lg border border-primary/25 bg-primary/5 p-5 text-center text-base whitespace-pre-line">{current.back}</p>
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t('review.howDidItGo')}</span>
+                      <ReviewRating size="lg" disabled={busy} onRate={(rating) => void rate(current, rating)} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-center gap-2">
+                    <Button variant="ghost" size="lg" onClick={() => setQuiz(null)}>{t('cards.stop')}</Button>
+                    <Button size="lg" className="min-w-40" onClick={() => setRevealed(true)} autoFocus>{t('cards.reveal')}</Button>
+                  </div>
+                )}
+                <p className="hidden text-center text-xs text-muted-foreground md:block">{t(revealed ? 'cards.keysRate' : 'cards.keysReveal')}</p>
+              </CardContent>
+            </Card>
           ) : (
-            <section className="panel card-today" aria-labelledby="card-today-title">
-              <div>
-                <h2 id="card-today-title" className="panel-meta">{t('cards.todayTitle')}</h2>
-                <p className="card-today-count num">{due.length}</p>
-                <p className="panel-meta">
-                  {due.length ? t('cards.todayDue') : cards.length ? (nextDue ? t('cards.todayNone', { when: relativeDay(nextDue, locale).toLowerCase() }) : t('cards.allDone')) : t('cards.todayEmpty')}
-                </p>
-              </div>
-              <button className="btn btn-primary btn-lg" type="button" disabled={due.length === 0} onClick={startQuiz}>
-                <Layers aria-hidden="true" /> {t('cards.start')}
-              </button>
-            </section>
+            <Card aria-labelledby="card-today-title" className="relative">
+              <div aria-hidden="true" className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/8 blur-3xl" />
+              <CardContent className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <h2 id="card-today-title" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">{t('cards.todayTitle')}</h2>
+                  <p className="font-mono text-6xl font-semibold tracking-tighter tabular-nums">{due.length}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {due.length ? t('cards.todayDue') : cards.length ? (nextDue ? t('cards.todayNone', { when: relativeDay(nextDue, locale).toLowerCase() }) : t('cards.allDone')) : t('cards.todayEmpty')}
+                  </p>
+                </div>
+                <Button size="lg" disabled={due.length === 0} onClick={startQuiz}>
+                  <Layers data-icon="inline-start" aria-hidden="true" /> {t('cards.start')}
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
-          <div className="cards-layout">
-            <section className="panel" aria-labelledby="card-new-title">
-              <h2 id="card-new-title" className="panel-title">{t('cards.newTitle')}</h2>
-              <form className="card-form" onSubmit={(e) => void add(e)}>
-                <label className="field">
-                  <span className="field-label">{t('timer.topic')}</span>
-                  <select value={topicId} onChange={(e) => setTopicId(e.target.value)} required>
-                    <option value="">{t('cards.chooseTopic')}</option>
-                    {subjects.filter((s) => s.topics.length).map((s) => (
-                      <optgroup key={s.id} label={s.name}>
-                        {s.topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="field-label">{t('cards.front')}</span>
-                  <textarea rows={2} maxLength={2000} required value={front} onChange={(e) => setFront(e.target.value)} placeholder={t('cards.frontPlaceholder')} />
-                </label>
-                <label className="field">
-                  <span className="field-label">{t('cards.back')}</span>
-                  <textarea rows={3} maxLength={5000} required value={back} onChange={(e) => setBack(e.target.value)} />
-                </label>
-                <div className="form-actions">
-                  <button className="btn btn-primary" type="submit" disabled={busy || !topicId || !front.trim() || !back.trim()}>
-                    <Plus aria-hidden="true" /> {t('cards.add')}
-                  </button>
-                </div>
-              </form>
-              <div className="card-tools">
-                <h3 className="settings-subtitle">{t('cards.moreWays')}</h3>
-                <div className="settings-actions">
-                  <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void fromNotes()} title={t('cards.fromNotesHint')}>
-                    <NotebookPen aria-hidden="true" /> {t('cards.fromNotes')}
-                  </button>
-                  <label className={`btn btn-secondary${busy || !topicId ? ' is-disabled' : ''}`} title={topicId ? t('cards.importHint') : t('cards.importNeedsTopic')}>
-                    <FileUp aria-hidden="true" /> {t('cards.import')}
-                    <input className="visually-hidden" type="file" accept=".txt,.csv,.tsv,text/plain,text/csv" disabled={busy || !topicId} onChange={(e) => void importFile(e)} />
-                  </label>
-                </div>
-                <p className="panel-meta">{topicId ? t('cards.toolsHint') : t('cards.importNeedsTopic')}</p>
-              </div>
-            </section>
-
-            <section className="panel" aria-labelledby="card-list-title">
-              <h2 id="card-list-title" className="panel-title">{t('cards.manageTitle')}</h2>
-              {groups.length === 0 ? (
-                <EmptyState compact title={t('cards.emptyTitle')}>{t('cards.emptyBody')}</EmptyState>
-              ) : (
-                <ol className="grouped-list">
-                  {groups.map(({ topic, cards: list }) => (
-                    <li className="list-group" key={topic.id}>
-                      <div className="list-group-head">
-                        <h3 className="list-group-title"><SubjectDot subject={topic.subject} /> {topic.subject.name} / {topic.title}</h3>
-                        <span className="panel-meta num">{list.length}</span>
-                      </div>
-                      <ul className="rows">
-                        {list.map((card) => (
-                          <li className="row" key={card.id}>
-                            <span className="row-main">
-                              <span className="row-title">{card.front}</span>
-                              <span className="row-meta card-answer">{card.back}</span>
-                            </span>
-                            {card.due_date <= todayIso()
-                              ? <span className="tag tag-accent">{t('cards.dueNow')}</span>
-                              : <span className="row-meta num">{relativeDay(card.due_date, locale)}</span>}
-                            <span className="row-reveal">
-                              <DeleteButton label={t('cards.delete')} onDelete={() => remove(card)} />
-                            </span>
-                          </li>
+          <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
+            <Card aria-labelledby="card-new-title">
+              <CardHeader>
+                <CardTitle><h2 id="card-new-title">{t('cards.newTitle')}</h2></CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <form onSubmit={(e) => void add(e)}>
+                  <FieldGroup className="gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="card-topic">{t('timer.topic')}</FieldLabel>
+                      <NativeSelect id="card-topic" className="w-full" value={topicId} onChange={(e) => setTopicId(e.target.value)} required>
+                        <NativeSelectOption value="">{t('cards.chooseTopic')}</NativeSelectOption>
+                        {subjects.filter((s) => s.topics.length).map((s) => (
+                          <NativeSelectOptGroup key={s.id} label={s.name}>
+                            {s.topics.map((topic) => <NativeSelectOption key={topic.id} value={topic.id}>{topic.title}</NativeSelectOption>)}
+                          </NativeSelectOptGroup>
                         ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
+                      </NativeSelect>
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="card-front">{t('cards.front')}</FieldLabel>
+                      <Textarea id="card-front" rows={2} maxLength={2000} required value={front} onChange={(e) => setFront(e.target.value)} placeholder={t('cards.frontPlaceholder')} />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="card-back">{t('cards.back')}</FieldLabel>
+                      <Textarea id="card-back" rows={3} maxLength={5000} required value={back} onChange={(e) => setBack(e.target.value)} />
+                    </Field>
+                    <Button type="submit" disabled={busy || !topicId || !front.trim() || !back.trim()}>
+                      <Plus data-icon="inline-start" aria-hidden="true" /> {t('cards.add')}
+                    </Button>
+                  </FieldGroup>
+                </form>
+                <div className="flex flex-col gap-3 border-t pt-5">
+                  <h3 className="text-sm font-medium">{t('cards.moreWays')}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" disabled={busy} onClick={() => void fromNotes()} title={t('cards.fromNotesHint')}>
+                      <NotebookPen data-icon="inline-start" aria-hidden="true" /> {t('cards.fromNotes')}
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <label aria-disabled={busy || !topicId} className="aria-disabled:pointer-events-none aria-disabled:opacity-50" title={topicId ? t('cards.importHint') : t('cards.importNeedsTopic')}>
+                        <FileUp data-icon="inline-start" aria-hidden="true" /> {t('cards.import')}
+                        <input className="sr-only" type="file" accept=".txt,.csv,.tsv,text/plain,text/csv" disabled={busy || !topicId} onChange={(e) => void importFile(e)} />
+                      </label>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{topicId ? t('cards.toolsHint') : t('cards.importNeedsTopic')}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card aria-labelledby="card-list-title" className="min-w-0">
+              <CardHeader>
+                <CardTitle><h2 id="card-list-title">{t('cards.manageTitle')}</h2></CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groups.length === 0 ? (
+                  <EmptyState compact title={t('cards.emptyTitle')}>{t('cards.emptyBody')}</EmptyState>
+                ) : (
+                  <ol className="flex flex-col gap-6">
+                    {groups.map(({ topic, cards: list }) => (
+                      <li className="flex flex-col gap-1" key={topic.id}>
+                        <div className="flex items-center justify-between gap-2 border-b pb-2">
+                          <h3 className="flex min-w-0 items-center gap-2 truncate text-xs font-medium text-muted-foreground"><SubjectDot subject={topic.subject} /> {topic.subject.name} / {topic.title}</h3>
+                          <span className="font-mono text-xs text-muted-foreground tabular-nums">{list.length}</span>
+                        </div>
+                        <ul className="flex flex-col divide-y">
+                          {list.map((card) => (
+                            <li className="group/card flex items-center gap-3 py-2.5" key={card.id}>
+                              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                <span className="text-sm font-medium break-words">{card.front}</span>
+                                <span className="line-clamp-2 text-xs text-muted-foreground">{card.back}</span>
+                              </span>
+                              {card.due_date <= todayIso()
+                                ? <Badge variant="accent">{t('cards.dueNow')}</Badge>
+                                : <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">{relativeDay(card.due_date, locale)}</span>}
+                              <span className="md:opacity-0 md:transition-opacity md:group-focus-within/card:opacity-100 md:group-hover/card:opacity-100">
+                                <DeleteButton label={t('cards.delete')} onDelete={() => remove(card)} />
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </>
       )}
