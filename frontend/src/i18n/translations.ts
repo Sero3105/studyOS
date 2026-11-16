@@ -834,6 +834,21 @@ const it = {
   'stats.vsTitle': 'Questa settimana',
   'stats.vsBySubject': 'Questa settimana per materia, rispetto alla scorsa',
   'stats.trendSame': 'come la scorsa',
+  'stats.qualityTitle': 'Qualità dello studio',
+  'stats.qualityEmptyTitle': 'Ancora nessun blocco del timer',
+  'stats.qualityEmptyBody': 'Blocchi completati e distrazioni si contano dalle sessioni fatte con il timer.',
+  'stats.completedBlocks': 'Blocchi completati',
+  'stats.ofBlocks': '{done} su {total}',
+  'stats.distractionsPerBlock': 'Distrazioni per blocco',
+  'stats.focusByLength': 'Focus per durata del blocco',
+  'stats.focusByBand': 'Focus per momento del giorno',
+  'stats.length.short': 'Fino a 30 min',
+  'stats.length.medium': '31–60 min',
+  'stats.length.long': 'Oltre 60 min',
+  'stats.band.morning': 'Mattina',
+  'stats.band.afternoon': 'Pomeriggio',
+  'stats.band.evening': 'Sera',
+  'stats.band.night': 'Notte',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1503,6 +1518,21 @@ const en: Record<TranslationKey, string> = {
   'stats.vsTitle': 'This week',
   'stats.vsBySubject': 'This week by subject, compared with last week',
   'stats.trendSame': 'same as last',
+  'stats.qualityTitle': 'Study quality',
+  'stats.qualityEmptyTitle': 'No timer blocks yet',
+  'stats.qualityEmptyBody': 'Completed blocks and distractions are counted from sessions done with the timer.',
+  'stats.completedBlocks': 'Blocks completed',
+  'stats.ofBlocks': '{done} of {total}',
+  'stats.distractionsPerBlock': 'Distractions per block',
+  'stats.focusByLength': 'Focus by block length',
+  'stats.focusByBand': 'Focus by time of day',
+  'stats.length.short': 'Up to 30 min',
+  'stats.length.medium': '31–60 min',
+  'stats.length.long': 'Over 60 min',
+  'stats.band.morning': 'Morning',
+  'stats.band.afternoon': 'Afternoon',
+  'stats.band.evening': 'Evening',
+  'stats.band.night': 'Night',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

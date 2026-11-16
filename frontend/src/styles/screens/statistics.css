@@ -146,6 +146,15 @@
   text-align: right;
 }
 
+/* Liste in ordine naturale (durata, fascia oraria): in accento il migliore, non il primo */
+.ranked-natural .ranked-row:first-child .ranked-track span {
+  background: var(--line-strong);
+}
+
+.ranked-natural .ranked-row.is-best .ranked-track span {
+  background: var(--accent);
+}
+
 /* Andamento: questa settimana contro la scorsa */
 .trend-total {
   display: flex;
@@ -201,6 +210,12 @@
 
 .trend-subjects .trend-delta {
   justify-content: flex-end;
+}
+
+.quality-subtitle {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 /* Obiettivi */

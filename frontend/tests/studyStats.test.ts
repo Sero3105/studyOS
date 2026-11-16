@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildHeatmap, heatLevel, hourGrid, planVsActual, postponeByWeeks, weeklyReview, weeklyTotals } from '../src/utils/studyStats.ts'
+import { buildHeatmap, heatLevel, hourGrid, planVsActual, postponeByWeeks, studyQuality, weeklyReview, weeklyTotals } from '../src/utils/studyStats.ts'
 
 test('heat levels', () => {
   assert.deepEqual([0, 10, 25, 26, 60, 61, 121].map(heatLevel), [0, 1, 1, 2, 2, 3, 4])
@@ -73,4 +73,18 @@ test('weekly totals: last N weeks from monday, oldest first', () => {
   // 2026-11-16 è lunedì.
   const weeks = weeklyTotals([s('2026-11-16', 25), s('2026-11-15', 50), s('2026-11-09', 10), s('2026-08-01', 99)], '2026-11-18', 3)
   assert.deepEqual(weeks, [{ date: '2026-11-02', minutes: 0 }, { date: '2026-11-09', minutes: 60 }, { date: '2026-11-16', minutes: 25 }])
+})
+
+test('study quality: completion and distractions on timer blocks only, focus by length', () => {
+  const b = (duration_minutes: number, focus: number | null, extra: object = {}) => ({
+    duration_minutes, focus, created_at: '2026-11-16T10:00:00', sitting_id: 'x', partial: false, interruptions: null, ...extra,
+  })
+  const q = studyQuality([b(25, 3, { interruptions: 2 }), b(12, 1, { partial: true }), b(50, 2), b(90, 2, { sitting_id: null, partial: true })])
+  assert.equal(q.blocks, 3)
+  assert.equal(q.partial, 1)
+  assert.equal(q.completion, 2 / 3)
+  assert.equal(q.distractions, 2 / 3)
+  assert.deepEqual(q.byLength, [{ key: 'short', count: 2, average: 2 }, { key: 'medium', count: 1, average: 2 }, { key: 'long', count: 1, average: 2 }])
+  assert.equal(q.byBand.reduce((n, r) => n + r.count, 0), 4)
+  assert.equal(studyQuality([]).completion, null)
 })

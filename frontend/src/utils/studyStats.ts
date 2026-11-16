@@ -146,3 +146,40 @@ export function weeklyTotals(sessions: { studied_on: string; duration_minutes: n
   }
   return starts.map((date) => ({ date, minutes: totals.get(date)! }))
 }
+
+export type LengthBucket = 'short' | 'medium' | 'long'
+export type DayBand = 'morning' | 'afternoon' | 'evening' | 'night'
+export interface FocusRow<K> { key: K; average: number; count: number }
+
+interface BlockLike { duration_minutes: number; focus: number | null; created_at: string; sitting_id: string | null; partial: boolean; interruptions: number | null }
+
+const lengthBucket = (minutes: number): LengthBucket => (minutes <= 30 ? 'short' : minutes <= 60 ? 'medium' : 'long')
+/** Fascia del giorno a metà blocco, nel fuso del browser (la sessione si salva alla fine). */
+function dayBand(s: { created_at: string; duration_minutes: number }): DayBand {
+  const hour = new Date(parseUtc(s.created_at).getTime() - (s.duration_minutes * 60000) / 2).getHours()
+  return hour >= 5 && hour < 12 ? 'morning' : hour >= 12 && hour < 18 ? 'afternoon' : hour >= 18 ? 'evening' : 'night'
+}
+
+function focusBy<K>(sessions: BlockLike[], keyOf: (s: BlockLike) => K, order: K[]): FocusRow<K>[] {
+  return order.map((key) => {
+    const rated = sessions.filter((s) => s.focus !== null && keyOf(s) === key)
+    return { key, count: rated.length, average: rated.length ? rated.reduce((sum, s) => sum + s.focus!, 0) / rated.length : 0 }
+  }).filter((row) => row.count > 0)
+}
+
+/**
+ * Qualità dello studio. Completamento e distrazioni contano solo i blocchi del timer
+ * (con una seduta): le sessioni scritte a mano non hanno né l'uno né le altre.
+ */
+export function studyQuality(sessions: BlockLike[]) {
+  const blocks = sessions.filter((s) => s.sitting_id !== null)
+  const partial = blocks.filter((s) => s.partial).length
+  return {
+    blocks: blocks.length,
+    partial,
+    completion: blocks.length ? (blocks.length - partial) / blocks.length : null,
+    distractions: blocks.length ? blocks.reduce((sum, s) => sum + (s.interruptions ?? 0), 0) / blocks.length : null,
+    byLength: focusBy<LengthBucket>(sessions, (s) => lengthBucket(s.duration_minutes), ['short', 'medium', 'long']),
+    byBand: focusBy<DayBand>(sessions, dayBand, ['morning', 'afternoon', 'evening', 'night']),
+  }
+}
