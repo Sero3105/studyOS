@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildHeatmap, heatLevel, hourGrid, planVsActual, postponeByWeeks, weeklyReview } from '../src/utils/studyStats.ts'
+import { buildHeatmap, heatLevel, hourGrid, planVsActual, postponeByWeeks, weeklyReview, weeklyTotals } from '../src/utils/studyStats.ts'
 
 test('heat levels', () => {
   assert.deepEqual([0, 10, 25, 26, 60, 61, 121].map(heatLevel), [0, 1, 1, 2, 2, 3, 4])
@@ -66,4 +66,11 @@ test('weekly review compares with last week and finds overdue tasks', () => {
   assert.deepEqual(r.overdue.map((t) => t.id), [2, 4])
   assert.equal(postponeByWeeks('2026-10-27', '2026-10-29'), '2026-11-03')
   assert.equal(postponeByWeeks('2026-10-10', '2026-10-29'), '2026-10-31')
+})
+
+test('weekly totals: last N weeks from monday, oldest first', () => {
+  const s = (studied_on: string, duration_minutes: number) => ({ studied_on, duration_minutes })
+  // 2026-11-16 è lunedì.
+  const weeks = weeklyTotals([s('2026-11-16', 25), s('2026-11-15', 50), s('2026-11-09', 10), s('2026-08-01', 99)], '2026-11-18', 3)
+  assert.deepEqual(weeks, [{ date: '2026-11-02', minutes: 0 }, { date: '2026-11-09', minutes: 60 }, { date: '2026-11-16', minutes: 25 }])
 })

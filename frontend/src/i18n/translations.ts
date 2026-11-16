@@ -827,6 +827,13 @@ const it = {
   'coverage.last': 'ultima volta {day}',
   'coverage.study': 'Avvia il timer',
   'coverage.studyTopic': 'Studia {title} ({detail})',
+  'stats.trendTitle': 'Ultime 12 settimane',
+  'stats.trendMeta': 'Media {avg} a settimana',
+  'stats.thisWeekShort': 'Ora',
+  'stats.weekOf': 'Settimana del {day}',
+  'stats.vsTitle': 'Questa settimana',
+  'stats.vsBySubject': 'Questa settimana per materia, rispetto alla scorsa',
+  'stats.trendSame': 'come la scorsa',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1489,6 +1496,13 @@ const en: Record<TranslationKey, string> = {
   'coverage.last': 'last studied {day}',
   'coverage.study': 'Start the timer',
   'coverage.studyTopic': 'Study {title} ({detail})',
+  'stats.trendTitle': 'Last 12 weeks',
+  'stats.trendMeta': 'Average {avg} a week',
+  'stats.thisWeekShort': 'Now',
+  'stats.weekOf': 'Week of {day}',
+  'stats.vsTitle': 'This week',
+  'stats.vsBySubject': 'This week by subject, compared with last week',
+  'stats.trendSame': 'same as last',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

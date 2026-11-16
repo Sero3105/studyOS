@@ -146,6 +146,63 @@
   text-align: right;
 }
 
+/* Andamento: questa settimana contro la scorsa */
+.trend-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.trend-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.trend-delta svg {
+  width: 14px;
+  height: 14px;
+}
+
+.trend-delta.is-up {
+  color: var(--success);
+}
+
+.trend-subjects {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.trend-subjects li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 7.5em;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.trend-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-subjects .trend-delta {
+  justify-content: flex-end;
+}
+
 /* Obiettivi */
 
 .goal-stat-bar {

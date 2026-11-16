@@ -14,6 +14,7 @@ import { getSubjects } from '../services/subjectService'
 import type { Subject } from '../services/subjectService'
 import StudyHeatmap from '../components/stats/StudyHeatmap'
 import BestHours from '../components/stats/BestHours'
+import StudyTrend from '../components/stats/StudyTrend'
 import SubjectDot from '../components/ui/SubjectDot'
 import { subjectColor } from '../services/subjectService'
 import type { SubjectMinutes } from '../services/statsService'
@@ -179,6 +180,8 @@ function StatisticsPage() {
               )}
             </section>
           </div>
+
+          {detail && detail.sessions.length > 0 && <StudyTrend sessions={detail.sessions} subjects={detail.subjects} tasks={detail.tasks} today={today} />}
 
           {detail && detail.sessions.length > 0 && (
             <div className="stats-pair">

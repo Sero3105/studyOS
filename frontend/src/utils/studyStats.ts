@@ -134,3 +134,15 @@ export function focusBySubject(sessions: { subject_id: number | null; focus: num
   }
   return [...acc].map(([subjectId, { sum, count }]) => ({ subjectId, average: sum / count, count })).sort((a, b) => b.average - a.average)
 }
+
+/** Minuti per settimana (da lunedì), le ultime `weeks` fino a quella di oggi compresa. */
+export function weeklyTotals(sessions: { studied_on: string; duration_minutes: number }[], today: string, weeks = 12): { date: string; minutes: number }[] {
+  const current = weekStart(today)
+  const starts = Array.from({ length: weeks }, (_, i) => addDays(current, (i - weeks + 1) * 7))
+  const totals = new Map(starts.map((d) => [d, 0]))
+  for (const s of sessions) {
+    const start = weekStart(s.studied_on)
+    if (totals.has(start)) totals.set(start, totals.get(start)! + s.duration_minutes)
+  }
+  return starts.map((date) => ({ date, minutes: totals.get(date)! }))
+}
