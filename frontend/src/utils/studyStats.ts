@@ -6,6 +6,9 @@ interface TaskLike { due_date: string | null; status: string; subject_id: number
 export interface HeatCell { date: string; minutes: number; level: 0 | 1 | 2 | 3 | 4 }
 
 /** Livello di colore per i minuti di un giorno (soglie fisse: 25 min = un pomodoro). */
+/** Classe Tailwind per livello di intensità (0 = vuoto), condivisa da calendario e heatmap. */
+export const HEAT = ['', 'bg-primary/15', 'bg-primary/35', 'bg-primary/60', 'bg-primary'] as const
+
 export function heatLevel(minutes: number): HeatCell['level'] {
   if (minutes <= 0) return 0
   if (minutes <= 25) return 1

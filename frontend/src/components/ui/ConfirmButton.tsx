@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useLanguage } from '../../i18n/useLanguage'
+import { Button } from './button'
 
 interface ConfirmButtonProps {
   label: string
@@ -27,22 +28,23 @@ function ConfirmButton({ label, onConfirm }: ConfirmButtonProps) {
 
   if (!armed) {
     return (
-      <button
-        className="icon-btn icon-btn-danger"
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         onClick={() => setArmed(true)}
         aria-label={label}
         title={label}
       >
         <Trash2 aria-hidden="true" />
-      </button>
+      </Button>
     )
   }
 
   return (
-    <button
-      className="btn btn-danger confirm-btn"
-      type="button"
+    <Button
+      variant="destructive"
+      size="sm"
       disabled={busy}
       autoFocus
       onBlur={() => { if (!busy) setArmed(false) }}
@@ -58,7 +60,7 @@ function ConfirmButton({ label, onConfirm }: ConfirmButtonProps) {
       aria-label={t('common.confirmLabel', { label })}
     >
       {busy ? t('common.deleting') : t('common.confirm')}
-    </button>
+    </Button>
   )
 }
 
