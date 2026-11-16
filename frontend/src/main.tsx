@@ -8,7 +8,6 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import TimerPage from './pages/TimerPage'
-import ExamsPage from './pages/ExamsPage'
 import SubjectsPage from './pages/SubjectsPage'
 import PlannerPage from './pages/PlannerPage'
 import HistoryPage from './pages/HistoryPage'
@@ -21,7 +20,9 @@ import SharedPlanPage from './pages/SharedPlanPage'
 import { LanguageProvider } from './i18n/LanguageProvider'
 import { AuthProvider } from './context/AuthProvider'
 import ProtectedRoute from './components/ProtectedRoute'
-import './styles/index.css'
+import { TooltipProvider } from './components/ui/tooltip'
+import { Toaster } from './components/ui/sonner'
+import './index.css'
 import { initTheme } from './utils/theme'
 
 /**
@@ -66,7 +67,8 @@ const router = createBrowserRouter([
             path: '/timer',
             element: <TimerPage />,
           },
-          { path: '/exams', element: <ExamsPage /> },
+          // Esami e materie sono una pagina sola.
+          { path: '/exams', element: <Navigate to="/subjects" replace /> },
           { path: '/subjects', element: <SubjectsPage /> },
           { path: '/planner', element: <PlannerPage /> },
           { path: '/calendar', element: <CalendarPage /> },
@@ -94,7 +96,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <TooltipProvider delayDuration={300}>
+          <RouterProvider router={router} />
+          <Toaster position="bottom-center" offset={{ bottom: 24 }} mobileOffset={{ bottom: 88 }} />
+        </TooltipProvider>
       </AuthProvider>
     </LanguageProvider>
   </StrictMode>,

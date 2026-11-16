@@ -3,7 +3,6 @@ import {
   BookOpen,
   CalendarCheck,
   CalendarDays,
-  GraduationCap,
   History,
   Layers,
   LayoutDashboard,
@@ -22,7 +21,7 @@ export interface NavEntry {
   key: string
 }
 
-/** Pagine dell'app: le usano sidebar, palette dei comandi e scorciatoie. */
+/** Pagine nella sidebar, a gruppi: fare oggi, studiare, guardare indietro. */
 export const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
   {
     items: [
@@ -36,9 +35,8 @@ export const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
     titleKey: 'nav.study',
     items: [
       { to: '/subjects', labelKey: 'nav.subjects', icon: BookOpen, key: 'm' },
-      { to: '/exams', labelKey: 'nav.exams', icon: GraduationCap, key: 'e' },
-      { to: '/goals', labelKey: 'nav.goals', icon: Target, key: 'o' },
       { to: '/cards', labelKey: 'nav.cards', icon: Layers, key: 'f' },
+      { to: '/goals', labelKey: 'nav.goals', icon: Target, key: 'o' },
     ],
   },
   {
@@ -46,9 +44,14 @@ export const navGroups: { titleKey?: TranslationKey; items: NavEntry[] }[] = [
     items: [
       { to: '/statistics', labelKey: 'nav.statistics', icon: BarChart3, key: 's' },
       { to: '/history', labelKey: 'nav.history', icon: History, key: 'h' },
-      { to: '/settings', labelKey: 'nav.settings', icon: Settings, key: 'i' },
     ],
   },
 ]
 
-export const navItems = navGroups.flatMap((group) => group.items)
+/** Impostazioni stanno nel menu account, non tra le pagine di lavoro. */
+export const settingsItem: NavEntry = { to: '/settings', labelKey: 'nav.settings', icon: Settings, key: 'i' }
+
+/** Tab bar mobile: le quattro pagine di ogni giorno; il resto è in "Altro". */
+export const mobileTabs = ['/dashboard', '/timer', '/planner', '/statistics']
+
+export const navItems = [...navGroups.flatMap((group) => group.items), settingsItem]
