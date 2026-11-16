@@ -55,14 +55,24 @@ def update_task(task_id: int, data: TaskUpdate, user_id: int, db: Session) -> Ta
         if exists is None:
             db.add(Task(user_id=user_id, title=task.title, description=task.description, due_date=due, priority=task.priority,
                         subject_id=task.subject_id, topic_id=task.topic_id, recurrence=task.recurrence))
+    if newly_done and task.topic_id and not task.review_interval and not task.recurrence:
+        # Sessione di studio su un argomento nuovo: diventa "da ripassare" e, se nessun ripasso è già in calendario, arriva domani.
+        topic = db.get(Topic, task.topic_id)
+        if topic is not None and topic.mastery == 0:
+            topic.mastery = 1
+            pending = db.scalar(select(Task.id).where(Task.user_id == user_id, Task.topic_id == topic.id, Task.review_interval.is_not(None), Task.status != 'done').limit(1))
+            if pending is None:
+                db.add(Task(user_id=user_id, title=f'↻ {topic.title}'[:200], due_date=date.today() + timedelta(days=1), priority='medium',
+                            subject_id=task.subject_id, topic_id=topic.id, review_interval=1))
     if newly_done and task.review_interval:
         # Ripasso adattivo: il prossimo arriva prima se è andato male, più tardi se è andato bene.
         rating = data.review_rating or Rating.OK
         interval = next_interval(task.review_interval, rating)
         topic = db.get(Topic, task.topic_id) if task.topic_id else None
-        if topic is not None and topic.mastery >= 1:
-            # Difficile riporta a "studiato"; ok/facile almeno "ripassato"; oltre l'ultimo ripasso è "sicuro".
+        if topic is not None:
+            # Difficile: resta "da ripassare"; ok/facile: almeno "ripassato" (completato); oltre l'ultimo ripasso: "sicuro".
             topic.mastery = 1 if rating == Rating.HARD else 3 if interval > MAX_REVIEW_DAYS else max(topic.mastery, 2)
+            topic.completed = topic.mastery >= 2
         exists = db.scalar(select(Task.id).where(Task.user_id == user_id, Task.topic_id == task.topic_id, Task.review_interval.is_not(None),
                                                  Task.status != 'done', Task.id != task.id).limit(1))
         if interval <= MAX_REVIEW_DAYS and exists is None:

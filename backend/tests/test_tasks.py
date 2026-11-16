@@ -22,8 +22,10 @@ def test_task_flow_with_subject_link(client):
     done = client.patch(f"/tasks/{task['id']}", json={"status": "done"}, headers=headers)
     assert done.status_code == 200 and done.json()["status"] == "done"
 
+    # Studiato l'argomento: diventa "da ripassare" e il primo ripasso arriva domani.
+    assert client.get("/subjects", headers=headers).json()[0]["topics"][0]["mastery"] == 1
     assert client.delete(f"/tasks/{task['id']}", headers=headers).status_code == 204
-    assert client.get("/tasks", headers=headers).json() == []
+    assert [(x["title"], x["review_interval"]) for x in client.get("/tasks", headers=headers).json()] == [("↻ HTTP", 1)]
 
 
 def test_task_isolation_and_link_validation(client):
