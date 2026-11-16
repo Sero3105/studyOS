@@ -271,10 +271,10 @@ Aree implementate end-to-end (frontend, API, persistenza, isolamento per utente)
 | --- | --- | --- |
 | Auth e account | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`, `/auth/password`, `DELETE /auth/account` | Login/Register, Impostazioni → Account |
 | Preferenze | `GET/PATCH /settings` (JSON sull'utente) | `utils/preferences.ts`: server come fonte, localStorage come cache |
-| Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` (note, difficoltà, ripassi adattivi) | `/subjects` con note Markdown e anteprima |
+| Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` (note, difficoltà, stato `mastery` 0-3, ripassi adattivi) | `/subjects` con note Markdown e anteprima |
 | Task | `/tasks` (ricorrenza, ripasso adattivo con `review_rating`, blocco orario `scheduled_time` + `planned_minutes`) | `/planner`, `/calendar` (time blocking) |
 | Esami | `/exams` (CRUD), `POST /exams/{id}/plan` (piano pesato, `rest_days`), `POST /exams/{id}/attempts` | `/exams`: esito, tentativi, prontezza, libretto e simulatore |
-| Sessioni | `/sessions` (CRUD, `kind`, `focus`) | Timer, `/history` |
+| Sessioni e sedute | `/sessions` (CRUD, `kind`, `focus`, `sitting_id`, `partial`, `interruptions`), `GET /sittings`, `PUT /sittings/{uid}` (obiettivo, checklist, distrazioni, "riparto da qui"; idempotente) | Timer (`utils/sitting.ts`), `/history` |
 | Flashcard ed errori | `/cards`, `/cards/bulk`, `/cards/{id}/review`, `/mistakes` | `/cards`: ripasso, import/export, quaderno degli errori |
 | Obiettivi | `/goals` (progresso calcolato dai dati) | `/goals` |
 | Statistiche | `/stats/summary` | Dashboard ("Cosa studio oggi?") e `/statistics` con export CSV |
@@ -292,7 +292,7 @@ la costanza (streak) conta i giorni consecutivi con almeno una sessione,
 incluso oggi o ieri.
 
 Database: lo schema è gestito da Alembic (`backend/migrations/versions/`,
-0001 → 0008). L'API applica le migrazioni mancanti all'avvio; ogni modifica a
+0001 → 0010). L'API applica le migrazioni mancanti all'avvio; ogni modifica a
 un modello va accompagnata da una nuova revisione (`alembic revision
 --autogenerate -m "..."`) e dall'aggiornamento di `tests/test_migrations.py`.
 Nuove tabelle con dati dell'utente vanno aggiunte anche a export/import e alla

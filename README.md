@@ -44,14 +44,14 @@
 |---|---|---|
 | 🧭 | **What do I study today?** | On the dashboard: time blocks, reviews, flashcards, due tasks and the least-studied topic of the next exam, each one a click away |
 | 📅 | **Planner** | Tasks with subject, topic, priority, deadline, status and recurrence; ▶ starts the timer on a task |
-| ⏱️ | **Pomodoro Timer** | Keeps running across pages, long break every N blocks, sound and notification when a block ends, activity type and focus for each block |
-| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy, Markdown notes with preview and formulas (KaTeX), difficulty per topic and adaptive reviews: Hard / Ok / Easy decides when the next one comes |
+| ⏱️ | **Pomodoro Timer** | Keeps running across pages, long break every N blocks, sound and notification when a block ends, activity type and focus for each block; session goal and checklist, distractions jotted down without stopping, "what I did" after each block, cut-short blocks saved, end-of-session recap and a "pick up from here" note for next time |
+| 📚 | **Subjects & Topics** | `Subject → Topic` hierarchy, Markdown notes with preview and formulas (KaTeX), difficulty per topic, status (to do → studied → reviewed → confident) and adaptive reviews: Hard / Ok / Easy decides when the next one comes and updates the status |
 | 🃏 | **Flashcards** | Spaced repetition with keyboard shortcuts, cards from notes (`question :: answer`), Anki or CSV import and export, mistakes notebook |
-| 📝 | **Exams** | Countdowns, exam readiness, study plan weighted by difficulty and hours already studied (with rest days), outcome and attempts (failed or rejected) |
+| 📝 | **Exams** | Countdowns, exam readiness, topic coverage map (weak, never studied, getting rusty, confident), study plan weighted by difficulty and hours already studied (with rest days), outcome and attempts (failed or rejected) |
 | 🎓 | **Record book** | Simple and weighted average, graduation base, configurable degree CFU, grade trend and graduation grade simulator |
 | 🎯 | **Goals** | Weekly/total minutes, tasks, topics, sessions — progress calculated from real data |
-| 📊 | **Statistics** | Totals, time by subject, topic and activity type, average focus, streaks, one-year heatmap, best hours, planned vs studied, CSV export |
-| 🕘 | **History** | Sessions grouped by day with totals; sessions added or fixed by hand |
+| 📊 | **Statistics** | Totals, time by subject, topic and activity type, average focus, streaks, one-year heatmap, best hours, planned vs studied, last 12 weeks and this week vs last, study quality (completed blocks, distractions, focus by block length and time of day), upcoming exams (hours per credit, topics to catch up), CSV export |
+| 🕘 | **History** | Sessions grouped by day with totals, timer blocks grouped by session with goal, checklist and distractions; sessions added or fixed by hand |
 | 🗓️ | **Calendar** | Week and month views of exams, deadlines and minutes studied; time blocking (drag tasks onto days, time and duration per block); iCal feed for Apple/Google Calendar and Outlook |
 | 💾 | **Backups** | One-click JSON export, import that adds or restores, automatic daily copy of the database (last 7 files) |
 | 🔔 | **Reminders** | Daily browser notification for overdue/upcoming tasks and exams at 7/3/1/0 days |
@@ -273,6 +273,7 @@ alembic revision --autogenerate -m "describe the change"   # review the generate
 - [x] Long breaks, end-of-block alerts, session activity type and focus
 - [x] Adaptive reviews, flashcards with Anki import/export and a mistakes notebook
 - [x] Exam attempts, readiness, weighted exam plan and graduation grade simulator
+- [x] Study sessions with goal, checklist, distractions and recap; topic status and exam coverage; trend and study quality statistics
 - [x] Calendar time blocking and "What do I study today?"
 - [x] Notes with Markdown preview and formulas
 - [x] Server-side preferences, undo after delete, CSV export and automatic backups

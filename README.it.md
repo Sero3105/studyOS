@@ -44,14 +44,14 @@
 |---|---|---|
 | 🧭 | **Cosa studio oggi?** | In dashboard: blocchi orari, ripassi, flashcard, task in scadenza e l'argomento più indietro dell'esame vicino, ognuno avviabile con un clic |
 | 📅 | **Planner** | Task con materia, argomento, priorità, scadenza, stato e ricorrenza; ▶ avvia il timer sul task |
-| ⏱️ | **Timer Pomodoro** | Continua tra le pagine, pausa lunga ogni N blocchi, suono e notifica a fine blocco, tipo di attività e focus di ogni blocco |
-| 📚 | **Materie e argomenti** | Gerarchia `Materia → Argomento`, note Markdown con anteprima e formule (KaTeX), difficoltà per argomento e ripasso adattivo: Difficile / Ok / Facile decide quando torna |
+| ⏱️ | **Timer Pomodoro** | Continua tra le pagine, pausa lunga ogni N blocchi, suono e notifica a fine blocco, tipo di attività e focus di ogni blocco; obiettivo e checklist della sessione, distrazioni annotate senza fermarsi, "cosa hai fatto" a fine blocco, blocchi interrotti salvati, riepilogo finale e nota "riparto da qui" per la volta dopo |
+| 📚 | **Materie e argomenti** | Gerarchia `Materia → Argomento`, note Markdown con anteprima e formule (KaTeX), difficoltà e stato per argomento (da fare → studiato → ripassato → sicuro) e ripasso adattivo: Difficile / Ok / Facile decide quando torna e aggiorna lo stato |
 | 🃏 | **Flashcard** | Ripasso dilazionato con scorciatoie da tastiera, carte dalle note (`domanda :: risposta`), import ed export per Anki o CSV, quaderno degli errori |
-| 📝 | **Esami** | Conto alla rovescia, prontezza per l'esame, piano di studio pesato per difficoltà e ore già studiate (con giorni liberi), esito e tentativi (bocciato o rifiutato) |
+| 📝 | **Esami** | Conto alla rovescia, prontezza per l'esame, mappa di copertura degli argomenti (deboli, mai toccati, da riprendere, sicuri), piano di studio pesato per difficoltà e ore già studiate (con giorni liberi), esito e tentativi (bocciato o rifiutato) |
 | 🎓 | **Libretto** | Media aritmetica e ponderata, base di laurea, CFU del corso configurabili, andamento dei voti e simulatore del voto di laurea |
 | 🎯 | **Obiettivi** | Minuti settimanali/totali, task, argomenti, sessioni — progresso calcolato dai dati reali |
-| 📊 | **Statistiche** | Totali, tempo per materia, argomento e tipo di attività, focus medio, giorni di fila, heatmap annuale, ore migliori, pianificato vs studiato, export CSV |
-| 🕘 | **Storico** | Sessioni raggruppate per giorno con i totali; sessioni aggiunte o corrette a mano |
+| 📊 | **Statistiche** | Totali, tempo per materia, argomento e tipo di attività, focus medio, giorni di fila, heatmap annuale, ore migliori, pianificato vs studiato, ultime 12 settimane e questa settimana contro la scorsa, qualità dello studio (blocchi completati, distrazioni, focus per durata e momento del giorno), esami in arrivo (ore per CFU, argomenti da recuperare), export CSV |
+| 🕘 | **Storico** | Sessioni raggruppate per giorno con i totali, blocchi del timer raggruppati per sessione con obiettivo, checklist e distrazioni; sessioni aggiunte o corrette a mano |
 | 🗓️ | **Calendario** | Settimana e mese con esami, scadenze e minuti studiati; time blocking (trascina i task sui giorni, ora e durata per blocco); feed iCal per Apple/Google Calendar e Outlook |
 | 💾 | **Backup** | Export JSON con un clic, import che aggiunge o ripristina, copia automatica giornaliera del database (ultimi 7 file) |
 | 🔔 | **Promemoria** | Notifica giornaliera del browser per task in ritardo/in scadenza ed esami a 7/3/1/0 giorni |
@@ -273,6 +273,7 @@ alembic revision --autogenerate -m "descrivi la modifica"   # controlla il file 
 - [x] Pausa lunga, avvisi a fine blocco, tipo di attività e focus delle sessioni
 - [x] Ripasso adattivo, flashcard con import/export Anki e quaderno degli errori
 - [x] Tentativi d'esame, prontezza, piano d'esame pesato e simulatore del voto di laurea
+- [x] Sessioni con obiettivo, checklist, distrazioni e riepilogo; stato degli argomenti e copertura degli esami; statistiche di andamento e qualità
 - [x] Time blocking nel calendario e "Cosa studio oggi?"
 - [x] Note con anteprima Markdown e formule
 - [x] Preferenze sul server, annulla dopo l'eliminazione, export CSV e backup automatico
