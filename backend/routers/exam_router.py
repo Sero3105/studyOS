@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from dependencies.auth_dependency import get_current_user
 from dependencies.database_dependency import get_db
 from models.user_models import User
-from schemas.exam_schemas import AttemptCreate, ExamCreate, ExamResponse, ExamUpdate, PlanRequest
+from schemas.exam_schemas import AttemptCreate, ExamCreate, ExamResponse, ExamUpdate, PlanAdviceResponse, PlanRequest
 from schemas.task_schemas import TaskResponse
-from services.exam_service import create_exam, delete_exam, list_user_exams, plan_exam, record_attempt, update_exam
+from services.exam_service import create_exam, delete_exam, list_user_exams, plan_exam, plan_exam_advice, record_attempt, update_exam
 
 router = APIRouter(prefix='/exams', tags=['Exams'])
 
@@ -34,8 +34,15 @@ def delete(exam_id: int, user: User = Depends(get_current_user), db: Session = D
     try: delete_exam(exam_id, user.id, db)
     except LookupError: raise HTTPException(status_code=404, detail='Exam not found')
 
+# Calcolo senza effetti: POST solo per mandare le preferenze nel corpo.
+@router.post('/{exam_id}/plan/advice', response_model=PlanAdviceResponse)
+def plan_advice(exam_id: int, data: PlanRequest | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try: return plan_exam_advice(exam_id, user.id, db, data)
+    except LookupError: raise HTTPException(status_code=404, detail='Exam not found')
+    except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
+
 @router.post('/{exam_id}/plan', response_model=list[TaskResponse], status_code=status.HTTP_201_CREATED)
 def plan(exam_id: int, data: PlanRequest | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    try: return plan_exam(exam_id, user.id, db, set(data.rest_days) if data else set())
+    try: return plan_exam(exam_id, user.id, db, data)
     except LookupError: raise HTTPException(status_code=404, detail='Exam not found')
     except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
