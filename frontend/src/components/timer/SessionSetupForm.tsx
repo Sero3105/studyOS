@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Play } from 'lucide-react'
+import { ChevronRight, Play } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '../ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from '../ui/field'
+import { Input } from '../ui/input'
+import { NativeSelect, NativeSelectOption } from '../ui/native-select'
+import { Textarea } from '../ui/textarea'
 import type { StudySessionConfig } from './types'
-import { getSubjects } from '../../services/subjectService'
+import { getActiveSubjects } from '../../services/subjectService'
+import { getExams } from '../../services/examService'
+import type { Exam } from '../../services/examService'
+import { daysUntil } from '../../utils/dates'
 import type { Subject } from '../../services/subjectService'
 import { useLanguage } from '../../i18n/useLanguage'
 import type { TranslationKey } from '../../i18n/translations'
@@ -44,9 +54,17 @@ function SessionSetupForm({
   const [topicId, setTopicId] = useState('')
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [error, setError] = useState('')
+  const [customOpen, setCustomOpen] = useState(false)
+  const [exams, setExams] = useState<Exam[]>([])
+  // Accanto alla materia, quanto manca al suo esame: aiuta a scegliere cosa studiare.
+  const examHint = (subjectId: number) => {
+    const days = exams.filter((e) => e.subject_id === subjectId && e.exam_date && (e.status === 'planned' || e.status === 'in_progress')).map((e) => daysUntil(e.exam_date!)).filter((d) => d >= 0).sort((a, b) => a - b)[0]
+    return days === undefined ? '' : ` · ${t('timer.examIn', { days })}`
+  }
 
   useEffect(() => {
-    getSubjects().then(setSubjects).catch(() => setSubjects([]))
+    getActiveSubjects().then(setSubjects).catch(() => setSubjects([]))
+    getExams().then(setExams).catch(() => setExams([]))
   }, [])
 
   const selectedSubject = subjects.find((s) => s.id === Number(subjectId))
@@ -80,142 +98,132 @@ function SessionSetupForm({
     })
   }
 
+  const numberField = (id: string, label: string, value: string, set: (v: string) => void) => (
+    <Field data-invalid={Boolean(error) || undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min="1"
+        step="1"
+        className="font-mono tabular-nums"
+        value={value}
+        onChange={(event) => { set(event.target.value); setError('') }}
+        required
+        aria-invalid={Boolean(error)}
+      />
+    </Field>
+  )
+  const optional = <span className="font-normal text-muted-foreground">{t('common.optional')}</span>
+
   return (
-    <form className="session-form" onSubmit={handleSubmit} noValidate>
-      <fieldset className="session-form-block">
-        <legend className="field-label">{t('timer.duration')}</legend>
-        <div className="preset-list">
-          {presets.map((preset) => (
-            <button
-              key={preset.id}
-              className="preset"
-              type="button"
-              aria-pressed={activePreset?.id === preset.id}
-              onClick={() => {
-                setFocusMinutes(String(preset.focus))
-                setBreakMinutes(String(preset.rest))
-                setError('')
-              }}
-            >
-              <span className="preset-name">{t(preset.labelKey)}</span>
-              <span className="preset-time num">{preset.focus} + {preset.rest} min</span>
-            </button>
-          ))}
-        </div>
-        <div className="form-grid">
-          <label className="field">
-            <span className="field-label">{t('timer.focusMinutes')}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              value={focusMinutes}
-              onChange={(event) => { setFocusMinutes(event.target.value); setError('') }}
-              required
-              aria-invalid={Boolean(error)}
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('timer.breakMinutes')}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              value={breakMinutes}
-              onChange={(event) => { setBreakMinutes(event.target.value); setError('') }}
-              required
-              aria-invalid={Boolean(error)}
-            />
-          </label>
-        </div>
-        <div className="form-grid">
-          <label className="field">
-            <span className="field-label">{t('timer.longBreakMinutes')}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              value={longBreakMinutes}
-              onChange={(event) => { setLongBreakMinutes(event.target.value); setError('') }}
-              required
-              aria-invalid={Boolean(error)}
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('timer.blocksBeforeLongBreak')}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              value={blocksBeforeLongBreak}
-              onChange={(event) => { setBlocksBeforeLongBreak(event.target.value); setError('') }}
-              required
-              aria-invalid={Boolean(error)}
-            />
-          </label>
-        </div>
-        {error && <p className="field-error" role="alert">{error}</p>}
-      </fieldset>
+    <form onSubmit={handleSubmit} noValidate>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend>{t('timer.duration')}</FieldLegend>
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('timer.duration')}>
+            {presets.map((preset) => {
+              const active = activePreset?.id === preset.id
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setFocusMinutes(String(preset.focus))
+                    setBreakMinutes(String(preset.rest))
+                    setError('')
+                  }}
+                  className={cn(
+                    'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50',
+                    active && 'border-primary bg-primary/8 hover:bg-primary/12',
+                  )}
+                >
+                  <span className="text-sm font-medium">{t(preset.labelKey)}</span>
+                  <span className={cn('font-mono text-xs tabular-nums', active ? 'text-primary' : 'text-muted-foreground')}>{preset.focus} + {preset.rest} min</span>
+                </button>
+              )
+            })}
+          </div>
+          <Collapsible open={customOpen || Boolean(error)} onOpenChange={setCustomOpen}>
+            <CollapsibleTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" className="-ml-2 text-muted-foreground">
+                <ChevronRight data-icon="inline-start" className={cn('transition-transform', (customOpen || error) && 'rotate-90')} aria-hidden="true" />
+                {t('timer.customize')}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="grid gap-4 pt-3 sm:grid-cols-2">
+              {numberField('focus-minutes', t('timer.focusMinutes'), focusMinutes, setFocusMinutes)}
+              {numberField('break-minutes', t('timer.breakMinutes'), breakMinutes, setBreakMinutes)}
+              {numberField('long-break-minutes', t('timer.longBreakMinutes'), longBreakMinutes, setLongBreakMinutes)}
+              {numberField('blocks-before-long', t('timer.blocksBeforeLongBreak'), blocksBeforeLongBreak, setBlocksBeforeLongBreak)}
+            </CollapsibleContent>
+          </Collapsible>
+          {error && <FieldError>{error}</FieldError>}
+        </FieldSet>
 
-      <fieldset className="session-form-block">
-        <legend className="field-label">{t('timer.whatYouStudy')}</legend>
-        <div className="form-grid">
-          <label className="field">
-            <span className="field-label">{t('timer.subject')} <em>{t('common.optional')}</em></span>
-            <select value={subjectId} onChange={(event) => { setSubjectId(event.target.value); setTopicId('') }}>
-              <option value="">{t('common.noneFeminine')}</option>
-              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field-label">{t('timer.topic')} <em>{t('common.optional')}</em></span>
-            <select value={topicId} onChange={(event) => setTopicId(event.target.value)} disabled={!selectedSubject || selectedSubject.topics.length === 0}>
-              <option value="">{t('common.noneMasculine')}</option>
-              {selectedSubject?.topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-            </select>
-          </label>
+        <FieldSeparator />
+
+        <FieldSet>
+          <FieldLegend>{t('timer.whatYouStudy')}</FieldLegend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="setup-subject">{t('timer.subject')} {optional}</FieldLabel>
+              <NativeSelect id="setup-subject" className="w-full" value={subjectId} onChange={(event) => { setSubjectId(event.target.value); setTopicId('') }}>
+                <NativeSelectOption value="">{t('common.noneFeminine')}</NativeSelectOption>
+                {subjects.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}{examHint(s.id)}</NativeSelectOption>)}
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="setup-topic">{t('timer.topic')} {optional}</FieldLabel>
+              <NativeSelect id="setup-topic" className="w-full" value={topicId} onChange={(event) => setTopicId(event.target.value)} disabled={!selectedSubject || selectedSubject.topics.length === 0}>
+                <NativeSelectOption value="">{t('common.noneMasculine')}</NativeSelectOption>
+                {selectedSubject?.topics.map((t) => <NativeSelectOption key={t.id} value={t.id}>{t.title}</NativeSelectOption>)}
+              </NativeSelect>
+            </Field>
+          </div>
+          <Field>
+            <FieldLabel htmlFor="setup-kind">{t('session.kind')}</FieldLabel>
+            <NativeSelect id="setup-kind" className="w-full" value={kind} onChange={(event) => setKind(event.target.value as SessionKind)}>
+              {SESSION_KINDS.map((value) => <NativeSelectOption key={value} value={value}>{t(`session.kind.${value}`)}</NativeSelectOption>)}
+            </NativeSelect>
+          </Field>
+        </FieldSet>
+
+        <FieldSeparator />
+
+        <FieldSet>
+          <FieldLegend>{t('sitting.plan')}</FieldLegend>
+          <Field>
+            <FieldLabel htmlFor="setup-goal">{t('sitting.goal')} {optional}</FieldLabel>
+            <Input id="setup-goal" value={goal} maxLength={500} onChange={(event) => setGoal(event.target.value)} placeholder={t('sitting.goalPlaceholder')} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="setup-checklist">{t('sitting.checklist')} {optional}</FieldLabel>
+            <Textarea
+              id="setup-checklist"
+              value={checklist}
+              onChange={(event) => setChecklist(event.target.value)}
+              placeholder={t('sitting.checklistPlaceholder')}
+              rows={3}
+            />
+            <FieldDescription>{t('sitting.checklistHint', { max: CHECKLIST_MAX })}</FieldDescription>
+          </Field>
+        </FieldSet>
+
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {showCancel && onCancel && (
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              {t('common.cancel')}
+            </Button>
+          )}
+          <Button size="lg" type="submit">
+            <Play data-icon="inline-start" aria-hidden="true" />
+            {t('timer.startSession')}
+          </Button>
         </div>
-        <label className="field">
-          <span className="field-label">{t('session.kind')}</span>
-          <select value={kind} onChange={(event) => setKind(event.target.value as SessionKind)}>
-            {SESSION_KINDS.map((value) => <option key={value} value={value}>{t(`session.kind.${value}`)}</option>)}
-          </select>
-        </label>
-      </fieldset>
-
-      <fieldset className="session-form-block">
-        <legend className="field-label">{t('sitting.plan')}</legend>
-        <label className="field">
-          <span className="field-label">{t('sitting.goal')} <em>{t('common.optional')}</em></span>
-          <input value={goal} maxLength={500} onChange={(event) => setGoal(event.target.value)} placeholder={t('sitting.goalPlaceholder')} />
-        </label>
-        <label className="field">
-          <span className="field-label">{t('sitting.checklist')} <em>{t('common.optional')}</em></span>
-          <textarea
-            value={checklist}
-            onChange={(event) => setChecklist(event.target.value)}
-            placeholder={t('sitting.checklistPlaceholder')}
-            rows={3}
-          />
-          <span className="field-hint">{t('sitting.checklistHint', { max: CHECKLIST_MAX })}</span>
-        </label>
-      </fieldset>
-
-      <div className="form-actions">
-        {showCancel && onCancel && (
-          <button className="btn btn-ghost" type="button" onClick={onCancel}>
-            {t('common.cancel')}
-          </button>
-        )}
-        <button className="btn btn-primary btn-lg" type="submit">
-          <Play aria-hidden="true" />
-          {t('timer.startSession')}
-        </button>
-      </div>
+      </FieldGroup>
     </form>
   )
 }

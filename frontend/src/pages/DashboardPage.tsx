@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarCheck } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
+import MoreLink from '../components/ui/MoreLink'
+import { Button } from '../components/ui/button'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Skeleton } from '../components/ui/skeleton'
 import WeekChart from '../components/ui/WeekChart'
 import { ErrorNotice } from '../components/ui/Feedback'
 import SessionSetupModal from '../components/timer/SessionSetupModal'
@@ -54,48 +58,48 @@ function DashboardPage() {
   const today = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 
   return (
-    <div className="page">
+    <div className="flex flex-col gap-8">
       <PageHeader
+        eyebrow={today}
         title={`${greeting(t)}, ${firstName}`}
-        description={today.charAt(0).toUpperCase() + today.slice(1)}
         actions={
-          <button className="btn btn-secondary" type="button" onClick={() => setReviewOpen(true)}>
-            <CalendarCheck aria-hidden="true" /> {t('review.title')}
-          </button>
+          <Button variant="outline" onClick={() => setReviewOpen(true)}>
+            <CalendarCheck data-icon="inline-start" aria-hidden="true" /> {t('review.title')}
+          </Button>
         }
       />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
 
       {!stats && !error && (
-        <div className="dashboard-grid" aria-busy="true">
-          <span className="visually-hidden">{t('dashboard.loading')}</span>
-          <div className="skeleton dashboard-skeleton-main" aria-hidden="true" />
-          <div className="skeleton dashboard-skeleton-side" aria-hidden="true" />
+        <div className="grid gap-4 lg:grid-cols-3" aria-busy="true">
+          <span className="sr-only">{t('dashboard.loading')}</span>
+          <Skeleton className="h-64 lg:col-span-2" aria-hidden="true" />
+          <Skeleton className="h-64" aria-hidden="true" />
         </div>
       )}
 
       {stats && (
-        <div className="dashboard-grid">
-          <div className="dashboard-main">
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
             <TodayOverview stats={stats} onStartSession={() => setIsSessionModalOpen(true)} />
             <TodayPlan />
 
-            <section className="panel" aria-labelledby="dash-week-title">
-              <div className="panel-head">
-                <h2 id="dash-week-title" className="panel-title">{t('dashboard.last7Days')}</h2>
-                <span className="panel-meta num">
+            <Card>
+              <CardHeader>
+                <CardTitle><h2 id="dash-week-title">{t('dashboard.last7Days')}</h2></CardTitle>
+                <CardDescription className="font-mono tabular-nums">
                   {t('dashboard.total', { value: formatMinutes(stats.daily.reduce((sum, day) => sum + day.minutes, 0)) })}
-                </span>
-              </div>
-              <WeekChart daily={stats.daily} />
-              <Link className="text-link panel-foot-link" to="/statistics">
-                {t('dashboard.allStatistics')} <ArrowRight aria-hidden="true" />
-              </Link>
-            </section>
+                </CardDescription>
+                <CardAction><MoreLink to="/statistics">{t('dashboard.allStatistics')}</MoreLink></CardAction>
+              </CardHeader>
+              <CardContent>
+                <WeekChart daily={stats.daily} />
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="dashboard-side">
+          <div className="flex min-w-0 flex-col gap-4">
             <UpcomingExams exams={stats.upcoming_exams} />
             <OpenTasks tasks={stats.upcoming_tasks} />
           </div>

@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarClock, GraduationCap, Layers, Play, RotateCw, SquareCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarClock, GraduationCap, Layers, Play, RotateCw, SquareCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import SubjectDot from '../ui/SubjectDot'
+import MoreLink from '../ui/MoreLink'
+import { Button } from '../ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Skeleton } from '../ui/skeleton'
 import { EmptyState } from '../ui/Feedback'
 import { getTasks } from '../../services/taskService'
 import { getCards } from '../../services/cardService'
@@ -16,6 +21,7 @@ import { daysUntil, relativeDay, todayIso } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 
 const ICONS: Record<Suggestion['kind'], LucideIcon> = { block: CalendarClock, review: RotateCw, cards: Layers, task: SquareCheck, exam: GraduationCap }
+const ICON_TONE: Record<Suggestion['kind'], string> = { block: 'text-primary', review: 'text-info', cards: 'text-chart-3', task: 'text-foreground', exam: 'text-warning' }
 
 /**
  * "Cosa studio oggi?": blocchi orari, ripassi, flashcard, task in scadenza e l'argomento più
@@ -33,7 +39,7 @@ function TodayPlan() {
       .catch(() => setItems([]))
   }, [])
 
-  if (items === null) return <div className="skeleton today-plan-skeleton" aria-hidden="true" />
+  if (items === null) return <Skeleton className="h-56" aria-hidden="true" />
 
   const label = (s: Suggestion) => {
     switch (s.kind) {
@@ -52,41 +58,43 @@ function TodayPlan() {
   }
 
   return (
-    <section className="panel today-plan" aria-labelledby="dash-today-title">
-      <div className="panel-head">
-        <h2 id="dash-today-title" className="panel-title">{t('today.title')}</h2>
-        <Link className="text-link" to="/calendar">{t('nav.calendar')} <ArrowRight aria-hidden="true" /></Link>
-      </div>
-      {items.length === 0 ? (
-        <EmptyState compact title={t('today.emptyTitle')}>{t('today.emptyBody')}</EmptyState>
-      ) : (
-        <ol className="rows today-plan-list">
-          {items.map((s) => {
-            const Icon = ICONS[s.kind]
-            const { title, meta } = label(s)
-            const subject = s.kind === 'cards' ? undefined : s.subject
-            const late = s.kind === 'task' && s.task.due_date !== null && daysUntil(s.task.due_date) < 0
-            return (
-              <li className="row today-plan-row" key={s.kind === 'cards' ? 'cards' : s.kind === 'exam' ? `exam-${s.topic.id}` : `task-${s.task.id}`}>
-                <span className={`today-plan-icon is-${s.kind}`} aria-hidden="true"><Icon /></span>
-                <span className="row-main">
-                  <span className="row-title">{title}</span>
-                  <span className={`row-meta${late ? ' text-danger' : ''}`}>
-                    {subject && <SubjectDot subject={subject} />}
-                    <span>{subject ? `${subject.name} · ${meta}` : meta}</span>
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 id="dash-today-title">{t('today.title')}</h2></CardTitle>
+        <CardAction><MoreLink to="/calendar">{t('nav.calendar')}</MoreLink></CardAction>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <EmptyState compact title={t('today.emptyTitle')}>{t('today.emptyBody')}</EmptyState>
+        ) : (
+          <ol className="-mx-2 flex flex-col" aria-labelledby="dash-today-title">
+            {items.map((s) => {
+              const Icon = ICONS[s.kind]
+              const { title, meta } = label(s)
+              const subject = s.kind === 'cards' ? undefined : s.subject
+              const late = s.kind === 'task' && s.task.due_date !== null && daysUntil(s.task.due_date) < 0
+              return (
+                <li className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50" key={s.kind === 'cards' ? 'cards' : s.kind === 'exam' ? `exam-${s.topic.id}` : `task-${s.task.id}`}>
+                  <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted [&_svg]:size-4', ICON_TONE[s.kind])} aria-hidden="true"><Icon /></span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-sm font-medium">{title}</span>
+                    <span className={cn('flex min-w-0 items-center gap-1.5 text-xs', late ? 'text-destructive' : 'text-muted-foreground')}>
+                      {subject && <SubjectDot subject={subject} />}
+                      <span className="truncate">{subject ? `${subject.name} · ${meta}` : meta}</span>
+                    </span>
                   </span>
-                </span>
-                <button className="btn btn-secondary today-plan-go" type="button" onClick={() => start(s)}
-                  aria-label={s.kind === 'cards' ? t('today.openCards') : t('today.startOn', { title })}>
-                  {s.kind === 'cards' ? <Layers aria-hidden="true" /> : <Play aria-hidden="true" />}
-                  <span className="today-plan-go-label">{s.kind === 'cards' ? t('today.review_') : t('today.start')}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ol>
-      )}
-    </section>
+                  <Button variant="secondary" size="sm" onClick={() => start(s)}
+                    aria-label={s.kind === 'cards' ? t('today.openCards') : t('today.startOn', { title })}>
+                    {s.kind === 'cards' ? <Layers data-icon="inline-start" aria-hidden="true" /> : <Play data-icon="inline-start" aria-hidden="true" />}
+                    <span className="hidden sm:inline">{s.kind === 'cards' ? t('today.review_') : t('today.start')}</span>
+                  </Button>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

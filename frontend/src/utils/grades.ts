@@ -42,3 +42,8 @@ export function requiredAverage(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[],
   if (remaining <= 0) return null
   return ((targetBase * 30) / 110 * totalCfu - points) / remaining
 }
+
+/** Materie archiviate: quelle con un esame superato. Restano nel database (note, flashcard, statistiche), spariscono dai selettori. */
+export function archivedSubjectIds(exams: Pick<Exam, 'status' | 'subject_id'>[]): Set<number> {
+  return new Set(exams.flatMap((e) => (e.status === 'passed' && e.subject_id !== null ? [e.subject_id] : [])))
+}

@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Layers, Plus } from 'lucide-react'
 import DeleteButton from '../ui/DeleteButton'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Field, FieldGroup, FieldLabel } from '../ui/field'
+import { Input } from '../ui/input'
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '../ui/native-select'
+import { Textarea } from '../ui/textarea'
 import SubjectDot from '../ui/SubjectDot'
 import { EmptyState, ErrorNotice } from '../ui/Feedback'
 import { createCard, createMistake, deleteMistake, getMistakes, linkMistakeCard } from '../../services/cardService'
-import type { Card, Mistake } from '../../services/cardService'
+import type { Card as FlashCard, Mistake } from '../../services/cardService'
 import type { Subject } from '../../services/subjectService'
 import { useUndo } from '../../context/undoContext'
 import { errorMessage } from '../../utils/errors'
@@ -16,7 +23,7 @@ import { useLanguage } from '../../i18n/useLanguage'
  * Quaderno degli errori: cosa hai sbagliato, la spiegazione giusta e da dove viene (esercizio, esame).
  * Un errore diventa una flashcard con un clic e torna nel ripasso adattivo.
  */
-function MistakesPanel({ subjects, cards, onCardCreated }: { subjects: Subject[]; cards: Card[]; onCardCreated: (card: Card) => void }) {
+function MistakesPanel({ subjects, cards, onCardCreated }: { subjects: Subject[]; cards: FlashCard[]; onCardCreated: (card: FlashCard) => void }) {
   const { t, locale } = useLanguage()
   const { undoable } = useUndo()
   const [mistakes, setMistakes] = useState<Mistake[]>([])
@@ -59,77 +66,85 @@ function MistakesPanel({ subjects, cards, onCardCreated }: { subjects: Subject[]
   }
 
   return (
-    <div className="cards-layout">
-      <section className="panel" aria-labelledby="mistake-new-title">
-        <h2 id="mistake-new-title" className="panel-title">{t('mistakes.newTitle')}</h2>
-        <p className="panel-meta">{t('mistakes.intro')}</p>
-        {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
-        <form className="card-form" onSubmit={(e) => void add(e)}>
-          <label className="field">
-            <span className="field-label">{t('timer.topic')}</span>
-            <select value={topicId} onChange={(e) => setTopicId(e.target.value)} required>
-              <option value="">{t('cards.chooseTopic')}</option>
-              {subjects.filter((s) => s.topics.length).map((s) => (
-                <optgroup key={s.id} label={s.name}>
-                  {s.topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field-label">{t('mistakes.mistake')}</span>
-            <textarea rows={2} maxLength={5000} required value={mistake} onChange={(e) => setMistake(e.target.value)} placeholder={t('mistakes.mistakePlaceholder')} />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('mistakes.correction')}</span>
-            <textarea rows={3} maxLength={5000} required value={correction} onChange={(e) => setCorrection(e.target.value)} />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('mistakes.source')} <em>{t('common.optional')}</em></span>
-            <input maxLength={200} value={source} onChange={(e) => setSource(e.target.value)} placeholder={t('mistakes.sourcePlaceholder')} />
-          </label>
-          <div className="form-actions">
-            <button className="btn btn-primary" type="submit" disabled={busy || !topicId || !mistake.trim() || !correction.trim()}>
-              <Plus aria-hidden="true" /> {t('mistakes.add')}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="panel" aria-labelledby="mistake-list-title">
-        <h2 id="mistake-list-title" className="panel-title">{t('mistakes.listTitle', { count: mistakes.length })}</h2>
-        {groups.length === 0 ? (
-          <EmptyState compact title={t('mistakes.emptyTitle')}>{t('mistakes.emptyBody')}</EmptyState>
-        ) : (
-          <ol className="grouped-list">
-            {groups.map(({ topic, items }) => (
-              <li className="list-group" key={topic.id}>
-                <div className="list-group-head">
-                  <h3 className="list-group-title"><SubjectDot subject={topic.subject} /> {topic.subject.name} / {topic.title}</h3>
-                  <span className="panel-meta num">{items.length}</span>
-                </div>
-                <ul className="rows">
-                  {items.map((m) => (
-                    <li className="row mistake-row" key={m.id}>
-                      <span className="row-main">
-                        <span className="row-title mistake-text">{m.mistake}</span>
-                        <span className="mistake-correction">{m.correction}</span>
-                        <span className="row-meta">{[m.source, formatDay(m.created_at.slice(0, 10), 'long', locale)].filter(Boolean).join(' · ')}</span>
-                      </span>
-                      <span className="row-actions">
-                        {hasCard(m)
-                          ? <span className="tag tag-success">{t('mistakes.inCards')}</span>
-                          : <button className="tag tag-button" type="button" onClick={() => void toCard(m)}><Layers aria-hidden="true" /> {t('mistakes.toCard')}</button>}
-                        <span className="row-reveal"><DeleteButton label={t('mistakes.delete')} onDelete={() => remove(m)} /></span>
-                      </span>
-                    </li>
+    <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <Card aria-labelledby="mistake-new-title">
+        <CardHeader>
+          <CardTitle><h2 id="mistake-new-title">{t('mistakes.newTitle')}</h2></CardTitle>
+          <CardDescription>{t('mistakes.intro')}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
+          <form onSubmit={(e) => void add(e)}>
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="mistake-topic">{t('timer.topic')}</FieldLabel>
+                <NativeSelect id="mistake-topic" className="w-full" value={topicId} onChange={(e) => setTopicId(e.target.value)} required>
+                  <NativeSelectOption value="">{t('cards.chooseTopic')}</NativeSelectOption>
+                  {subjects.filter((s) => s.topics.length).map((s) => (
+                    <NativeSelectOptGroup key={s.id} label={s.name}>
+                      {s.topics.map((topic) => <NativeSelectOption key={topic.id} value={topic.id}>{topic.title}</NativeSelectOption>)}
+                    </NativeSelectOptGroup>
                   ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+                </NativeSelect>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="mistake-text">{t('mistakes.mistake')}</FieldLabel>
+                <Textarea id="mistake-text" rows={2} maxLength={5000} required value={mistake} onChange={(e) => setMistake(e.target.value)} placeholder={t('mistakes.mistakePlaceholder')} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="mistake-correction">{t('mistakes.correction')}</FieldLabel>
+                <Textarea id="mistake-correction" rows={3} maxLength={5000} required value={correction} onChange={(e) => setCorrection(e.target.value)} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="mistake-source">{t('mistakes.source')} <span className="font-normal text-muted-foreground">{t('common.optional')}</span></FieldLabel>
+                <Input id="mistake-source" maxLength={200} value={source} onChange={(e) => setSource(e.target.value)} placeholder={t('mistakes.sourcePlaceholder')} />
+              </Field>
+              <Button type="submit" disabled={busy || !topicId || !mistake.trim() || !correction.trim()}>
+                <Plus data-icon="inline-start" aria-hidden="true" /> {t('mistakes.add')}
+              </Button>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card aria-labelledby="mistake-list-title" className="min-w-0">
+        <CardHeader>
+          <CardTitle><h2 id="mistake-list-title">{t('mistakes.listTitle', { count: mistakes.length })}</h2></CardTitle>
+        </CardHeader>
+        <CardContent>
+          {groups.length === 0 ? (
+            <EmptyState compact title={t('mistakes.emptyTitle')}>{t('mistakes.emptyBody')}</EmptyState>
+          ) : (
+            <ol className="flex flex-col gap-6">
+              {groups.map(({ topic, items }) => (
+                <li className="flex flex-col gap-1" key={topic.id}>
+                  <div className="flex items-center justify-between gap-2 border-b pb-2">
+                    <h3 className="flex min-w-0 items-center gap-2 truncate text-xs font-medium text-muted-foreground"><SubjectDot subject={topic.subject} /> {topic.subject.name} / {topic.title}</h3>
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums">{items.length}</span>
+                  </div>
+                  <ul className="flex flex-col divide-y">
+                    {items.map((m) => (
+                      <li className="group/mistake flex flex-wrap items-start gap-3 py-3 sm:flex-nowrap" key={m.id}>
+                        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          <span className="text-sm break-words text-destructive line-through decoration-destructive/40">{m.mistake}</span>
+                          <span className="text-sm break-words text-success">{m.correction}</span>
+                          <span className="text-xs text-muted-foreground">{[m.source, formatDay(m.created_at.slice(0, 10), 'long', locale)].filter(Boolean).join(' · ')}</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          {hasCard(m)
+                            ? <Badge variant="success">{t('mistakes.inCards')}</Badge>
+                            : <Button variant="outline" size="xs" onClick={() => void toCard(m)}><Layers data-icon="inline-start" aria-hidden="true" /> {t('mistakes.toCard')}</Button>}
+                          <span className="md:opacity-0 md:transition-opacity md:group-focus-within/mistake:opacity-100 md:group-hover/mistake:opacity-100"><DeleteButton label={t('mistakes.delete')} onDelete={() => remove(m)} /></span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

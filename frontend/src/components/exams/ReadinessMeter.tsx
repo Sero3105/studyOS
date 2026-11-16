@@ -1,4 +1,10 @@
+import { cn } from '@/lib/utils'
+import { Badge } from '../ui/badge'
+import { Progress } from '../ui/progress'
 import type { Readiness } from '../../utils/planning'
+
+const TEXT = { success: 'text-success', warning: 'text-warning', destructive: 'text-destructive' }
+const BAR = { success: '[&>*]:bg-success', warning: '[&>*]:bg-warning', destructive: '[&>*]:bg-destructive' }
 import { formatMinutes } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 
@@ -7,7 +13,7 @@ function ReadinessMeter({ readiness, compact = false }: { readiness: Readiness; 
   const { t } = useLanguage()
   if (readiness.score === null) return null
   const percent = Math.round(readiness.score * 100)
-  const tone = percent >= 75 ? 'is-good' : percent >= 40 ? 'is-mid' : 'is-low'
+  const tone = percent >= 75 ? 'success' : percent >= 40 ? 'warning' : 'destructive'
   const details = [
     readiness.topics && t('readiness.topics', { done: readiness.topics.done, total: readiness.topics.total }),
     readiness.cards && t('readiness.cards', { mastered: readiness.cards.mastered, total: readiness.cards.total }),
@@ -16,18 +22,20 @@ function ReadinessMeter({ readiness, compact = false }: { readiness: Readiness; 
   ].filter(Boolean) as string[]
 
   if (compact) {
-    return <span className={`readiness-chip num ${tone}`} title={`${t('readiness.title')}: ${details.join(' · ')}`}>{t('readiness.short', { percent })}</span>
+    return <Badge variant={tone} className="cursor-help font-mono tabular-nums" title={`${t('readiness.title')}: ${details.join(' · ')}`}>{t('readiness.short', { percent })}</Badge>
   }
   return (
-    <div className={`readiness ${tone}`}>
-      <div className="readiness-head">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between text-sm">
         <span>{t('readiness.title')}</span>
-        <span className="num readiness-value">{percent}%</span>
+        <span className={cn('font-mono font-semibold tabular-nums', TEXT[tone])}>{percent}%</span>
       </div>
-      <div className="readiness-track" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={t('readiness.title')}>
-        <span style={{ width: `${percent}%` }} />
-      </div>
-      <p className="readiness-details">{details.join(' · ')}</p>
+      <Progress
+        value={percent}
+        aria-label={t('readiness.title')}
+        className={cn('h-1.5', BAR[tone])}
+      />
+      <p className="text-xs text-muted-foreground">{details.join(' · ')}</p>
     </div>
   )
 }

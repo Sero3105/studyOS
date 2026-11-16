@@ -13,8 +13,8 @@ const markdown = new Marked(markedKatex({ throwOnError: false, nonStandard: true
  */
 function MarkdownPreview({ source, emptyText }: { source: string; emptyText: string }) {
   const html = useMemo(() => DOMPurify.sanitize(markdown.parse(source, { async: false })), [source])
-  if (!source.trim()) return <p className="panel-meta">{emptyText}</p>
-  return <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />
+  if (!source.trim()) return <p className="text-sm text-muted-foreground">{emptyText}</p>
+  return <div className="prose prose-sm max-w-none rounded-lg border bg-muted/20 p-4 dark:prose-invert prose-a:text-primary prose-code:font-mono" dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 export default MarkdownPreview

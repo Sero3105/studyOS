@@ -193,12 +193,12 @@ docker compose up -d
 
 | Livello | Tecnologie |
 |---|---|
-| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · Recharts · marked + KaTeX + DOMPurify (note) · CSS puro con design token |
+| **Frontend** | React 19 · TypeScript · Vite · React Router · lucide-react · Recharts · marked + KaTeX + DOMPurify (note) · Tailwind CSS v4 · shadcn/ui (Radix) · Sonner · cmdk |
 | **Backend** | FastAPI · SQLAlchemy · Alembic · Pydantic · PyJWT · pwdlib (argon2) · uvicorn |
 | **Database** | SQLite (file nel volume Docker, `database/studyos.db` in locale) |
 | **Deploy** | Docker Compose · nginx (file statici + proxy `/api`) · immagini multi-stage |
 
-**Design:** dark-first su fondo nero, un solo accento menta (niente blu né viola), Funnel Display / Funnel Sans / DM Mono, piatto (niente gradienti), transizioni da 150 ms con gradino di 1 px in hover e pressione, `prefers-reduced-motion` rispettato, target touch da 44 px, breakpoint a 700/900 px. I token sono in `frontend/src/styles/base/tokens.css`.
+**Design:** dark-first futuristico e minimale: nero neutro (senza tinta blu), un solo accento lime elettrico, colori di segnale solo accesi (ciano, ambra, rosso; niente blu scuro né viola), Geist Sans + Geist Mono per i numeri, `prefers-reduced-motion` rispettato, target touch da 40 px su mobile, tab bar in basso sul telefono. Nessun CSS scritto a mano: utility Tailwind più componenti shadcn/ui; i token del tema sono in `frontend/src/index.css`.
 
 ---
 
@@ -223,7 +223,8 @@ StudyOS/
 │       ├── components/   # sidebar, Pomodoro, form, UI kit
 │       ├── context/      # auth, timer persistente, annulla dopo l'eliminazione
 │       ├── utils/        # logica pura testata: date, voti, piano di oggi, prontezza, CSV, Anki
-│       └── styles/       # base / layout / componenti / schermate
+│       ├── components/ui/ # componenti shadcn/ui + piccoli componenti di casa
+│       └── index.css     # entry Tailwind e token del tema (chiaro/scuro)
 ├── database/             # studyos.db locale (mai toccato da Docker)
 └── docs/                 # screenshot, demo, note di design
 ```

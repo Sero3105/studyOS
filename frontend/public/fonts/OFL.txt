@@ -1,5 +1,0 @@
-Fonts in this folder are licensed under the SIL Open Font License, Version 1.1
-(https://openfontlicense.org). Files are the Latin subsets served by Google Fonts.
-
-- Funnel Display, Funnel Sans: Copyright 2024 The Funnel Project Authors
-- DM Mono: Copyright 2020 The DM Mono Project Authors (https://github.com/googlefonts/dm-mono)

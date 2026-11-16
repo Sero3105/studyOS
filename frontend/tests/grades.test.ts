@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { gradeSummary, gradeTrend } from '../src/utils/grades.ts'
+import { archivedSubjectIds, gradeSummary, gradeTrend } from '../src/utils/grades.ts'
 
 test('weighted average uses CFU, ignores ungraded and unpassed exams', () => {
   const s = gradeSummary([
@@ -42,4 +42,14 @@ test('required average for a graduation target', async () => {
   assert.equal(requiredAverage(passed, 120, 110), 36)
   assert.equal(Math.round(requiredAverage(passed, 120, 99)! * 100) / 100, 30)
   assert.equal(requiredAverage([{ status: 'passed', grade: 30, cfu: 180 }], 180, 110), null)
+})
+
+test('only subjects with a passed exam are archived', () => {
+  const ids = archivedSubjectIds([
+    { status: 'passed', subject_id: 1 },
+    { status: 'failed', subject_id: 2 },
+    { status: 'in_progress', subject_id: 3 },
+    { status: 'passed', subject_id: null },
+  ])
+  assert.deepEqual([...ids], [1])
 })

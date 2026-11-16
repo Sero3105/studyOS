@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { CSSProperties, DragEvent, FormEvent } from 'react'
+import type { DragEvent, FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, Clock3, GraduationCap, GripVertical } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import PageHeader from '../components/ui/PageHeader'
+import Figures from '../components/ui/Figures'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Checkbox } from '../components/ui/checkbox'
+import { Input } from '../components/ui/input'
 import Segmented from '../components/ui/Segmented'
 import { ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createTask, getTasks, updateTask } from '../services/taskService'
@@ -16,7 +22,7 @@ import SubjectDot from '../components/ui/SubjectDot'
 import BlockEditor from '../components/calendar/BlockEditor'
 import Modal from '../components/ui/Modal'
 import { addDays, formatDay, formatMinutes, parseDay, todayIso, weekStart } from '../utils/dates'
-import { heatLevel } from '../utils/studyStats'
+import { HEAT, heatLevel } from '../utils/studyStats'
 import { errorMessage } from '../utils/errors'
 import { useLanguage } from '../i18n/useLanguage'
 
@@ -141,25 +147,31 @@ function CalendarPage() {
 
   const renderTask = (task: Task) => {
     const subject = subjects.find((x) => x.id === task.subject_id)
-    const tint = subject ? { '--subject-color': `var(--subject-${subjectColor(subject)})` } as CSSProperties : undefined
+    const done = task.status === 'done'
     return (
-      <li key={task.id} style={tint}
-        className={`calendar-task-item${task.scheduled_time ? ' is-block' : ''}${subject ? ' has-subject' : ''}${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
-        {task.scheduled_time && (
-          <span className="calendar-block-time num">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
+      <li key={task.id}
+        style={subject ? { borderLeftColor: `var(--subject-${subjectColor(subject)})` } : undefined}
+        className={cn(
+          'group/item flex cursor-grab items-start gap-1 rounded-md border border-l-2 bg-card px-2 py-1.5 text-xs active:cursor-grabbing',
+          task.scheduled_time && 'bg-primary/5',
+          dragId === task.id && 'opacity-40',
         )}
-        <label className={`calendar-task${task.status === 'done' ? ' is-done' : ''}`}>
-          <input className="check" type="checkbox" checked={task.status === 'done'} onChange={() => void toggle(task)} />
-          <span className="calendar-task-body">
-            <span className="calendar-task-title">{task.title}</span>
-            {subject && <span className="calendar-task-subject">{subject.name}</span>}
+        {...dragProps(task)}>
+        <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2">
+          <Checkbox className="mt-px" checked={done} onCheckedChange={() => void toggle(task)} />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            {task.scheduled_time && (
+              <span className="font-mono text-[0.6875rem] text-primary tabular-nums">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
+            )}
+            <span className={cn('leading-snug font-medium break-words', done && 'text-muted-foreground line-through')}>{task.title}</span>
+            {subject && <span className="truncate text-muted-foreground">{subject.name}</span>}
           </span>
         </label>
-        {task.status !== 'done' && (
-          <button className="icon-btn calendar-task-time" type="button" onClick={() => setEditing(editing === task.id ? null : task.id)}
+        {!done && (
+          <Button variant="ghost" size="icon-xs" className="text-muted-foreground md:opacity-0 md:group-hover/item:opacity-100 md:focus-visible:opacity-100" onClick={() => setEditing(editing === task.id ? null : task.id)}
             aria-expanded={editing === task.id} aria-label={t('calendar.blockEdit', { title: task.title })} title={t('calendar.blockEditTitle')}>
             <Clock3 aria-hidden="true" />
-          </button>
+          </Button>
         )}
       </li>
     )
@@ -173,24 +185,24 @@ function CalendarPage() {
   const weekdayShort = (day: string) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(parseDay(day))
 
   return (
-    <div className="page calendar-page">
+    <div className="flex flex-col gap-8">
       <PageHeader
         title={t('calendar.title')}
         description={title.charAt(0).toUpperCase() + title.slice(1)}
         actions={
-          <div className="calendar-nav">
+          <>
             <Segmented
               label={t('calendar.view')}
               value={view}
               onChange={setView}
               options={[{ value: 'week', label: t('calendar.viewWeek') }, { value: 'month', label: t('calendar.viewMonth') }]}
             />
-            <div className="calendar-steps">
-              <button className="icon-btn" type="button" onClick={() => move(-1)} aria-label={view === 'week' ? t('calendar.prevWeek') : t('calendar.prevMonth')}><ChevronLeft aria-hidden="true" /></button>
-              <button className="btn btn-secondary" type="button" onClick={() => setAnchor(today)}>{t('common.today')}</button>
-              <button className="icon-btn" type="button" onClick={() => move(1)} aria-label={view === 'week' ? t('calendar.nextWeek') : t('calendar.nextMonth')}><ChevronRight aria-hidden="true" /></button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => move(-1)} aria-label={view === 'week' ? t('calendar.prevWeek') : t('calendar.prevMonth')}><ChevronLeft aria-hidden="true" /></Button>
+              <Button variant="outline" onClick={() => setAnchor(today)}>{t('common.today')}</Button>
+              <Button variant="ghost" size="icon" onClick={() => move(1)} aria-label={view === 'week' ? t('calendar.nextWeek') : t('calendar.nextMonth')}><ChevronRight aria-hidden="true" /></Button>
             </div>
-          </div>
+          </>
         }
       />
 
@@ -204,37 +216,32 @@ function CalendarPage() {
 
       {loading ? <LoadingRows label={t('calendar.loading')} /> : view === 'week' ? (
         <>
-          <dl className="calendar-summary">
-            {summary.map((item) => (
-              <div className="panel calendar-stat" key={item.label}>
-                <dt>{item.label}</dt>
-                <dd className="num">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <Figures items={summary.map((item) => ({ label: item.label, value: item.value }))} className="grid-cols-3 sm:grid-cols-3" />
 
           {unplanned.length > 0 && (
-            <section className="panel calendar-tray" aria-labelledby="calendar-tray-title">
-              <div className="panel-head">
-                <h2 id="calendar-tray-title" className="panel-title">{t('calendar.trayTitle', { count: unplanned.length })}</h2>
-                <span className="panel-meta">{t('calendar.trayHint')}</span>
-              </div>
-              <ul className="calendar-tray-list">
-                {unplanned.map((task) => (
-                  <li key={task.id} className={`calendar-chip${dragId === task.id ? ' is-dragging' : ''}`} {...dragProps(task)}>
-                    <GripVertical aria-hidden="true" className="calendar-chip-grip" />
-                    <SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />
-                    <button type="button" className="calendar-chip-title" onClick={() => setEditing(editing === task.id ? null : task.id)} aria-expanded={editing === task.id}
-                      aria-label={t('calendar.blockEdit', { title: task.title })}>
-                      {task.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle><h2 id="calendar-tray-title">{t('calendar.trayTitle', { count: unplanned.length })}</h2></CardTitle>
+                <CardDescription>{t('calendar.trayHint')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="flex flex-wrap gap-2" aria-labelledby="calendar-tray-title">
+                  {unplanned.map((task) => (
+                    <li key={task.id} className={cn('flex cursor-grab items-center gap-1.5 rounded-md border bg-muted/40 py-1 pr-2.5 pl-1 text-sm active:cursor-grabbing', dragId === task.id && 'opacity-40')} {...dragProps(task)}>
+                      <GripVertical aria-hidden="true" className="size-3.5 text-muted-foreground" />
+                      <SubjectDot subject={subjects.find((x) => x.id === task.subject_id)} />
+                      <button type="button" className="rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50" onClick={() => setEditing(editing === task.id ? null : task.id)} aria-expanded={editing === task.id}
+                        aria-label={t('calendar.blockEdit', { title: task.title })}>
+                        {task.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           )}
 
-          <ol className="calendar-week">
+          <ol className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-7">
             {weekDays.map((day) => {
               const dayExams = examsOn(day)
               const dayTasks = tasksOn(day)
@@ -243,33 +250,38 @@ function CalendarPage() {
               return (
                 <li
                   key={day}
-                  className={`calendar-day${isToday ? ' is-today' : ''}${day < today ? ' is-past' : ''}${dropDay === day ? ' is-drop' : ''}`}
+                  className={cn(
+                    'flex min-h-48 min-w-0 flex-col gap-3 bg-card p-3 transition-colors',
+                    day < today && 'bg-card/60',
+                    isToday && 'bg-primary/5',
+                    dropDay === day && 'bg-primary/10 ring-2 ring-primary ring-inset',
+                  )}
                   onDragOver={(e) => { if (dragId !== null) { e.preventDefault(); setDropDay(day) } }}
                   onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropDay(null) }}
                   onDrop={(e) => { e.preventDefault(); drop(day) }}
                 >
-                  <h2 className="calendar-day-head" aria-label={isToday ? `${formatDay(day, 'full', locale)}, ${t('common.today')}` : formatDay(day, 'full', locale)}>
-                    <span className="calendar-weekday" aria-hidden="true">{weekdayShort(day)}</span>
-                    <span className="calendar-date num" aria-hidden="true">{parseDay(day).getDate()}</span>
+                  <h2 className="flex items-baseline gap-2" aria-label={isToday ? `${formatDay(day, 'full', locale)}, ${t('common.today')}` : formatDay(day, 'full', locale)}>
+                    <span className={cn('font-mono text-[0.6875rem] tracking-wider uppercase', isToday ? 'text-primary' : 'text-muted-foreground')} aria-hidden="true">{weekdayShort(day)}</span>
+                    <span className={cn('font-mono text-xl font-semibold tabular-nums', isToday && 'text-primary', day < today && 'text-muted-foreground')} aria-hidden="true">{parseDay(day).getDate()}</span>
                   </h2>
 
-                  <ul className="calendar-items">
+                  <ul className="flex flex-col gap-1.5">
                     {dayExams.map((exam) => (
-                      <li key={`e${exam.id}`} className="calendar-exam">
-                        <GraduationCap aria-hidden="true" />
-                        <span>
-                          <span className="calendar-exam-title">{exam.title}</span>
-                          {exam.exam_time && <span className="calendar-exam-time num">{exam.exam_time.slice(0, 5)}</span>}
+                      <li key={`e${exam.id}`} className="flex items-start gap-2 rounded-md bg-warning/15 px-2 py-1.5 text-xs text-warning">
+                        <GraduationCap className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                        <span className="flex min-w-0 flex-col">
+                          <span className="font-medium break-words">{exam.title}</span>
+                          {exam.exam_time && <span className="font-mono tabular-nums">{exam.exam_time.slice(0, 5)}</span>}
                         </span>
                       </li>
                     ))}
                     {dayTasks.map(renderTask)}
-                    {dayExams.length === 0 && dayTasks.length === 0 && <li className="calendar-free">{t('calendar.free')}</li>}
+                    {dayExams.length === 0 && dayTasks.length === 0 && <li className="text-xs text-muted-foreground/70">{t('calendar.free')}</li>}
                   </ul>
 
-                  <form className="calendar-add" onSubmit={(e) => void addTask(e, day)}>
-                    <input
-                      className="input"
+                  <form className="mt-auto" onSubmit={(e) => void addTask(e, day)}>
+                    <Input
+                      className="h-8 border-dashed bg-transparent text-xs md:h-8 dark:bg-transparent"
                       value={drafts[day] ?? ''}
                       onChange={(e) => setDrafts((d) => ({ ...d, [day]: e.target.value }))}
                       maxLength={200}
@@ -278,7 +290,8 @@ function CalendarPage() {
                     />
                   </form>
 
-                  <p className={`calendar-studied${minutes ? ' has-time' : ''}`} data-level={heatLevel(minutes)}>
+                  <p className={cn('flex items-center gap-1.5 font-mono text-[0.6875rem] tabular-nums', minutes ? 'text-foreground' : 'text-muted-foreground/70')}>
+                    <span className={cn('size-2 rounded-sm', HEAT[heatLevel(minutes)] || 'bg-muted')} aria-hidden="true" />
                     {minutes ? t('calendar.studiedValue', { value: formatMinutes(minutes) }) : t('calendar.notStudied')}
                   </p>
                 </li>
@@ -287,22 +300,24 @@ function CalendarPage() {
           </ol>
         </>
       ) : (
-        <div className="panel calendar-month">
-          <div className="calendar-month-head" aria-hidden="true">
-            {weekDays.map((day) => <span key={day}>{weekdayShort(day)}</span>)}
+        <Card className="gap-0 py-0">
+          <div className="grid grid-cols-7 border-b bg-muted/30" aria-hidden="true">
+            {weekDays.map((day) => <span key={day} className="px-2 py-2 text-center font-mono text-[0.6875rem] tracking-wider text-muted-foreground uppercase">{weekdayShort(day)}</span>)}
           </div>
-          <ol className="calendar-month-grid">
+          <ol className="grid grid-cols-7 gap-px bg-border">
             {days.map((day) => {
               const dayExams = examsOn(day)
               const open = tasksOn(day).filter((x) => x.status !== 'done').length
               const minutes = minutesOn(day)
               const outside = day.slice(0, 7) !== monthStart(anchor).slice(0, 7)
               return (
-                <li key={day}>
+                <li key={day} className="bg-card">
                   <button
                     type="button"
-                    className={`calendar-cell${day === today ? ' is-today' : ''}${outside ? ' is-outside' : ''}`}
-                    data-level={heatLevel(minutes)}
+                    className={cn(
+                      'relative flex size-full min-h-16 flex-col items-start gap-1 p-1.5 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:min-h-24 sm:p-2',
+                      outside && 'opacity-40',
+                    )}
                     onClick={() => openWeek(day)}
                     aria-label={[
                       formatDay(day, 'full', locale),
@@ -311,16 +326,22 @@ function CalendarPage() {
                       minutes ? t('calendar.studiedValue', { value: formatMinutes(minutes) }) : '',
                     ].filter(Boolean).join(', ')}
                   >
-                    <span className="calendar-cell-date num">{parseDay(day).getDate()}</span>
-                    {dayExams.slice(0, 2).map((e) => <span key={e.id} className="calendar-cell-exam">{e.title}</span>)}
-                    {open > 0 && <span className="calendar-cell-tasks num">{t('calendar.openTasks', { count: open })}</span>}
-                    {minutes > 0 && <span className="calendar-cell-minutes num">{formatMinutes(minutes)}</span>}
+                    <span className={cn('flex size-6 items-center justify-center rounded-md font-mono text-xs tabular-nums', day === today && 'bg-primary font-semibold text-primary-foreground')}>{parseDay(day).getDate()}</span>
+                    {dayExams.slice(0, 2).map((e) => <span key={e.id} className="hidden w-full truncate rounded-sm bg-warning/15 px-1 text-[0.6875rem] text-warning sm:block">{e.title}</span>)}
+                    {dayExams.length > 0 && <span className="size-1.5 rounded-full bg-warning sm:hidden" aria-hidden="true" />}
+                    {open > 0 && <span className="hidden text-[0.6875rem] text-muted-foreground sm:block">{t('calendar.openTasks', { count: open })}</span>}
+                    {minutes > 0 && (
+                      <span className="mt-auto flex items-center gap-1 font-mono text-[0.6875rem] tabular-nums">
+                        <span className={cn('size-2 rounded-sm', HEAT[heatLevel(minutes)])} aria-hidden="true" />
+                        <span className="hidden sm:inline">{formatMinutes(minutes)}</span>
+                      </span>
+                    )}
                   </button>
                 </li>
               )
             })}
           </ol>
-        </div>
+        </Card>
       )}
     </div>
   )

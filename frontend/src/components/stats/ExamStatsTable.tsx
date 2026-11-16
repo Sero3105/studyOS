@@ -1,3 +1,5 @@
+import Section from './Section'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { formatMinutes } from '../../utils/dates'
 import type { ExamStatsRow } from '../../utils/planning'
 import { useLanguage } from '../../i18n/useLanguage'
@@ -6,39 +8,33 @@ import { useLanguage } from '../../i18n/useLanguage'
 function ExamStatsTable({ rows }: { rows: ExamStatsRow[] }) {
   const { t, locale } = useLanguage()
   return (
-    <section className="panel" aria-labelledby="stats-exams-title">
-      <div className="panel-head">
-        <h2 id="stats-exams-title" className="panel-title">{t('stats.examsTitle')}</h2>
-        <span className="panel-meta">{t('stats.examsMeta')}</span>
-      </div>
-      <div className="table-scroll">
-        <table className="plan-table exam-stats-table">
-          <thead>
-            <tr>
-              <th scope="col">{t('stats.examsExam')}</th>
-              <th scope="col">{t('stats.examsDays')}</th>
-              <th scope="col">{t('stats.planStudied')}</th>
-              <th scope="col">{t('stats.examsPerCfu')}</th>
-              <th scope="col">{t('stats.examsToCatchUp')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.exam.id}>
-                <th scope="row">{row.exam.title}</th>
-                <td className="num">{row.days === 0 ? t('common.today') : row.days}</td>
-                <td className="num">{row.minutes ? formatMinutes(row.minutes) : '—'}</td>
-                <td className="num">{row.hoursPerCfu === null ? '—' : `${row.hoursPerCfu.toLocaleString(locale, { maximumFractionDigits: 1 })} h`}</td>
-                <td className="num">
-                  {row.topics ? t('stats.examsTopics', { count: row.toCatchUp, total: row.topics }) : '—'}
-                  {row.untouched > 0 && <span className="exam-stats-untouched"> · {t('stats.examsUntouched', { count: row.untouched })}</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <Section id="stats-exams-title" title={t('stats.examsTitle')} meta={t('stats.examsMeta')}>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">{t('stats.examsExam')}</TableHead>
+            <TableHead scope="col" className="text-right">{t('stats.examsDays')}</TableHead>
+            <TableHead scope="col" className="text-right">{t('stats.planStudied')}</TableHead>
+            <TableHead scope="col" className="text-right">{t('stats.examsPerCfu')}</TableHead>
+            <TableHead scope="col">{t('stats.examsToCatchUp')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.exam.id}>
+              <TableHead scope="row" className="font-normal text-foreground">{row.exam.title}</TableHead>
+              <TableCell className="text-right font-mono tabular-nums">{row.days === 0 ? t('common.today') : row.days}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{row.minutes ? formatMinutes(row.minutes) : '—'}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{row.hoursPerCfu === null ? '—' : `${row.hoursPerCfu.toLocaleString(locale, { maximumFractionDigits: 1 })} h`}</TableCell>
+              <TableCell className="font-mono tabular-nums">
+                {row.topics ? t('stats.examsTopics', { count: row.toCatchUp, total: row.topics }) : '—'}
+                {row.untouched > 0 && <span className="text-warning"> · {t('stats.examsUntouched', { count: row.untouched })}</span>}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Section>
   )
 }
 

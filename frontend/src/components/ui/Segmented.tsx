@@ -1,3 +1,5 @@
+import { ToggleGroup, ToggleGroupItem } from './toggle-group'
+
 interface SegmentedOption<T extends string> {
   value: T
   label: string
@@ -11,22 +13,25 @@ interface SegmentedProps<T extends string> {
   onChange: (value: T) => void
 }
 
-/** Filtro a segmenti: pulsanti con `aria-pressed`, uno solo attivo. */
+/** Filtro a segmenti: uno solo attivo, mai nessuno. */
 function Segmented<T extends string>({ label, value, options, onChange }: SegmentedProps<T>) {
   return (
-    <div className="segmented" role="group" aria-label={label}>
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      spacing={0}
+      value={value}
+      onValueChange={(next) => { if (next) onChange(next as T) }}
+      aria-label={label}
+      className="max-w-full overflow-x-auto"
+    >
       {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={option.value === value}
-          onClick={() => onChange(option.value)}
-        >
+        <ToggleGroupItem key={option.value} value={option.value} className="data-[state=on]:bg-accent data-[state=on]:text-foreground">
           {option.label}
-          {option.count !== undefined && <span className="segmented-count">{option.count}</span>}
-        </button>
+          {option.count !== undefined && <span className="font-mono text-xs text-muted-foreground tabular-nums">{option.count}</span>}
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 

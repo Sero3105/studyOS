@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom'
+import { cn } from '@/lib/utils'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
 import { COVERAGE_ORDER } from '../../utils/planning'
-import type { TopicCoverage } from '../../utils/planning'
+import type { CoverageStatus, TopicCoverage } from '../../utils/planning'
+
+const DOT: Record<CoverageStatus, string> = { weak: 'bg-destructive', untouched: 'bg-muted-foreground/30', stale: 'bg-warning', progress: 'bg-info', solid: 'bg-success' }
+const BORDER: Record<CoverageStatus, string> = { weak: 'border-l-destructive', untouched: 'border-l-muted-foreground/40', stale: 'border-l-warning', progress: 'border-l-info', solid: 'border-l-success' }
 import type { Subject } from '../../services/subjectService'
 import { sessionFor } from '../../utils/pomodoro'
 import { formatDay, formatMinutes } from '../../utils/dates'
@@ -28,7 +34,7 @@ function CoverageMap({ coverage, compact = false }: { coverage: ExamCoverage; co
 
   if (compact) {
     const missing = topics.filter((c) => c.status === 'untouched' || c.status === 'weak' || c.status === 'stale').length
-    return missing ? <span className="coverage-chip num" title={summary}>{t('coverage.missing', { count: missing })}</span> : null
+    return missing ? <Badge variant="outline" className="cursor-help font-mono tabular-nums" title={summary}>{t('coverage.missing', { count: missing })}</Badge> : null
   }
 
   const detail = (c: TopicCoverage) => [
@@ -38,26 +44,28 @@ function CoverageMap({ coverage, compact = false }: { coverage: ExamCoverage; co
   ].filter(Boolean).join(' · ')
 
   return (
-    <section className="coverage" aria-label={t('coverage.title')}>
-      <div className="readiness-head">
+    <section className="flex flex-col gap-3" aria-label={t('coverage.title')}>
+      <div className="flex items-baseline justify-between text-sm">
         <span>{t('coverage.title')}</span>
-        <span className="coverage-total num">{t('coverage.topics', { count: topics.length })}</span>
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">{t('coverage.topics', { count: topics.length })}</span>
       </div>
-      <div className="coverage-bar" role="img" aria-label={summary}>
-        {groups.map((g) => <span key={g.status} className={`is-${g.status}`} style={{ flexGrow: g.items.length }} />)}
+      <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={summary}>
+        {groups.map((g) => <span key={g.status} className={cn('h-full', DOT[g.status])} style={{ flexGrow: g.items.length }} />)}
       </div>
-      <dl className="coverage-groups">
+      <dl className="flex flex-col gap-3">
         {groups.map((g) => (
-          <div className="coverage-group" key={g.status}>
-            <dt><span className={`coverage-dot is-${g.status}`} aria-hidden="true" />{t(`coverage.${g.status}`)} <span className="num">{g.items.length}</span></dt>
-            <dd>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3" key={g.status}>
+            <dt className="flex w-36 shrink-0 items-center gap-2 pt-1 text-xs text-muted-foreground">
+              <span className={cn('size-2 rounded-full', DOT[g.status])} aria-hidden="true" />{t(`coverage.${g.status}`)} <span className="font-mono tabular-nums">{g.items.length}</span>
+            </dt>
+            <dd className="flex flex-wrap gap-1.5">
               {g.items.map((c) => (
-                <button key={c.topic.id} type="button" className={`tag tag-button coverage-topic is-${g.status}`}
+                <Button key={c.topic.id} variant="outline" size="xs" className={cn('border-l-2', BORDER[g.status], g.status === 'untouched' && 'border-dashed')}
                   onClick={() => navigate('/timer', { state: sessionFor(subject, c.topic) })}
                   title={[t('coverage.study'), detail(c)].filter(Boolean).join(' · ')}
                   aria-label={t('coverage.studyTopic', { title: c.topic.title, detail: detail(c) || t(`coverage.${g.status}`) })}>
                   {c.topic.title}
-                </button>
+                </Button>
               ))}
             </dd>
           </div>

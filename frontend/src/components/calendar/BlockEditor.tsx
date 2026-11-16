@@ -3,6 +3,10 @@ import type { FormEvent } from 'react'
 import type { Task } from '../../services/taskService'
 import { useLanguage } from '../../i18n/useLanguage'
 import DatePicker from '../ui/DatePicker'
+import { Button } from '../ui/button'
+import { Field, FieldGroup, FieldLabel } from '../ui/field'
+import { Input } from '../ui/input'
+import { NativeSelect, NativeSelectOption } from '../ui/native-select'
 
 const DURATIONS = [25, 50, 90, 120, 180]
 
@@ -34,32 +38,34 @@ function BlockEditor({ task, defaultDay, onSave, onCancel }: {
   }
 
   return (
-    <form className="block-editor" onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}>
-      <div className="field">
-        <span className="field-label">{t('calendar.blockDay')}</span>
-        <DatePicker required value={day} onChange={setDay} aria-label={t('calendar.blockDay')} />
-      </div>
-      <div className="block-editor-row">
-        <label className="field">
-          <span className="field-label">{t('calendar.blockTime')}</span>
-          <input type="time" required step={300} value={time} onChange={(e) => setTime(e.target.value)} autoFocus />
-        </label>
-        <label className="field">
-          <span className="field-label">{t('calendar.blockMinutes')}</span>
-          <select value={minutes} onChange={(e) => setMinutes(e.target.value)}>
-            {DURATIONS.map((m) => <option key={m} value={m}>{m} min</option>)}
-          </select>
-        </label>
-      </div>
-      <div className="block-editor-actions">
-        {task.scheduled_time && (
-          <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void save({ scheduled_time: null, planned_minutes: null })}>
-            {t('calendar.blockRemove')}
-          </button>
-        )}
-        <button className="btn btn-ghost" type="button" onClick={onCancel}>{t('common.cancel')}</button>
-        <button className="btn btn-primary" type="submit" disabled={busy}>{t('history.save')}</button>
-      </div>
+    <form onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}>
+      <FieldGroup className="gap-4">
+        <Field>
+          <FieldLabel htmlFor="block-day">{t('calendar.blockDay')}</FieldLabel>
+          <DatePicker id="block-day" required value={day} onChange={setDay} aria-label={t('calendar.blockDay')} />
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field>
+            <FieldLabel htmlFor="block-time">{t('calendar.blockTime')}</FieldLabel>
+            <Input id="block-time" type="time" required step={300} className="font-mono" value={time} onChange={(e) => setTime(e.target.value)} autoFocus />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="block-minutes">{t('calendar.blockMinutes')}</FieldLabel>
+            <NativeSelect id="block-minutes" className="w-full" value={minutes} onChange={(e) => setMinutes(e.target.value)}>
+              {DURATIONS.map((m) => <NativeSelectOption key={m} value={m}>{m} min</NativeSelectOption>)}
+            </NativeSelect>
+          </Field>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {task.scheduled_time && (
+            <Button type="button" variant="ghost" className="sm:mr-auto" disabled={busy} onClick={() => void save({ scheduled_time: null, planned_minutes: null })}>
+              {t('calendar.blockRemove')}
+            </Button>
+          )}
+          <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+          <Button type="submit" disabled={busy}>{t('history.save')}</Button>
+        </div>
+      </FieldGroup>
     </form>
   )
 }

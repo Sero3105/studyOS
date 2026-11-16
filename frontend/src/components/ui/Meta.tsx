@@ -14,7 +14,7 @@ interface MetaProps {
  * sopra e nessuna riga comincia con un separatore. Gli elementi vuoti
  * vengono ignorati.
  */
-function Meta({ items, className = 'row-meta' }: MetaProps) {
+function Meta({ items, className = 'text-xs text-muted-foreground' }: MetaProps) {
   const parts = items.filter((item) => item !== null && item !== undefined && item !== false && item !== '')
   return (
     <span className={className}>

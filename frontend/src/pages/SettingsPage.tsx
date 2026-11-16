@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { Copy, ExternalLink } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import PageHeader from '../components/ui/PageHeader'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../components/ui/field'
+import { Input } from '../components/ui/input'
+import { NativeSelect, NativeSelectOption } from '../components/ui/native-select'
+import { Switch } from '../components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
 import { ErrorNotice } from '../components/ui/Feedback'
 import { useLanguage } from '../i18n/useLanguage'
 import { LANGUAGES } from '../i18n/translations'
@@ -32,13 +42,38 @@ const languageKeys: Record<Language, 'settings.italian' | 'settings.english'> = 
 
 type Run = (action: () => Promise<string>, fallback: string) => Promise<void>
 
-function Section({ id, title, description, children }: { id: string; title: string; description: string; children: ReactNode }) {
+/** Sezione impostazioni: titolo e spiegazione a sinistra, controlli a destra (sotto, su mobile). */
+function Section({ id, title, description, children, danger = false }: { id: string; title: string; description: string; children: ReactNode; danger?: boolean }) {
   return (
-    <section className="panel" aria-labelledby={id}>
-      <h2 id={id} className="panel-title">{title}</h2>
-      <p className="settings-description">{description}</p>
-      {children}
+    <section className={cn('grid gap-4 py-6 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] md:gap-10')} aria-labelledby={id}>
+      <div className="flex flex-col gap-1">
+        <h2 id={id} className={cn('text-sm font-medium', danger && 'text-destructive')}>{title}</h2>
+        <p className="text-sm text-pretty text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex min-w-0 flex-col gap-4">{children}</div>
     </section>
+  )
+}
+
+function Toggle({ id, label, checked, disabled, onChange }: { id: string; label: string; checked: boolean; disabled?: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <Field orientation="horizontal" className="justify-between rounded-lg border p-3">
+      <FieldLabel htmlFor={id} className="font-normal">{label}</FieldLabel>
+      <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </Field>
+  )
+}
+
+const choiceItem = 'data-[state=on]:bg-accent data-[state=on]:text-foreground'
+
+function FileButton({ label, variant, disabled, onChange }: { label: string; variant: 'outline' | 'ghost'; disabled: boolean; onChange: (event: ChangeEvent<HTMLInputElement>) => void }) {
+  return (
+    <Button variant={variant} asChild>
+      <label aria-disabled={disabled} className="aria-disabled:pointer-events-none aria-disabled:opacity-50">
+        {label}
+        <input className="sr-only" type="file" accept="application/json,.json" disabled={disabled} onChange={onChange} />
+      </label>
+    </Button>
   )
 }
 
@@ -64,16 +99,18 @@ function SecretLink({ kind, busy, run, prefix }: { kind: LinkKind; busy: boolean
   return (
     <>
       {link && (
-        <div className="settings-actions">
-          <input className="input settings-link" readOnly value={link} aria-label={t(key('LinkLabel'))} onFocus={(e) => e.target.select()} />
-          <button className="btn btn-secondary" type="button" onClick={() => void navigator.clipboard?.writeText(link)}>{t('settings.copy')}</button>
-          {kind === 'calendar-feed' && <a className="btn btn-secondary" href={link.replace(/^https?:/, 'webcal:')}>{t('settings.feedSubscribe')}</a>}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input className="font-mono text-xs" readOnly value={link} aria-label={t(key('LinkLabel'))} onFocus={(e) => e.target.select()} />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void navigator.clipboard?.writeText(link)}><Copy data-icon="inline-start" aria-hidden="true" />{t('settings.copy')}</Button>
+            {kind === 'calendar-feed' && <Button variant="outline" asChild><a href={link.replace(/^https?:/, 'webcal:')}>{t('settings.feedSubscribe')}</a></Button>}
+          </div>
         </div>
       )}
-      {active && !link && <p className="panel-meta">{t('settings.linkActive')}</p>}
-      <div className="settings-actions">
-        <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void create()}>{active ? t('settings.linkRotate') : t(key('Create'))}</button>
-        {active && <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => void revoke()}>{t('settings.linkRevoke')}</button>}
+      {active && !link && <p className="flex items-center gap-2 text-sm text-success"><span className="size-1.5 rounded-full bg-success" aria-hidden="true" />{t('settings.linkActive')}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" disabled={busy} onClick={() => void create()}>{active ? t('settings.linkRotate') : t(key('Create'))}</Button>
+        {active && <Button variant="ghost" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void revoke()}>{t('settings.linkRevoke')}</Button>}
       </div>
     </>
   )
@@ -115,36 +152,35 @@ function AccountSection({ busy, run }: { busy: boolean; run: Run }) {
   }
 
   return (
-    <Section id="settings-account-title" title={t('settings.accountTitle')} description={t('settings.accountDescription')}>
-      <form className="settings-form" onSubmit={submitPassword}>
-        <h3 className="settings-subtitle">{t('settings.passwordTitle')}</h3>
-        <div className="form-grid">
-          <label className="field">
-            <span className="field-label">{t('settings.currentPassword')}</span>
-            <input type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} maxLength={128} />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('settings.newPassword')}</span>
-            <input type="password" autoComplete="new-password" required value={next} onChange={(e) => setNext(e.target.value)} maxLength={128} />
-          </label>
-        </div>
-        <div className="settings-actions">
-          <button className="btn btn-secondary" type="submit" disabled={busy || !current || !next}>{t('settings.passwordSubmit')}</button>
-        </div>
-      </form>
+    <>
+      <Section id="settings-account-title" title={t('settings.passwordTitle')} description={t('settings.accountDescription')}>
+        <form onSubmit={submitPassword}>
+          <FieldGroup className="gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="current-password">{t('settings.currentPassword')}</FieldLabel>
+                <Input id="current-password" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} maxLength={128} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-password">{t('settings.newPassword')}</FieldLabel>
+                <Input id="new-password" type="password" autoComplete="new-password" required value={next} onChange={(e) => setNext(e.target.value)} maxLength={128} />
+              </Field>
+            </div>
+            <Button type="submit" variant="outline" className="self-start" disabled={busy || !current || !next}>{t('settings.passwordSubmit')}</Button>
+          </FieldGroup>
+        </form>
+      </Section>
 
-      <form className="settings-form settings-danger" onSubmit={submitDelete}>
-        <h3 className="settings-subtitle">{t('settings.deleteTitle')}</h3>
-        <p className="settings-description">{t('settings.deleteDescription')}</p>
-        <label className="field form-narrow">
-          <span className="field-label">{t('settings.confirmWithPassword')}</span>
-          <input type="password" autoComplete="current-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} maxLength={128} />
-        </label>
-        <div className="settings-actions">
-          <button className="btn btn-danger" type="submit" disabled={busy || !confirmPassword}>{t('settings.deleteSubmit')}</button>
-        </div>
-      </form>
-    </Section>
+      <Section id="settings-delete-title" danger title={t('settings.deleteTitle')} description={t('settings.deleteDescription')}>
+        <form onSubmit={submitDelete} className="flex flex-col gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <Field className="max-w-sm">
+            <FieldLabel htmlFor="delete-password">{t('settings.confirmWithPassword')}</FieldLabel>
+            <Input id="delete-password" type="password" autoComplete="current-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} maxLength={128} />
+          </Field>
+          <Button type="submit" variant="destructive" className="self-start" disabled={busy || !confirmPassword}>{t('settings.deleteSubmit')}</Button>
+        </form>
+      </Section>
+    </>
   )
 }
 
@@ -152,7 +188,6 @@ function SettingsPage() {
   const { language, setLanguage, t, locale } = useLanguage()
   const example = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date())
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [reminders, setReminders] = useState(remindersEnabled)
   const [reviews, setReviews] = useState(reviewsEnabled)
@@ -164,8 +199,8 @@ function SettingsPage() {
   const [theme, setThemeState] = useState(getTheme)
 
   const run: Run = async (action, fallback) => {
-    setBusy(true); setError(''); setNotice('')
-    try { setNotice(await action()) } catch (e) { setError(errorMessage(e, fallback)) }
+    setBusy(true); setError('')
+    try { const message = await action(); if (message) toast.success(message) } catch (e) { setError(errorMessage(e, fallback)) }
     finally { setBusy(false) }
   }
 
@@ -210,130 +245,102 @@ function SettingsPage() {
     setTimerAlertsEnabled(enabled); setTimerAlerts(enabled)
   }
   const chooseCfu = (value: number) => { setDegreeCfu(value); setCfu(value) }
-  const toggleRestDay = (day: number, off: boolean) => {
-    const next = off ? [...rest, day].sort() : rest.filter((d) => d !== day)
-    setRestDays(next); setRest(next)
-  }
   const chooseTheme = (value: Theme) => { saveTheme(value); setThemeState(value) }
 
   return (
-    <div className="page settings-page">
+    <div className="flex flex-col gap-8">
       <PageHeader title={t('settings.title')} description={t('settings.description')} />
       {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
-      {notice && <div className="notice notice-success" role="status">{notice}</div>}
 
-      <section className="panel" aria-labelledby="settings-language-title">
-        <h2 id="settings-language-title" className="panel-title">{t('settings.languageTitle')}</h2>
-        <p className="settings-description">{t('settings.languageDescription')}</p>
-        <fieldset className="settings-language">
-          <legend className="field-label">{t('settings.languageLabel')}</legend>
-          <div className="settings-language-options" role="radiogroup" aria-label={t('settings.languageLabel')}>
-            {LANGUAGES.map((option) => (
-              <label key={option} className={`settings-language-option${language === option ? ' is-selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="language"
-                  value={option}
-                  lang={option}
-                  checked={language === option}
-                  onChange={() => setLanguage(option)}
-                />
-                <span>{t(languageKeys[option])}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <p className="panel-meta">{t('settings.currentDateExample', { date: example.charAt(0).toUpperCase() + example.slice(1) })}</p>
-      </section>
+      <Tabs defaultValue="general" className="gap-6">
+        <TabsList className="w-full sm:w-fit">
+          <TabsTrigger value="general">{t('settings.tabGeneral')}</TabsTrigger>
+          <TabsTrigger value="data">{t('settings.tabData')}</TabsTrigger>
+          <TabsTrigger value="account">{t('settings.accountTitle')}</TabsTrigger>
+        </TabsList>
 
-      <Section id="settings-theme-title" title={t('settings.themeTitle')} description={t('settings.themeDescription')}>
-        <fieldset className="settings-language">
-          <legend className="visually-hidden">{t('settings.themeTitle')}</legend>
-          <div className="settings-language-options">
-            {(Object.keys(themeKeys) as Theme[]).map((option) => (
-              <label key={option} className={`settings-language-option${theme === option ? ' is-selected' : ''}`}>
-                <input type="radio" name="theme" value={option} checked={theme === option} onChange={() => chooseTheme(option)} />
-                <span>{t(themeKeys[option])}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      </Section>
+        <TabsContent value="general">
+          <Card><CardContent className="flex flex-col divide-y">
+            <Section id="settings-language-title" title={t('settings.languageTitle')} description={t('settings.languageDescription')}>
+              <ToggleGroup type="single" variant="outline" spacing={0} value={language} onValueChange={(value) => { if (value) setLanguage(value as Language) }} aria-label={t('settings.languageLabel')}>
+                {LANGUAGES.map((option) => <ToggleGroupItem key={option} value={option} lang={option} className={choiceItem}>{t(languageKeys[option])}</ToggleGroupItem>)}
+              </ToggleGroup>
+              <p className="text-xs text-muted-foreground">{t('settings.currentDateExample', { date: example.charAt(0).toUpperCase() + example.slice(1) })}</p>
+            </Section>
 
-      <Section id="settings-reminders-title" title={t('settings.remindersTitle')} description={t('settings.remindersDescription')}>
-        {notificationsSupported() ? (
-          <label className="settings-toggle">
-            <input type="checkbox" className="check" checked={reminders} disabled={busy} onChange={(e) => void toggleReminders(e.target.checked)} />
-            <span>{t('settings.remindersToggle')}</span>
-          </label>
-        ) : <p className="panel-meta">{t('settings.remindersUnsupported')}</p>}
-        <label className="settings-toggle">
-          <input type="checkbox" className="check" checked={reviews} onChange={(e) => toggleReviews(e.target.checked)} />
-          <span>{t('settings.reviewsToggle')}</span>
-        </label>
-        <label className="settings-toggle">
-          <input type="checkbox" className="check" checked={timerAlerts} onChange={(e) => toggleTimerAlerts(e.target.checked)} />
-          <span>{t('settings.timerAlertsToggle')}</span>
-        </label>
-      </Section>
+            <Section id="settings-theme-title" title={t('settings.themeTitle')} description={t('settings.themeDescription')}>
+              <ToggleGroup type="single" variant="outline" spacing={0} value={theme} onValueChange={(value) => { if (value) chooseTheme(value as Theme) }} aria-label={t('settings.themeTitle')}>
+                {(Object.keys(themeKeys) as Theme[]).map((option) => <ToggleGroupItem key={option} value={option} className={choiceItem}>{t(themeKeys[option])}</ToggleGroupItem>)}
+              </ToggleGroup>
+            </Section>
 
-      <Section id="settings-degree-title" title={t('settings.degreeTitle')} description={t('settings.degreeDescription')}>
-        <label className="field form-narrow">
-          <span className="field-label">{t('settings.degreeCfu')}</span>
-          <select value={cfu} onChange={(e) => chooseCfu(Number(e.target.value))}>
-            {DEGREE_CFU_OPTIONS.map((option) => <option key={option} value={option}>{t(`settings.degreeCfu${option}`)}</option>)}
-          </select>
-        </label>
-      </Section>
+            <Section id="settings-reminders-title" title={t('settings.remindersTitle')} description={t('settings.remindersDescription')}>
+              {notificationsSupported()
+                ? <Toggle id="toggle-reminders" label={t('settings.remindersToggle')} checked={reminders} disabled={busy} onChange={(value) => void toggleReminders(value)} />
+                : <p className="text-sm text-muted-foreground">{t('settings.remindersUnsupported')}</p>}
+              <Toggle id="toggle-reviews" label={t('settings.reviewsToggle')} checked={reviews} onChange={toggleReviews} />
+              <Toggle id="toggle-timer-alerts" label={t('settings.timerAlertsToggle')} checked={timerAlerts} onChange={toggleTimerAlerts} />
+            </Section>
 
-      <Section id="settings-plan-title" title={t('settings.planTitle')} description={t('settings.planDescription')}>
-        <fieldset className="settings-language">
-          <legend className="field-label">{t('settings.restDays')}</legend>
-          <div className="settings-language-options settings-weekdays">
-            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-              <label key={day} className={`settings-language-option${rest.includes(day) ? ' is-selected' : ''}`}>
-                <input type="checkbox" checked={rest.includes(day)} onChange={(e) => toggleRestDay(day, e.target.checked)} />
-                <span>{weekdayName(day)}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        {rest.length > 0 && <p className="panel-meta">{t('settings.restDaysSummary', { days: rest.map(weekdayName).join(', ') })}</p>}
-      </Section>
+            <Section id="settings-degree-title" title={t('settings.degreeTitle')} description={t('settings.degreeDescription')}>
+              <Field className="max-w-xs">
+                <FieldLabel htmlFor="degree-cfu">{t('settings.degreeCfu')}</FieldLabel>
+                <NativeSelect id="degree-cfu" className="w-full" value={cfu} onChange={(e) => chooseCfu(Number(e.target.value))}>
+                  {DEGREE_CFU_OPTIONS.map((option) => <NativeSelectOption key={option} value={option}>{t(`settings.degreeCfu${option}`)}</NativeSelectOption>)}
+                </NativeSelect>
+              </Field>
+            </Section>
 
-      <Section id="settings-feed-title" title={t('settings.feedTitle')} description={t('settings.feedDescription')}>
-        <SecretLink kind="calendar-feed" prefix="settings.feed" busy={busy} run={run} />
-      </Section>
+            <Section id="settings-plan-title" title={t('settings.planTitle')} description={t('settings.planDescription')}>
+              <FieldSet className="gap-2">
+                <FieldLegend variant="label">{t('settings.restDays')}</FieldLegend>
+                <ToggleGroup type="multiple" variant="outline" spacing={0} value={rest.map(String)} onValueChange={(values) => { const next = values.map(Number).sort(); setRestDays(next); setRest(next) }} className="w-full max-w-md [&>*]:flex-1 [&>*]:px-0">
+                  {[1, 2, 3, 4, 5, 6, 7].map((day) => <ToggleGroupItem key={day} value={String(day)} className={choiceItem}>{weekdayName(day)}</ToggleGroupItem>)}
+                </ToggleGroup>
+              </FieldSet>
+              {rest.length > 0 && <p className="text-xs text-muted-foreground">{t('settings.restDaysSummary', { days: rest.map(weekdayName).join(', ') })}</p>}
+            </Section>
+          </CardContent></Card>
+        </TabsContent>
 
-      <Section id="settings-data-title" title={t('settings.dataTitle')} description={t('settings.dataDescription')}>
-        <div className="settings-actions">
-          <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void downloadBackup()}>{t('settings.exportButton')}</button>
-          <label className={`btn btn-secondary${busy ? ' is-disabled' : ''}`}>
-            {t('settings.importButton')}
-            <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={(e) => uploadBackup(e, false)} />
-          </label>
-          <label className={`btn btn-ghost${busy ? ' is-disabled' : ''}`}>
-            {t('settings.restoreButton')}
-            <input className="visually-hidden" type="file" accept="application/json,.json" disabled={busy} onChange={(e) => uploadBackup(e, true)} />
-          </label>
-        </div>
-      </Section>
+        <TabsContent value="data">
+          <Card><CardContent className="flex flex-col divide-y">
+            <Section id="settings-data-title" title={t('settings.dataTitle')} description={t('settings.dataDescription')}>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" disabled={busy} onClick={() => void downloadBackup()}>{t('settings.exportButton')}</Button>
+                <FileButton variant="outline" label={t('settings.importButton')} disabled={busy} onChange={(e) => uploadBackup(e, false)} />
+                <FileButton variant="ghost" label={t('settings.restoreButton')} disabled={busy} onChange={(e) => uploadBackup(e, true)} />
+              </div>
+            </Section>
 
-      <Section id="settings-synapse-title" title={t('settings.synapseTitle')} description={t('settings.synapseDescription')}>
-        <div className="settings-actions">
-          <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => void downloadVault()}>{t('subjects.vaultButton')}</button>
-          <a className="btn btn-secondary" href={SYNAPSE_URL} target="_blank" rel="noopener noreferrer">
-            {t('settings.synapseDownload')} <ExternalLink aria-hidden="true" />
-          </a>
-        </div>
-        <p className="panel-meta">{t('settings.synapseSteps')}</p>
-      </Section>
+            <Section id="settings-feed-title" title={t('settings.feedTitle')} description={t('settings.feedDescription')}>
+              <SecretLink kind="calendar-feed" prefix="settings.feed" busy={busy} run={run} />
+            </Section>
 
-      <Section id="settings-share-title" title={t('settings.shareTitle')} description={t('settings.shareDescription')}>
-        <SecretLink kind="share" prefix="settings.share" busy={busy} run={run} />
-      </Section>
+            <Section id="settings-share-title" title={t('settings.shareTitle')} description={t('settings.shareDescription')}>
+              <SecretLink kind="share" prefix="settings.share" busy={busy} run={run} />
+            </Section>
 
-      <AccountSection busy={busy} run={run} />
+            <Section id="settings-synapse-title" title={t('settings.synapseTitle')} description={t('settings.synapseDescription')}>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" disabled={busy} onClick={() => void downloadVault()}>{t('subjects.vaultButton')}</Button>
+                <Button variant="outline" asChild>
+                  <a href={SYNAPSE_URL} target="_blank" rel="noopener noreferrer">
+                    {t('settings.synapseDownload')} <ExternalLink data-icon="inline-end" aria-hidden="true" />
+                  </a>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('settings.synapseSteps')}</p>
+            </Section>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="account">
+          <Card><CardContent className="flex flex-col divide-y">
+            <AccountSection busy={busy} run={run} />
+          </CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

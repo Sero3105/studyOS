@@ -63,8 +63,8 @@ export function formatMinutes(minutes: number): string {
 
 /** Classe di urgenza di una scadenza: rossa entro 3 giorni, ambra entro 7. */
 export function urgencyClass(days: number): string {
-  if (days <= 3) return 'is-urgent'
-  if (days <= 7) return 'is-soon'
+  if (days <= 3) return 'text-destructive'
+  if (days <= 7) return 'text-warning'
   return ''
 }
 

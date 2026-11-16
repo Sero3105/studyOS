@@ -1,4 +1,6 @@
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import Section from './Section'
 import WeekChart from '../ui/WeekChart'
 import SubjectDot from '../ui/SubjectDot'
 import type { Subject } from '../../services/subjectService'
@@ -13,7 +15,7 @@ function Delta({ minutes }: { minutes: number }) {
   const { t } = useLanguage()
   const Icon = minutes > 0 ? TrendingUp : minutes < 0 ? TrendingDown : Minus
   return (
-    <span className={`trend-delta num${minutes > 0 ? ' is-up' : minutes < 0 ? ' is-down' : ''}`}>
+    <span className={cn('inline-flex items-center gap-1 font-mono text-xs tabular-nums [&_svg]:size-3.5', minutes > 0 ? 'text-success' : minutes < 0 ? 'text-destructive' : 'text-muted-foreground')}>
       <Icon aria-hidden="true" />
       {minutes === 0 ? t('stats.trendSame') : `${minutes > 0 ? '+' : '−'}${formatMinutes(Math.abs(minutes))}`}
     </span>
@@ -33,35 +35,32 @@ function StudyTrend({ sessions, subjects, tasks, today }: { sessions: StudySessi
   const hours = (m: number) => `${Math.round(m / 60) || '<1'}h`
 
   return (
-    <div className="stats-split">
-      <section className="panel" aria-labelledby="stats-trend-title">
-        <div className="panel-head">
-          <h2 id="stats-trend-title" className="panel-title">{t('stats.trendTitle')}</h2>
-          <span className="panel-meta">{t('stats.trendMeta', { avg: formatMinutes(Math.round(weeks.reduce((s, w) => s + w.minutes, 0) / weeks.length)) })}</span>
-        </div>
+    <div className="grid gap-4 lg:grid-cols-3">
+      <Section id="stats-trend-title" className="lg:col-span-2" title={t('stats.trendTitle')} meta={t('stats.trendMeta', { avg: formatMinutes(Math.round(weeks.reduce((s, w) => s + w.minutes, 0) / weeks.length)) })}>
         <WeekChart daily={weeks} tall valueFor={hours}
           labelFor={(date, last) => (last ? t('stats.thisWeekShort') : weeks.findIndex((w) => w.date === date) % 4 === 0 ? shortDate.format(new Date(`${date}T00:00:00`)) : '')}
           describe={(date) => t('stats.weekOf', { day: formatDay(date, 'long', locale) })} />
-      </section>
+      </Section>
 
-      <section className="panel progress-panel" aria-labelledby="stats-vs-title">
-        <h2 id="stats-vs-title" className="panel-title">{t('stats.vsTitle')}</h2>
-        <div className="trend-total">
-          <span className="figure-value num">{formatMinutes(review.minutes)}</span>
-          <Delta minutes={review.minutes - review.previousMinutes} />
+      <Section id="stats-vs-title" title={t('stats.vsTitle')}>
+        <div className="flex flex-col gap-5">
+          <div className="flex items-baseline gap-3">
+            <span className="font-mono text-3xl font-semibold tracking-tight tabular-nums">{formatMinutes(review.minutes)}</span>
+            <Delta minutes={review.minutes - review.previousMinutes} />
+          </div>
+          {review.bySubject.length > 0 && (
+            <ul className="flex flex-col divide-y" aria-label={t('stats.vsBySubject')}>
+              {review.bySubject.map((row) => (
+                <li key={row.subjectId} className="grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-center gap-3 py-2 text-sm first:pt-0">
+                  <span className="flex min-w-0 items-center gap-2 truncate"><SubjectDot subject={subjects.find((s) => s.id === row.subjectId)} />{row.name}</span>
+                  <span className="font-mono text-xs tabular-nums">{formatMinutes(row.minutes)}</span>
+                  <Delta minutes={row.minutes - row.previous} />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {review.bySubject.length > 0 && (
-          <ul className="trend-subjects" aria-label={t('stats.vsBySubject')}>
-            {review.bySubject.map((row) => (
-              <li key={row.subjectId}>
-                <span className="trend-name"><SubjectDot subject={subjects.find((s) => s.id === row.subjectId)} />{row.name}</span>
-                <span className="num">{formatMinutes(row.minutes)}</span>
-                <Delta minutes={row.minutes - row.previous} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      </Section>
     </div>
   )
 }

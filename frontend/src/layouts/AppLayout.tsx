@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, Play, Search } from 'lucide-react'
-import Sidebar from '../components/Sidebar'
+import Sidebar, { SearchButton } from '../components/Sidebar'
 import CommandPalette from '../components/CommandPalette'
+import MobileTabBar from '../components/MobileTabBar'
+import TimerPill from '../components/TimerPill'
+import BrandMark from '../components/BrandMark'
 import { navItems } from '../components/navigation'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '../components/ui/sidebar'
 import { TimerProvider } from '../context/TimerProvider'
 import { useLanguage } from '../i18n/useLanguage'
 import { runDeadlineReminders } from '../utils/reminders'
@@ -12,38 +15,33 @@ import UndoProvider from '../components/UndoProvider'
 
 const COLLAPSE_KEY = 'studyos.sidebar.collapsed'
 
+function readCollapsed(): boolean {
+  try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
+}
+
 /**
- * Layout principale dell'applicazione.
+ * Layout delle pagine protette:
+ * - sidebar shadcn (icone su desktop ridotto, pannello su mobile),
+ * - barra in alto con il timer in corso e la ricerca, sempre raggiungibili,
+ * - tab bar in basso su mobile per le pagine di ogni giorno.
  *
- * Definisce la struttura comune a tutte le pagine protette:
- * - la sidebar di navigazione (colonna fissa su desktop, pannello su mobile),
- * - una barra superiore visibile solo su schermi stretti,
- * - l'area centrale, con larghezza massima e margini uguali per ogni route,
- *   dove `Outlet` renderizza la pagina corrente.
- *
- * Qui vive anche `TimerProvider`: il layout resta montato tra una route e
- * l'altra, quindi il timer continua a girare mentre si naviga.
- *
- * Lo stato "ridotta" della sidebar viene ricordato tra una visita e l'altra;
- * il pannello mobile si chiude a ogni cambio di pagina e con Escape.
+ * `TimerProvider` vive qui: il layout resta montato tra le route, quindi il
+ * timer continua mentre si naviga.
  */
 function AppLayout() {
   const { t, locale } = useLanguage()
   const location = useLocation()
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [lastPath, setLastPath] = useState(location.pathname)
+  const [open, setOpen] = useState(() => !readCollapsed())
   const [paletteOpen, setPaletteOpen] = useState(false)
   const navigate = useNavigate()
 
-  if (lastPath !== location.pathname) {
-    setLastPath(location.pathname)
-    setMobileOpen(false)
+  const changeOpen = (next: boolean) => {
+    setOpen(next)
+    try { localStorage.setItem(COLLAPSE_KEY, next ? '0' : '1') } catch { /* storage bloccato: vale per la sessione */ }
   }
 
-  useEffect(() => {
-    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
-  }, [collapsed])
+  // Ogni pagina parte dall'alto.
+  useEffect(() => { window.scrollTo(0, 0) }, [location.pathname])
 
   // Preferenze dal server (valgono su ogni browser); offline resta la cache locale.
   useEffect(() => { void syncPreferences().catch(() => {}) }, [])
@@ -61,7 +59,7 @@ function AppLayout() {
     let pendingG = 0
     const handleKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault(); setPaletteOpen((open) => !open); return
+        event.preventDefault(); setPaletteOpen((value) => !value); return
       }
       const target = event.target as HTMLElement
       if (paletteOpen || event.metaKey || event.ctrlKey || event.altKey || target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
@@ -79,60 +77,41 @@ function AppLayout() {
     return () => document.removeEventListener('keydown', handleKey)
   }, [navigate, paletteOpen])
 
-  useEffect(() => {
-    if (!mobileOpen) return
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileOpen(false)
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [mobileOpen])
-
   return (
     <TimerProvider>
     <UndoProvider>
-      <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
-        <a className="skip-link" href="#main-content">{t('app.skipToContent')}</a>
+      <SidebarProvider open={open} onOpenChange={changeOpen}>
+        <a
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+          href="#main-content"
+        >
+          {t('app.skipToContent')}
+        </a>
+        <Sidebar />
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 
-        <header className="topbar">
-          <button
-            className="icon-btn"
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            aria-label={t('nav.openMenu')}
-            aria-expanded={mobileOpen}
-            aria-controls="app-sidebar"
-          >
-            <Menu aria-hidden="true" />
-          </button>
-          <Link to="/dashboard" className="brand">
-            <span className="brand-mark" aria-hidden="true" />
-            <span className="brand-name">StudyOS</span>
-          </Link>
-          <button className="icon-btn topbar-search" type="button" onClick={() => setPaletteOpen(true)} aria-label={t('palette.title')}>
-            <Search aria-hidden="true" />
-          </button>
-          <Link to="/timer" className="icon-btn topbar-cta" aria-label={t('nav.newSession')}>
-            <Play aria-hidden="true" />
-          </Link>
-        </header>
+        <SidebarInset className="min-w-0">
+          <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur-lg md:px-6">
+            <SidebarTrigger className="-ml-1 hidden md:inline-flex" aria-label={open ? t('nav.collapseSidebar') : t('nav.expandSidebar')} />
+            <span className="mr-1 hidden h-4 w-px bg-border md:block" aria-hidden="true" />
+            <Link to="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight md:hidden" aria-label={t('nav.goToDashboard')}>
+              <BrandMark className="size-7" />
+              StudyOS
+            </Link>
+            <div className="ml-auto flex items-center gap-2">
+              <TimerPill />
+              <SearchButton onClick={() => setPaletteOpen(true)} />
+            </div>
+          </header>
 
-        <Sidebar
-          collapsed={collapsed}
-          mobileOpen={mobileOpen}
-          onToggleCollapsed={() => setCollapsed((value) => !value)}
-          onCloseMobile={() => setMobileOpen(false)}
-          onOpenPalette={() => setPaletteOpen(true)}
-        />
-        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
-        {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
-
-        <main id="main-content" className="content" tabIndex={-1}>
-          <div className="content-inner">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 md:px-8 md:pt-10 md:pb-16">
+              <Outlet />
+            </div>
+          </main>
+        </SidebarInset>
+        <MobileTabBar />
+      </SidebarProvider>
     </UndoProvider>
     </TimerProvider>
   )

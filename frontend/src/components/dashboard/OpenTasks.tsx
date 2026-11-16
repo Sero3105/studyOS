@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
 import { EmptyState, ErrorNotice } from '../ui/Feedback'
 import Meta from '../ui/Meta'
+import MoreLink from '../ui/MoreLink'
+import Priority from '../ui/Priority'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Checkbox } from '../ui/checkbox'
 import ReviewRating from '../ReviewRating'
 import { updateTask } from '../../services/taskService'
 import type { ReviewRating as Rating, Task } from '../../services/taskService'
 import { daysUntil, relativeDay } from '../../utils/dates'
 import { errorMessage } from '../../utils/errors'
 import { useLanguage } from '../../i18n/useLanguage'
-import type { TranslationKey } from '../../i18n/translations'
-
-const priorityKeys: Record<string, TranslationKey> = { low: 'priority.low', medium: 'priority.medium', high: 'priority.high' }
 
 /**
  * Task aperti in ordine di scadenza, completabili direttamente dalla
@@ -34,55 +33,53 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
   }
 
   return (
-    <section className="panel" aria-labelledby="dash-tasks-title">
-      <div className="panel-head">
-        <h2 id="dash-tasks-title" className="panel-title">{t('dashboard.toDo')}</h2>
-        <Link className="text-link" to="/planner">
-          {t('nav.planner')} <ArrowRight aria-hidden="true" />
-        </Link>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 id="dash-tasks-title">{t('dashboard.toDo')}</h2></CardTitle>
+        <CardAction><MoreLink to="/planner">{t('nav.planner')}</MoreLink></CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
 
-      {error && <ErrorNotice message={error} onDismiss={() => setError('')} />}
-
-      {tasks.length === 0 ? (
-        <EmptyState
-          compact
-          title={t('dashboard.nothingPending')}
-          action={<Link className="text-link" to="/planner">{t('dashboard.planTask')} <ArrowRight aria-hidden="true" /></Link>}
-        >
-          {t('dashboard.openTasksBody')}
-        </EmptyState>
-      ) : (
-        <ul className="rows">
-          {tasks.map((task) => {
-            const overdue = task.due_date !== null && daysUntil(task.due_date) < 0
-            return (
-              <li className="row task-mini" key={task.id}>
-                <input
-                  className="check"
-                  type="checkbox"
-                  checked={false}
-                  onChange={() => void complete(task)}
-                  aria-label={t('dashboard.markDone', { title: task.title })}
-                />
-                <span className="row-main">
-                  <span className="row-title">{task.title}</span>
-                  <Meta
-                    items={[
-                      <span className={`priority priority-${task.priority}`}>{t(priorityKeys[task.priority])}</span>,
-                      <span className={overdue ? 'text-danger' : undefined}>
-                        {task.due_date ? relativeDay(task.due_date, locale) : t('dashboard.noDeadline')}
-                      </span>,
-                    ]}
+        {tasks.length === 0 ? (
+          <EmptyState
+            compact
+            title={t('dashboard.nothingPending')}
+            action={<MoreLink to="/planner">{t('dashboard.planTask')}</MoreLink>}
+          >
+            {t('dashboard.openTasksBody')}
+          </EmptyState>
+        ) : (
+          <ul className="flex flex-col divide-y" aria-labelledby="dash-tasks-title">
+            {tasks.map((task) => {
+              const overdue = task.due_date !== null && daysUntil(task.due_date) < 0
+              return (
+                <li className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0" key={task.id}>
+                  <Checkbox
+                    className="size-5"
+                    checked={false}
+                    onCheckedChange={() => void complete(task)}
+                    aria-label={t('dashboard.markDone', { title: task.title })}
                   />
-                </span>
-                {task.review_interval !== null && task.due_date !== null && daysUntil(task.due_date) <= 0 && <ReviewRating onRate={(rating) => void complete(task, rating)} />}
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </section>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-sm font-medium">{task.title}</span>
+                    <Meta
+                      items={[
+                        <Priority value={task.priority} />,
+                        <span className={overdue ? 'text-destructive' : undefined}>
+                          {task.due_date ? relativeDay(task.due_date, locale) : t('dashboard.noDeadline')}
+                        </span>,
+                      ]}
+                    />
+                  </span>
+                  {task.review_interval !== null && task.due_date !== null && daysUntil(task.due_date) <= 0 && <ReviewRating onRate={(rating) => void complete(task, rating)} />}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

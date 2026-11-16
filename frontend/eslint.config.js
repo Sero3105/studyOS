@@ -19,4 +19,9 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Componenti generati da shadcn: esportano anche le varianti (cva), come da upstream.
+    files: ['src/components/ui/[a-z]*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 ])

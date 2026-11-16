@@ -1,11 +1,15 @@
 import { Area, Bar, CartesianGrid, Cell, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { TrendingDown, TrendingUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { GradePoint } from '../../utils/grades'
 import { formatDay } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
 
 const SYNC = 'grade-trend'
-const axisTick = { fill: 'var(--text-muted)', fontSize: 11 }
+const axisTick = { fill: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'var(--font-mono)' }
+// Colori: media in lime (accento), salita in ciano, discesa in rosso, lode in lime.
+const UP = 'var(--info)'
+const DOWN = 'var(--destructive)'
 
 /** Nome breve per l'asse: prime parole, al massimo ~12 caratteri. */
 function shortName(title: string): string {
@@ -23,15 +27,15 @@ function TrendTooltip({ active, payload }: { active?: boolean; payload?: Readonl
   const up = (row.delta ?? 0) > 0.005
   const down = (row.delta ?? 0) < -0.005
   return (
-    <div className="grade-trend-tooltip">
-      <strong>{row.title}</strong>
+    <div className="grid min-w-48 gap-0.5 rounded-lg border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-lg">
+      <strong className="text-sm font-semibold text-popover-foreground">{row.title}</strong>
       <span>{formatDay(row.date, 'long', locale)}</span>
-      <span className="num">{t('exams.trendTooltip', { grade: `${row.grade}${row.honors ? 'L' : ''}`, cfu: row.cfu ?? '—' })}</span>
+      <span className="font-mono tabular-nums">{t('exams.trendTooltip', { grade: `${row.grade}${row.honors ? 'L' : ''}`, cfu: row.cfu ?? '—' })}</span>
       {row.average !== null && (
-        <span className="num grade-trend-tooltip-avg">
+        <span className="flex items-center justify-between gap-3 font-mono tabular-nums">
           {t('exams.trendAverageAfter', { value: row.average.toFixed(2) })}
           {row.delta !== null && (
-            <span className={`grade-trend-delta${up ? ' is-up' : down ? ' is-down' : ''}`}>
+            <span className={cn('inline-flex items-center gap-0.5 font-semibold [&_svg]:size-3.5', up ? 'text-info' : down ? 'text-destructive' : 'text-muted-foreground')}>
               {up ? <TrendingUp aria-hidden="true" /> : down ? <TrendingDown aria-hidden="true" /> : null}
               {row.delta > 0 ? '+' : ''}{row.delta.toFixed(2)}
             </span>
@@ -61,65 +65,65 @@ function GradeTrendChart({ points }: { points: GradePoint[] }) {
   const dot = ({ cx, cy, payload }: { cx?: number; cy?: number; payload?: Row }) => {
     if (cx === undefined || cy === undefined || !payload || payload.average === null) return <g key={`d-${payload?.id}`} />
     const tone = payload.delta === null ? 'flat' : payload.delta > 0.005 ? 'up' : payload.delta < -0.005 ? 'down' : 'flat'
-    return <circle key={`d-${payload.id}`} className={`grade-trend-point is-${tone}`} cx={cx} cy={cy} r={4.5} />
+    return <circle key={`d-${payload.id}`} cx={cx} cy={cy} r={4.5} stroke="var(--card)" strokeWidth={2} fill={tone === 'up' ? UP : tone === 'down' ? DOWN : 'var(--muted-foreground)'} />
   }
 
   return (
-    <figure className="grade-trend">
-      <div className="grade-trend-head">
-        <figcaption className="grade-trend-title">{t('exams.trendTitle')}</figcaption>
-        <ul className="grade-trend-legend">
-          <li><span className="grade-trend-key is-up" aria-hidden="true" />{t('exams.trendUp')}</li>
-          <li><span className="grade-trend-key is-down" aria-hidden="true" />{t('exams.trendDown')}</li>
-          <li><span className="grade-trend-key is-honors" aria-hidden="true" />{t('exams.formHonors')}</li>
+    <figure className="grid grid-cols-1 gap-3 border-t pt-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <figcaption className="text-sm font-semibold">{t('exams.trendTitle')}</figcaption>
+        <ul className="flex flex-wrap gap-4 text-xs text-muted-foreground [&>li]:inline-flex [&>li]:items-center [&>li]:gap-2">
+          <li><span className="size-2.5 rounded-full bg-info" aria-hidden="true" />{t('exams.trendUp')}</li>
+          <li><span className="size-2.5 rounded-full bg-destructive" aria-hidden="true" />{t('exams.trendDown')}</li>
+          <li><span className="size-2.5 rounded-xs bg-primary" aria-hidden="true" />{t('exams.formHonors')}</li>
         </ul>
       </div>
 
-      <div className="grade-trend-chart" role="img" aria-label={t('exams.trendLabel', { count: points.length })}>
-        <p className="grade-trend-axis-title">{t('exams.weightedAverage')} <span className="num">{last?.toFixed(2)}</span></p>
+      <div className="grid min-w-0 gap-1" role="img" aria-label={t('exams.trendLabel', { count: points.length })}>
+        <p className="mt-2 text-xs text-muted-foreground">{t('exams.weightedAverage')} <span className="ml-1 font-mono font-semibold text-foreground tabular-nums">{last?.toFixed(2)}</span></p>
         <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={data} syncId={SYNC} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
             <defs>
               <linearGradient id="grade-trend-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.28} />
-                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="var(--surface-3)" />
+            <CartesianGrid vertical={false} stroke="var(--border)" />
             <XAxis dataKey="label" hide />
             <YAxis domain={[low, high]} tick={axisTick} tickLine={false} axisLine={false} width={36} ticks={ticks} interval={0} />
-            <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--line)', strokeWidth: 1 }} />
-            <Area type="monotone" dataKey="average" stroke="var(--accent)" strokeWidth={2.5} fill="url(#grade-trend-fill)" dot={dot} activeDot={{ r: 6, fill: 'var(--accent)', stroke: 'var(--surface)', strokeWidth: 2 }} connectNulls isAnimationActive />
+            <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--border)', strokeWidth: 1 }} />
+            <Area type="monotone" dataKey="average" stroke="var(--primary)" strokeWidth={2.5} fill="url(#grade-trend-fill)" dot={dot} activeDot={{ r: 6, fill: 'var(--primary)', stroke: 'var(--card)', strokeWidth: 2 }} connectNulls isAnimationActive />
           </ComposedChart>
         </ResponsiveContainer>
 
-        <p className="grade-trend-axis-title">{t('exams.trendGrade')}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{t('exams.trendGrade')}</p>
         <ResponsiveContainer width="100%" height={150}>
           <ComposedChart data={data} syncId={SYNC} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--surface-3)" />
-            <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--line)' }} interval="preserveStartEnd" minTickGap={8} />
+            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--border)' }} interval="preserveStartEnd" minTickGap={8} />
             <YAxis domain={[18, 30]} ticks={[18, 24, 30]} tick={axisTick} tickLine={false} axisLine={false} width={36} />
             {/* Il tooltip è uno solo (sopra): qui resta solo l'evidenziazione sincronizzata. */}
-            <Tooltip content={() => null} cursor={{ fill: 'var(--surface-2)' }} />
+            <Tooltip content={() => null} cursor={{ fill: 'var(--muted)', fillOpacity: 0.5 }} />
             <Bar dataKey="grade" maxBarSize={22} radius={[4, 4, 0, 0]} isAnimationActive>
-              {data.map((row) => <Cell key={row.id} fill={row.honors ? 'var(--accent)' : 'var(--text-muted)'} />)}
+              {data.map((row) => <Cell key={row.id} fill={row.honors ? 'var(--primary)' : 'var(--muted-foreground)'} fillOpacity={row.honors ? 1 : 0.55} />)}
             </Bar>
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <details className="grade-trend-table">
-        <summary>{t('exams.trendTable')}</summary>
-        <table className="plan-table">
+      <details>
+        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">{t('exams.trendTable')}</summary>
+        <table className="mt-2 w-full text-sm [&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-medium [&_thead_th]:text-xs [&_thead_th]:text-muted-foreground [&_tr]:border-b">
           <thead><tr><th scope="col">{t('exams.formName')}</th><th scope="col">{t('exams.formDate')}</th><th scope="col">{t('exams.trendGrade')}</th><th scope="col">{t('exams.formCfu')}</th><th scope="col">{t('exams.weightedAverage')}</th></tr></thead>
           <tbody>
             {points.map((p) => (
               <tr key={p.id}>
                 <th scope="row">{p.title}</th>
                 <td>{formatDay(p.date, 'long', locale)}</td>
-                <td className="num">{p.grade}{p.honors ? 'L' : ''}</td>
-                <td className="num">{p.cfu ?? '—'}</td>
-                <td className="num">{p.average?.toFixed(2) ?? '—'}{p.delta ? ` (${p.delta > 0 ? '+' : ''}${p.delta.toFixed(2)})` : ''}</td>
+                <td className="font-mono tabular-nums">{p.grade}{p.honors ? 'L' : ''}</td>
+                <td className="font-mono tabular-nums">{p.cfu ?? '—'}</td>
+                <td className="font-mono tabular-nums">{p.average?.toFixed(2) ?? '—'}{p.delta ? ` (${p.delta > 0 ? '+' : ''}${p.delta.toFixed(2)})` : ''}</td>
               </tr>
             ))}
           </tbody>
