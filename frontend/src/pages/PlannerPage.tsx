@@ -1,8 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, ChevronDown, Play, Plus, Repeat } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ChevronDown, Play, Plus, Repeat } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import PageHeader from '../components/ui/PageHeader'
+import MoreLink from '../components/ui/MoreLink'
+import Priority from '../components/ui/Priority'
+import DateBlock from '../components/ui/DateBlock'
+import { Button } from '../components/ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Checkbox } from '../components/ui/checkbox'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible'
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../components/ui/field'
+import { Input } from '../components/ui/input'
+import { NativeSelect, NativeSelectOption } from '../components/ui/native-select'
+import { Spinner } from '../components/ui/spinner'
+import { Textarea } from '../components/ui/textarea'
+import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
 import Segmented from '../components/ui/Segmented'
 import DeleteButton from '../components/ui/DeleteButton'
 import { useUndo } from '../context/undoContext'
@@ -17,9 +31,10 @@ import type { Subject } from '../services/subjectService'
 import { getExams } from '../services/examService'
 import { isDated } from '../services/examService'
 import type { Exam } from '../services/examService'
-import { addDays, daysUntil, formatDay, monthShort, parseDay, relativeDay, urgencyClass, weekdayShort } from '../utils/dates'
+import { addDays, daysUntil, formatDay, relativeDay, urgencyClass, weekdayShort } from '../utils/dates'
 import SubjectDot from '../components/ui/SubjectDot'
 import { errorMessage } from '../utils/errors'
+import { archivedSubjectIds } from '../utils/grades'
 import { useLanguage } from '../i18n/useLanguage'
 import type { TranslationKey } from '../i18n/translations'
 import DatePicker from '../components/ui/DatePicker'
@@ -89,6 +104,7 @@ function PlannerPage() {
   useEffect(() => { queueMicrotask(() => { void load() }) }, [load])
 
   const selectedSubject = subjects.find((s) => s.id === Number(subjectId))
+  const archived = archivedSubjectIds(exams)
 
   const addTask = async (event: FormEvent) => {
     event.preventDefault()
@@ -138,57 +154,59 @@ function PlannerPage() {
   const doneTasks = sortTasks(tasks.filter((t) => t.status === 'done'))
   const overdueCount = openTasks.filter((t) => t.due_date && daysUntil(t.due_date) < 0).length
 
+  const reveal = 'md:opacity-0 md:transition-opacity md:group-hover/task:opacity-100 md:group-focus-within/task:opacity-100'
+
   const renderTask = (task: Task) => {
     const days = task.due_date ? daysUntil(task.due_date) : null
     const done = task.status === 'done'
     const subject = subjectOf(task.subject_id)
     const topic = topicName(task)
     return (
-      <li className={`row task-row${done ? ' is-complete' : ''}`} key={task.id}>
-        <input
-          className="check"
-          type="checkbox"
+      <li className="group/task flex flex-wrap items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-nowrap md:px-5" key={task.id}>
+        <Checkbox
+          className="mt-0.5 size-5"
           checked={done}
-          onChange={(e) => void changeStatus(task, e.target.checked ? 'done' : 'todo')}
+          onCheckedChange={(checked) => void changeStatus(task, checked === true ? 'done' : 'todo')}
           aria-label={done ? t('planner.reopen', { title: task.title }) : t('planner.markDone', { title: task.title })}
         />
-        <span className="row-main">
-          <span className={`row-title${done ? ' is-done' : ''}`}>{task.title}</span>
-          {task.description && <span className="task-description">{task.description}</span>}
+        <span className="flex min-w-0 flex-1 basis-[calc(100%-2.75rem)] flex-col gap-1 sm:basis-0">
+          <span className={cn('text-sm font-medium break-words', done && 'text-muted-foreground line-through')}>{task.title}</span>
+          {task.description && <span className="line-clamp-2 text-sm text-muted-foreground">{task.description}</span>}
           <Meta
-            className="row-meta task-meta"
+            className="text-xs text-muted-foreground [&>*]:inline-flex [&>*]:items-center [&>*]:gap-1.5 [&>*]:align-middle"
             items={[
-              <span className={`priority priority-${task.priority}`}>{t(priorityKeys[task.priority])}</span>,
+              <Priority value={task.priority} />,
               task.due_date && (
-                <span className={!done && days !== null && days < 0 ? 'text-danger' : undefined} title={formatDay(task.due_date, 'long', locale)}>
+                <span className={!done && days !== null && days < 0 ? 'text-destructive' : undefined} title={formatDay(task.due_date, 'long', locale)}>
                   {relativeDay(task.due_date, locale)}{task.scheduled_time && ` · ${task.scheduled_time.slice(0, 5)}`}
                 </span>
               ),
-              subject && <><SubjectDot subject={subject} />{subject.name}{topic ? ` / ${topic}` : ''}</>,
-              task.recurrence && <span className="task-repeat"><Repeat aria-hidden="true" /> {recurrenceLabel(task.recurrence)}</span>,
+              subject && <span><SubjectDot subject={subject} />{subject.name}{topic ? ` / ${topic}` : ''}</span>,
+              task.recurrence && <span><Repeat className="size-3" aria-hidden="true" /> {recurrenceLabel(task.recurrence)}</span>,
             ]}
           />
         </span>
-        <span className="row-actions">
+        <span className="ml-8 flex items-center gap-1 sm:ml-0">
           {/* Un ripasso in scadenza si chiude dicendo com'è andato; prima di allora è un task normale. */}
           {!done && task.review_interval !== null && days !== null && days <= 0 ? (
             <ReviewRating onRate={(rating) => void changeStatus(task, 'done', rating)} />
           ) : !done && (
-            <button
-              className={`tag tag-button${task.status === 'in_progress' ? ' tag-accent' : ' row-reveal'}`}
-              type="button"
+            <Button
+              variant={task.status === 'in_progress' ? 'secondary' : 'ghost'}
+              size="xs"
+              className={cn(task.status === 'in_progress' ? 'text-primary' : reveal)}
               aria-pressed={task.status === 'in_progress'}
               onClick={() => void changeStatus(task, task.status === 'in_progress' ? 'todo' : 'in_progress')}
             >
               {t('planner.inProgress')}
-            </button>
+            </Button>
           )}
-          <span className="row-reveal row-actions">
+          <span className={cn('flex items-center gap-0.5', reveal)}>
             {!done && (
-              <button className="icon-btn" type="button" onClick={() => navigate('/timer', { state: sessionFor(subject, subject?.topics.find((x) => x.id === task.topic_id), task) })}
+              <Button variant="ghost" size="icon-sm" onClick={() => navigate('/timer', { state: sessionFor(subject, subject?.topics.find((x) => x.id === task.topic_id), task) })}
                 aria-label={t('planner.startTimer', { title: task.title })} title={t('planner.startTimerTitle')}>
                 <Play aria-hidden="true" />
-              </button>
+              </Button>
             )}
             <DeleteButton label={t('planner.deleteLabel', { title: task.title })} onDelete={() => removeTask(task)} />
           </span>
@@ -204,8 +222,10 @@ function PlannerPage() {
           .filter((group) => group.items.length > 0)
       : [{ id: filter, titleKey: (filter === 'done' ? 'planner.group.done' : 'planner.group.all') as TranslationKey, items: filter === 'done' ? doneTasks : sortTasks(tasks) }]
 
+  const optional = <span className="font-normal text-muted-foreground">{t('common.optional')}</span>
+
   return (
-    <div className="page planner-page">
+    <div className="flex flex-col gap-8">
       <PageHeader
         title={t('planner.title')}
         description={
@@ -217,181 +237,169 @@ function PlannerPage() {
 
       {error && <ErrorNotice message={error} onRetry={tasks.length ? undefined : () => void load()} onDismiss={tasks.length ? () => setError('') : undefined} />}
 
-      <div className="planner-layout">
-        <div className="planner-main">
-          <form className="panel composer" onSubmit={addTask} aria-label={t('planner.newTask')}>
-            <div className="composer-row">
-              <label className="visually-hidden" htmlFor="task-title">{t('planner.taskTitle')}</label>
-              <input
-                id="task-title"
-                className="input composer-title"
-                autoFocus={focusNewTask}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                maxLength={200}
-                placeholder={t('planner.titlePlaceholder')}
-              />
-              <div className="composer-compact composer-date">
-                <DatePicker value={dueDate} onChange={setDueDate} placeholder={t('planner.dueDate')} aria-label={t('planner.dueDate')} />
-              </div>
-              <label className="field composer-compact">
-                <span className="visually-hidden">{t('planner.priority')}</span>
-                <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} aria-label={t('planner.priority')}>
-                  {(Object.keys(priorityKeys) as TaskPriority[]).map((v) => <option key={v} value={v}>{t('planner.priorityOption', { label: t(priorityKeys[v]).toLowerCase() })}</option>)}
-                </select>
-              </label>
-              <button className="btn btn-primary" type="submit" disabled={saving || !title.trim() || (repeat === 'weekly' && weekdays.length === 0)}>
-                <Plus aria-hidden="true" /> {t('common.add')}
-              </button>
-            </div>
-
-            <button
-              className="btn btn-ghost composer-toggle"
-              type="button"
-              aria-expanded={showDetails}
-              aria-controls="composer-details"
-              onClick={() => setShowDetails((v) => !v)}
-            >
-              <ChevronDown aria-hidden="true" className={showDetails ? 'is-flipped' : undefined} />
-              {showDetails ? t('planner.lessDetails') : t('planner.moreDetails')}
-            </button>
-
-            {showDetails && (
-              <div id="composer-details" className="composer-details">
-                <label className="field">
-                  <span className="field-label">{t('planner.description')} <em>{t('common.optional')}</em></span>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={2000} />
-                </label>
-                <div className="form-grid">
-                  <label className="field">
-                    <span className="field-label">{t('planner.subject')}</span>
-                    <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId('') }}>
-                      <option value="">{t('common.noneFeminine')}</option>
-                      {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span className="field-label">{t('planner.topic')}</span>
-                    <select value={topicId} onChange={(e) => setTopicId(e.target.value)} disabled={!selectedSubject || selectedSubject.topics.length === 0}>
-                      <option value="">{t('common.noneMasculine')}</option>
-                      {selectedSubject?.topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-                    </select>
-                  </label>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card size="sm">
+            <CardContent>
+              <form className="flex flex-col gap-3" onSubmit={addTask} aria-label={t('planner.newTask')}>
+                <div className="flex flex-col gap-2 md:flex-row">
+                  <label className="sr-only" htmlFor="task-title">{t('planner.taskTitle')}</label>
+                  <Input
+                    id="task-title"
+                    className="md:flex-1"
+                    autoFocus={focusNewTask}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    maxLength={200}
+                    placeholder={t('planner.titlePlaceholder')}
+                  />
+                  <div className="grid grid-cols-2 gap-2 md:flex">
+                    <DatePicker className="md:w-44" value={dueDate} onChange={setDueDate} placeholder={t('planner.dueDate')} aria-label={t('planner.dueDate')} />
+                    <NativeSelect className="w-full md:w-36" value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} aria-label={t('planner.priority')}>
+                      {(Object.keys(priorityKeys) as TaskPriority[]).map((v) => <NativeSelectOption key={v} value={v}>{t('planner.priorityOption', { label: t(priorityKeys[v]).toLowerCase() })}</NativeSelectOption>)}
+                    </NativeSelect>
+                  </div>
+                  <Button type="submit" disabled={saving || !title.trim() || (repeat === 'weekly' && weekdays.length === 0)}>
+                    {saving ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" aria-hidden="true" />} {t('common.add')}
+                  </Button>
                 </div>
-                <div className="form-grid">
-                  <label className="field">
-                    <span className="field-label">{t('planner.repeat')}</span>
-                    <select value={repeat} onChange={(e) => setRepeat(e.target.value as '' | 'daily' | 'weekly')}>
-                      <option value="">{t('planner.repeatNever')}</option>
-                      <option value="daily">{t('planner.repeatDaily')}</option>
-                      <option value="weekly">{t('planner.repeatWeekly')}</option>
-                    </select>
-                  </label>
-                  {repeat === 'weekly' && (
-                    <fieldset className="field weekday-picker">
-                      <legend className="field-label">{t('planner.repeatDays')}</legend>
-                      <div className="weekday-options">
-                        {ISO_WEEKDAYS.map((day) => (
-                          <label key={day} className="weekday-option">
-                            <input
-                              type="checkbox"
-                              className="check"
-                              checked={weekdays.includes(day)}
-                              onChange={(e) => setWeekdays((list) => e.target.checked ? [...list, day] : list.filter((d) => d !== day))}
-                            />
-                            <span>{isoWeekdayName(day, locale)}</span>
-                          </label>
-                        ))}
+
+                <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="-ml-2 self-start text-muted-foreground">
+                      <ChevronDown data-icon="inline-start" aria-hidden="true" className={cn('transition-transform', showDetails && 'rotate-180')} />
+                      {showDetails ? t('planner.lessDetails') : t('planner.moreDetails')}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <FieldGroup className="gap-4 pt-3">
+                      <Field>
+                        <FieldLabel htmlFor="task-description">{t('planner.description')} {optional}</FieldLabel>
+                        <Textarea id="task-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={2000} />
+                      </Field>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field>
+                          <FieldLabel htmlFor="task-subject">{t('planner.subject')}</FieldLabel>
+                          <NativeSelect id="task-subject" className="w-full" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId('') }}>
+                            <NativeSelectOption value="">{t('common.noneFeminine')}</NativeSelectOption>
+                            {subjects.filter((s) => !archived.has(s.id)).map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+                          </NativeSelect>
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="task-topic">{t('planner.topic')}</FieldLabel>
+                          <NativeSelect id="task-topic" className="w-full" value={topicId} onChange={(e) => setTopicId(e.target.value)} disabled={!selectedSubject || selectedSubject.topics.length === 0}>
+                            <NativeSelectOption value="">{t('common.noneMasculine')}</NativeSelectOption>
+                            {selectedSubject?.topics.map((t) => <NativeSelectOption key={t.id} value={t.id}>{t.title}</NativeSelectOption>)}
+                          </NativeSelect>
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="task-repeat">{t('planner.repeat')}</FieldLabel>
+                          <NativeSelect id="task-repeat" className="w-full" value={repeat} onChange={(e) => setRepeat(e.target.value as '' | 'daily' | 'weekly')}>
+                            <NativeSelectOption value="">{t('planner.repeatNever')}</NativeSelectOption>
+                            <NativeSelectOption value="daily">{t('planner.repeatDaily')}</NativeSelectOption>
+                            <NativeSelectOption value="weekly">{t('planner.repeatWeekly')}</NativeSelectOption>
+                          </NativeSelect>
+                        </Field>
+                        {repeat === 'weekly' && (
+                          <FieldSet className="gap-2">
+                            <FieldLegend variant="label">{t('planner.repeatDays')}</FieldLegend>
+                            <ToggleGroup
+                              type="multiple"
+                              variant="outline"
+                              spacing={0}
+                              value={weekdays.map(String)}
+                              onValueChange={(values) => setWeekdays(values.map(Number))}
+                              className="w-full [&>*]:flex-1 [&>*]:px-0"
+                            >
+                              {ISO_WEEKDAYS.map((day) => (
+                                <ToggleGroupItem key={day} value={String(day)} className="data-[state=on]:bg-accent data-[state=on]:text-primary">{isoWeekdayName(day, locale)}</ToggleGroupItem>
+                              ))}
+                            </ToggleGroup>
+                          </FieldSet>
+                        )}
                       </div>
-                    </fieldset>
-                  )}
-                </div>
-              </div>
-            )}
-          </form>
+                    </FieldGroup>
+                  </CollapsibleContent>
+                </Collapsible>
+              </form>
+            </CardContent>
+          </Card>
 
           {loading ? (
             <LoadingRows label={t('planner.loading')} />
           ) : tasks.length === 0 ? (
-            <section className="panel">
-              <EmptyState title={t('planner.noTasksTitle')}>
-                {t('planner.noTasksBody')}
-              </EmptyState>
-            </section>
+            <EmptyState title={t('planner.noTasksTitle')}>
+              {t('planner.noTasksBody')}
+            </EmptyState>
           ) : (
-            <section className="page-section" aria-label={t('planner.tasksLabel')}>
-              <div className="toolbar">
-                <Segmented
-                  label={t('planner.filter')}
-                  value={filter}
-                  onChange={setFilter}
-                  options={[
-                    { value: 'open', label: t('planner.filterOpen'), count: openTasks.length },
-                    { value: 'done', label: t('planner.filterDone'), count: doneTasks.length },
-                    { value: 'all', label: t('planner.filterAll'), count: tasks.length },
-                  ]}
-                />
-              </div>
+            <section className="flex flex-col gap-3" aria-label={t('planner.tasksLabel')}>
+              <Segmented
+                label={t('planner.filter')}
+                value={filter}
+                onChange={setFilter}
+                options={[
+                  { value: 'open', label: t('planner.filterOpen'), count: openTasks.length },
+                  { value: 'done', label: t('planner.filterDone'), count: doneTasks.length },
+                  { value: 'all', label: t('planner.filterAll'), count: tasks.length },
+                ]}
+              />
 
               {visibleGroups.length === 0 || visibleGroups.every((g) => g.items.length === 0) ? (
-                <section className="panel">
-                  <EmptyState title={filter === 'open' ? t('planner.allDoneTitle') : t('planner.noDoneTitle')}>
-                    {filter === 'open' ? t('planner.allDoneBody') : t('planner.noDoneBody')}
-                  </EmptyState>
-                </section>
+                <EmptyState title={filter === 'open' ? t('planner.allDoneTitle') : t('planner.noDoneTitle')}>
+                  {filter === 'open' ? t('planner.allDoneBody') : t('planner.noDoneBody')}
+                </EmptyState>
               ) : (
-                <div className="panel grouped-list">
+                <Card className="gap-0 py-0">
                   {visibleGroups.map((group) => (
-                    <div className="list-group" key={group.id}>
-                      <h2 className={`list-group-title${group.id === 'overdue' ? ' text-danger' : ''}`}>
-                        {t(group.titleKey)} <span className="num">{group.items.length}</span>
+                    <div className="border-b last:border-b-0" key={group.id}>
+                      <h2 className={cn('flex items-center gap-2 bg-muted/30 px-4 py-2 font-mono text-[0.6875rem] tracking-wider uppercase md:px-5', group.id === 'overdue' ? 'text-destructive' : 'text-muted-foreground')}>
+                        {t(group.titleKey)} <span className="tabular-nums">{group.items.length}</span>
                       </h2>
-                      <ul className="rows">{group.items.map(renderTask)}</ul>
+                      <ul className="flex flex-col divide-y">{group.items.map(renderTask)}</ul>
                     </div>
                   ))}
-                </div>
+                </Card>
               )}
             </section>
           )}
         </div>
 
-        <aside className="planner-side" aria-labelledby="planner-exams-title">
-          <section className="panel">
-            <div className="panel-head">
-              <h2 id="planner-exams-title" className="panel-title">{t('planner.upcomingExams')}</h2>
-              <Link className="text-link" to="/exams">{t('exams.title')} <ArrowRight aria-hidden="true" /></Link>
-            </div>
-            {upcomingExams.length === 0 ? (
-              <EmptyState compact title={t('exams.noUpcomingTitle')}>{t('planner.noUpcomingBody')}</EmptyState>
-            ) : (
-              <ul className="rows">
-                {upcomingExams.map((exam) => {
-                  const days = daysUntil(exam.exam_date)
-                  return (
-                    <li className="row" key={exam.id}>
-                      <span className="date-block" aria-hidden="true">
-                        <span className="date-block-day num">{parseDay(exam.exam_date).getDate()}</span>
-                        <span className="date-block-month">{monthShort(exam.exam_date, locale)}</span>
-                      </span>
-                      <span className="row-main">
-                        <span className="row-title">{exam.title}</span>
-                        <Meta
-                          items={[
-                            <>
-                              <span className="visually-hidden">{formatDay(exam.exam_date, 'long', locale)}, </span>
-                              <span className={`exam-row-days ${urgencyClass(days)}`}>{relativeDay(exam.exam_date, locale)}</span>
-                            </>,
-                            exam.subject,
-                          ]}
-                        />
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
+        <aside aria-labelledby="planner-exams-title">
+          <Card>
+            <CardHeader>
+              <CardTitle><h2 id="planner-exams-title">{t('planner.upcomingExams')}</h2></CardTitle>
+              <CardAction><MoreLink to="/subjects">{t('exams.title')}</MoreLink></CardAction>
+            </CardHeader>
+            <CardContent>
+              {upcomingExams.length === 0 ? (
+                <EmptyState compact title={t('exams.noUpcomingTitle')}>{t('planner.noUpcomingBody')}</EmptyState>
+              ) : (
+                <ul className="flex flex-col divide-y">
+                  {upcomingExams.map((exam) => {
+                    const days = daysUntil(exam.exam_date)
+                    return (
+                      <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0" key={exam.id}>
+                        <DateBlock iso={exam.exam_date} />
+                        <span className="flex min-w-0 flex-col gap-0.5">
+                          <span className="truncate text-sm font-medium">{exam.title}</span>
+                          <Meta
+                            items={[
+                              <>
+                                <span className="sr-only">{formatDay(exam.exam_date, 'long', locale)}, </span>
+                                <span className={urgencyClass(days)}>{relativeDay(exam.exam_date, locale)}</span>
+                              </>,
+                              exam.subject,
+                            ]}
+                          />
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>
