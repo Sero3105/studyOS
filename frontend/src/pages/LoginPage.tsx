@@ -1,7 +1,9 @@
 import { LoginForm } from '../components/AuthForm'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { CircleCheck } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
+import { Alert, AlertDescription } from '../components/ui/alert'
 import type { SyntheticEvent } from 'react'
 import { useAuth } from '../context/useAuth'
 import { useLanguage } from '../i18n/useLanguage'
@@ -43,7 +45,10 @@ function LoginPage() {
   return (
     <AuthLayout title={t('auth.loginTitle')} description={t('auth.loginDescription')}>
       {justRegistered && !error && (
-        <p className="notice notice-success" role="status">{t('auth.registeredNotice')}</p>
+        <Alert role="status" className="border-success/30 text-success">
+          <CircleCheck aria-hidden="true" />
+          <AlertDescription className="text-success">{t('auth.registeredNotice')}</AlertDescription>
+        </Alert>
       )}
       <LoginForm onSubmit={handleLogin} error={error} />
     </AuthLayout>
