@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowRight, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
+import Figures from '../components/ui/Figures'
+import MoreLink from '../components/ui/MoreLink'
+import { Button } from '../components/ui/button'
+import Ranked from '../components/stats/Ranked'
+import Section from '../components/stats/Section'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import WeekChart from '../components/ui/WeekChart'
 import ProgressBar from '../components/ui/ProgressBar'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
@@ -18,9 +24,10 @@ import StudyTrend from '../components/stats/StudyTrend'
 import StudyQuality from '../components/stats/StudyQuality'
 import ExamStatsTable from '../components/stats/ExamStatsTable'
 import { getCards, getMistakes } from '../services/cardService'
-import type { Card, Mistake } from '../services/cardService'
+import type { Card as FlashCard, Mistake } from '../services/cardService'
 import { examStats } from '../utils/planning'
 import SubjectDot from '../components/ui/SubjectDot'
+import { SUBJECT_BG } from '@/lib/subjectColors'
 import { subjectColor } from '../services/subjectService'
 import type { SubjectMinutes } from '../services/statsService'
 import RecordBook from '../components/exams/RecordBook'
@@ -46,33 +53,30 @@ function RankedBars({ items, label }: { items: (NameMinutes | SubjectMinutes)[];
   const max = Math.max(1, ...items.map((item) => item.minutes))
   const total = items.reduce((sum, item) => sum + item.minutes, 0)
   return (
-    <ol className="ranked" aria-label={label}>
+    <ol className="flex flex-col gap-3" aria-label={label}>
       {items.map((item) => (
-        <li className="ranked-row" key={'id' in item ? item.id : item.name}>
-          <span className="ranked-name">{'id' in item && <SubjectDot subject={item} />}{item.name}</span>
-          <span className="ranked-track" aria-hidden="true">
-            <span style={{ width: `${(item.minutes / max) * 100}%`, ...('id' in item && { background: `var(--subject-${subjectColor(item)})` }) }} />
-          </span>
-          <span className="ranked-value num">
-            {formatMinutes(item.minutes)}
-            <span className="ranked-share">{percentOf(item.minutes, total)}%</span>
-          </span>
-        </li>
+        <Ranked
+          key={'id' in item ? item.id : item.name}
+          name={<>{'id' in item && <SubjectDot subject={item} />}{item.name}</>}
+          width={(item.minutes / max) * 100}
+          barClass={'id' in item ? SUBJECT_BG[subjectColor(item)] : 'bg-primary/80'}
+          value={<>{formatMinutes(item.minutes)}<span className="ml-1.5 text-muted-foreground">{percentOf(item.minutes, total)}%</span></>}
+        />
       ))}
     </ol>
   )
 }
 
 /**
- * Statistiche: prima le cifre (il totale è la più grande), poi il ritmo
- * della settimana accanto all'avanzamento, poi dove va il tempo, infine
- * gli obiettivi. Tutto viene da `/stats/summary`.
+ * Statistiche in tre schede: Panoramica (cifre, ritmo, dove va il tempo, obiettivi),
+ * Esami (libretto con l'andamento dei voti, copertura) e Abitudini (tipo, focus, qualità,
+ * heatmap, ore migliori, piano contro realtà). Dati da `/stats/summary` e dai dettagli.
  */
 function StatisticsPage() {
   const { t, locale } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
-  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[]; cards: Card[]; mistakes: Mistake[] } | null>(null)
+  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[]; cards: FlashCard[]; mistakes: Mistake[] } | null>(null)
 
   const load = useCallback(() => {
     setError('')
@@ -95,6 +99,7 @@ function StatisticsPage() {
   const subjectById = (id: number | null) => detail?.subjects.find((s) => s.id === id)
   const kinds = detail ? minutesByKind(detail.sessions).map((k) => ({ name: t(`session.kind.${k.kind}` as TranslationKey), minutes: k.minutes })) : []
   const focus = detail ? focusBySubject(detail.sessions) : []
+  const hasSessions = Boolean(detail && detail.sessions.length > 0)
 
   // Tutte le sessioni, una per riga, in ordine di data: per un foglio di calcolo.
   const exportCsv = () => {
@@ -108,14 +113,14 @@ function StatisticsPage() {
   }
 
   return (
-    <div className="page stats-page">
+    <div className="flex flex-col gap-8">
       <PageHeader
         title={t('stats.title')}
         description={t('stats.description')}
-        actions={detail && detail.sessions.length > 0 && (
-          <button className="btn btn-secondary" type="button" onClick={exportCsv} title={t('stats.exportHint')}>
-            <Download aria-hidden="true" /> {t('stats.export')}
-          </button>
+        actions={hasSessions && (
+          <Button variant="outline" onClick={exportCsv} title={t('stats.exportHint')}>
+            <Download data-icon="inline-start" aria-hidden="true" /> {t('stats.export')}
+          </Button>
         )}
       />
 
@@ -123,175 +128,169 @@ function StatisticsPage() {
       {!stats && !error && <LoadingRows rows={4} label={t('stats.loading')} />}
 
       {stats && (
-        <>
-          <section className="panel figures" aria-label={t('stats.summary')}>
-            <div className="figure figure-lead">
-              <span className="figure-label">{t('stats.totalTime')}</span>
-              <span className="figure-value num">{formatMinutes(stats.total_minutes)}</span>
-            </div>
-            <dl className="figure-grid">
-              <div className="figure"><dt className="figure-label">{t('stats.thisMonth')}</dt><dd className="figure-value num">{formatMinutes(stats.month_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">{t('stats.thisWeek')}</dt><dd className="figure-value num">{formatMinutes(stats.week_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">{t('stats.today')}</dt><dd className="figure-value num">{formatMinutes(stats.today_minutes)}</dd></div>
-              <div className="figure"><dt className="figure-label">{t('stats.sessions')}</dt><dd className="figure-value num">{stats.sessions_count}</dd></div>
-              <div className="figure"><dt className="figure-label">{t('stats.streakDays')}</dt><dd className="figure-value num">{stats.streak_days}</dd></div>
-              <div className="figure"><dt className="figure-label">{t('stats.avgSession')}</dt><dd className="figure-value num">{stats.sessions_count ? formatMinutes(Math.round(stats.total_minutes / stats.sessions_count)) : '—'}</dd></div>
-            </dl>
-          </section>
+        <Tabs defaultValue="overview" className="gap-6">
+          <TabsList className="w-full sm:w-fit">
+            <TabsTrigger value="overview">{t('stats.tabOverview')}</TabsTrigger>
+            <TabsTrigger value="exams">{t('nav.exams')}</TabsTrigger>
+            <TabsTrigger value="habits">{t('stats.tabHabits')}</TabsTrigger>
+          </TabsList>
 
-          <div className="stats-split">
-            <section className="panel" aria-labelledby="stats-week-title">
-              <div className="panel-head">
-                <h2 id="stats-week-title" className="panel-title">{t('stats.last7Days')}</h2>
-                <span className="panel-meta num">
-                  {t('stats.activeDays', { count: activeDays, label: activeDays === 1 ? t('stats.activeDayOne') : t('stats.activeDayMany'), avg: formatMinutes(Math.round(stats.daily.reduce((s, d) => s + d.minutes, 0) / Math.max(1, stats.daily.length))) })}
-                </span>
-              </div>
-              <WeekChart daily={stats.daily} tall />
-            </section>
+          <TabsContent value="overview" className="flex flex-col gap-4">
+            <Figures label={t('stats.summary')} className="sm:grid-cols-4 lg:grid-cols-7" items={[
+              { label: t('stats.totalTime'), value: <span className="text-primary">{formatMinutes(stats.total_minutes)}</span> },
+              { label: t('stats.thisMonth'), value: formatMinutes(stats.month_minutes) },
+              { label: t('stats.thisWeek'), value: formatMinutes(stats.week_minutes) },
+              { label: t('stats.today'), value: formatMinutes(stats.today_minutes) },
+              { label: t('stats.sessions'), value: stats.sessions_count },
+              { label: t('stats.streakDays'), value: stats.streak_days },
+              { label: t('stats.avgSession'), value: stats.sessions_count ? formatMinutes(Math.round(stats.total_minutes / stats.sessions_count)) : '—' },
+            ]} />
 
-            <section className="panel progress-panel" aria-labelledby="stats-progress-title">
-              <h2 id="stats-progress-title" className="panel-title">{t('stats.progress')}</h2>
-              <div className="progress-stat">
-                <div className="progress-stat-line">
-                  <span>{t('stats.tasksCompleted')}</span>
-                  <span className="num">{stats.tasks_done}/{stats.tasks_total}</span>
-                </div>
-                <ProgressBar percent={percentOf(stats.tasks_done, stats.tasks_total)} label={t('stats.tasksCompleted')} />
-              </div>
-              <div className="progress-stat">
-                <div className="progress-stat-line">
-                  <span>{t('stats.topicsCompleted')}</span>
-                  <span className="num">{stats.topics_done}/{stats.topics_total}</span>
-                </div>
-                <ProgressBar percent={percentOf(stats.topics_done, stats.topics_total)} label={t('stats.topicsCompleted')} />
-              </div>
-            </section>
-          </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Section id="stats-week-title" className="lg:col-span-2" title={t('stats.last7Days')}
+                meta={t('stats.activeDays', { count: activeDays, label: activeDays === 1 ? t('stats.activeDayOne') : t('stats.activeDayMany'), avg: formatMinutes(Math.round(stats.daily.reduce((s, d) => s + d.minutes, 0) / Math.max(1, stats.daily.length))) })}>
+                <WeekChart daily={stats.daily} tall />
+              </Section>
 
-          <div className="stats-pair">
-            <section className="panel" aria-labelledby="stats-subject-title">
-              <h2 id="stats-subject-title" className="panel-title panel-head">{t('stats.timeBySubject')}</h2>
-              {stats.by_subject.length === 0 ? (
-                <EmptyState compact title={t('stats.noData')}>{t('stats.noSubjectData')}</EmptyState>
-              ) : (
-                <RankedBars items={stats.by_subject} label={t('stats.timeBySubject')} />
-              )}
-            </section>
-            <section className="panel" aria-labelledby="stats-topic-title">
-              <h2 id="stats-topic-title" className="panel-title panel-head">{t('stats.timeByTopic')}</h2>
-              {stats.by_topic.length === 0 ? (
-                <EmptyState compact title={t('stats.noData')}>{t('stats.noTopicData')}</EmptyState>
-              ) : (
-                <RankedBars items={stats.by_topic} label={t('stats.timeByTopic')} />
-              )}
-            </section>
-          </div>
-
-          {detail && detail.sessions.length > 0 && <StudyTrend sessions={detail.sessions} subjects={detail.subjects} tasks={detail.tasks} today={today} />}
-
-          {examRows.length > 0 && <ExamStatsTable rows={examRows} />}
-
-          {detail && detail.sessions.length > 0 && (
-            <div className="stats-pair">
-              <section className="panel" aria-labelledby="stats-kind-title">
-                <h2 id="stats-kind-title" className="panel-title panel-head">{t('stats.byKind')}</h2>
-                <RankedBars items={kinds} label={t('stats.byKind')} />
-              </section>
-              <section className="panel" aria-labelledby="stats-focus-title">
-                <h2 id="stats-focus-title" className="panel-title panel-head">{t('stats.focusTitle')}</h2>
-                {focus.length === 0 ? (
-                  <EmptyState compact title={t('stats.focusEmptyTitle')}>{t('stats.focusEmptyBody')}</EmptyState>
-                ) : (
-                  <ol className="ranked" aria-label={t('stats.focusTitle')}>
-                    {focus.map((row) => {
-                      const subject = subjectById(row.subjectId)
-                      return (
-                        <li className="ranked-row" key={row.subjectId ?? 'free'} title={t('stats.focusDetail', { value: row.average.toLocaleString(locale, { maximumFractionDigits: 1 }), count: row.count })}>
-                          <span className="ranked-name"><SubjectDot subject={subject} />{subject?.name ?? t('history.freeSession')}</span>
-                          <span className="ranked-track" aria-hidden="true"><span style={{ width: `${Math.max(4, ((row.average - 1) / 2) * 100)}%` }} /></span>
-                          <span className="ranked-value">{t(`session.focus.${Math.round(row.average) as 1 | 2 | 3}`)}</span>
-                        </li>
-                      )
-                    })}
-                  </ol>
-                )}
-              </section>
-            </div>
-          )}
-
-          {detail && detail.sessions.length > 0 && <StudyQuality sessions={detail.sessions} />}
-
-          {detail && <RecordBook exams={detail.exams} detailed />}
-
-          {detail && (
-            <section className="panel" aria-labelledby="stats-heatmap-title">
-              <h2 id="stats-heatmap-title" className="panel-title panel-head">{t('stats.heatmapTitle')}</h2>
-              <StudyHeatmap weeks={buildHeatmap(detail.sessions, today)} />
-            </section>
-          )}
-
-          {detail && (
-            <section className="panel" aria-labelledby="stats-hours-title">
-              <h2 id="stats-hours-title" className="panel-title panel-head">{t('stats.bestHoursTitle')}</h2>
-              <BestHours grid={hourGrid(detail.sessions)} />
-            </section>
-          )}
-
-          {planRows.length > 0 && (
-            <section className="panel" aria-labelledby="stats-plan-title">
-              <div className="panel-head">
-                <h2 id="stats-plan-title" className="panel-title">{t('stats.planTitle')}</h2>
-                <span className="panel-meta">{t('stats.planWindow')}</span>
-              </div>
-              <table className="plan-table">
-                <thead>
-                  <tr>
-                    <th scope="col">{t('planner.subject')}</th>
-                    <th scope="col">{t('stats.planPlanned')}</th>
-                    <th scope="col" className="plan-bar-col"><span className="visually-hidden">{t('stats.progress')}</span></th>
-                    <th scope="col">{t('stats.planStudied')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {planRows.map((row) => (
-                    <tr key={row.subjectId}>
-                      <th scope="row">{row.name}</th>
-                      <td className="num">{row.planned ? `${row.done}/${row.planned}` : '—'}</td>
-                      <td className="plan-bar-col">{row.planned > 0 && <ProgressBar percent={percentOf(row.done, row.planned)} label={t('stats.planProgress', { name: row.name })} />}</td>
-                      <td className="num">{row.minutes ? formatMinutes(row.minutes) : '—'}</td>
-                    </tr>
+              <Section id="stats-progress-title" title={t('stats.progress')}>
+                <div className="flex flex-col gap-6">
+                  {[
+                    { label: t('stats.tasksCompleted'), done: stats.tasks_done, total: stats.tasks_total },
+                    { label: t('stats.topicsCompleted'), done: stats.topics_done, total: stats.topics_total },
+                  ].map((row) => (
+                    <div key={row.label} className="flex flex-col gap-2">
+                      <div className="flex items-baseline justify-between gap-3 text-sm">
+                        <span>{row.label}</span>
+                        <span className="font-mono text-xs text-muted-foreground tabular-nums">{row.done}/{row.total}</span>
+                      </div>
+                      <ProgressBar percent={percentOf(row.done, row.total)} label={row.label} />
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          <section className="panel" aria-labelledby="stats-goals-title">
-            <div className="panel-head">
-              <h2 id="stats-goals-title" className="panel-title">{t('stats.goals')}</h2>
-              <Link className="text-link" to="/goals">{t('stats.manage')} <ArrowRight aria-hidden="true" /></Link>
+                </div>
+              </Section>
             </div>
-            {stats.goals.length === 0 ? (
-              <EmptyState compact title={t('stats.noGoals')} action={<Link className="text-link" to="/goals">{t('stats.createGoal')} <ArrowRight aria-hidden="true" /></Link>}>
-                {t('stats.noGoalsBody')}
-              </EmptyState>
-            ) : (
-              <ul className="rows">
-                {stats.goals.map((goal) => (
-                  <li className="row goal-stat" key={goal.id}>
-                    <span className="row-main">
-                      <span className="row-title">{goal.title}</span>
-                      <span className="row-meta">{t('stats.ofTarget', { kind: t(goalKindKeys[goal.kind]), current: goal.current, target: goal.target })}</span>
-                    </span>
-                    <span className="goal-stat-bar"><ProgressBar percent={goal.percent} label={goal.title} /></span>
-                    <span className="goal-stat-percent num">{goal.percent}%</span>
-                  </li>
-                ))}
-              </ul>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Section id="stats-subject-title" title={t('stats.timeBySubject')}>
+                {stats.by_subject.length === 0 ? (
+                  <EmptyState compact title={t('stats.noData')}>{t('stats.noSubjectData')}</EmptyState>
+                ) : (
+                  <RankedBars items={stats.by_subject} label={t('stats.timeBySubject')} />
+                )}
+              </Section>
+              <Section id="stats-topic-title" title={t('stats.timeByTopic')}>
+                {stats.by_topic.length === 0 ? (
+                  <EmptyState compact title={t('stats.noData')}>{t('stats.noTopicData')}</EmptyState>
+                ) : (
+                  <RankedBars items={stats.by_topic} label={t('stats.timeByTopic')} />
+                )}
+              </Section>
+            </div>
+
+            {detail && hasSessions && <StudyTrend sessions={detail.sessions} subjects={detail.subjects} tasks={detail.tasks} today={today} />}
+
+            <Section id="stats-goals-title" title={t('stats.goals')} action={<MoreLink to="/goals">{t('stats.manage')}</MoreLink>}>
+              {stats.goals.length === 0 ? (
+                <EmptyState compact title={t('stats.noGoals')} action={<MoreLink to="/goals">{t('stats.createGoal')}</MoreLink>}>
+                  {t('stats.noGoalsBody')}
+                </EmptyState>
+              ) : (
+                <ul className="flex flex-col divide-y">
+                  {stats.goals.map((goal) => (
+                    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_12rem_3rem]" key={goal.id}>
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-sm font-medium">{goal.title}</span>
+                        <span className="text-xs text-muted-foreground">{t('stats.ofTarget', { kind: t(goalKindKeys[goal.kind]), current: goal.current, target: goal.target })}</span>
+                      </span>
+                      <span className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"><ProgressBar percent={goal.percent} label={goal.title} /></span>
+                      <span className="col-start-2 row-start-1 text-right font-mono text-sm tabular-nums sm:col-start-auto sm:row-start-auto">{goal.percent}%</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="exams" className="flex flex-col gap-4">
+            {!detail ? <LoadingRows rows={3} label={t('stats.loading')} /> : (
+              <>
+                <RecordBook exams={detail.exams} detailed />
+                {examRows.length > 0 && <ExamStatsTable rows={examRows} />}
+                {detail.exams.length === 0 && <EmptyState title={t('stats.noData')} action={<MoreLink to="/subjects">{t('nav.exams')}</MoreLink>} />}
+              </>
             )}
-          </section>
-        </>
+          </TabsContent>
+
+          <TabsContent value="habits" className="flex flex-col gap-4">
+            {!detail ? <LoadingRows rows={3} label={t('stats.loading')} /> : (
+              <>
+                <Section id="stats-heatmap-title" title={t('stats.heatmapTitle')}>
+                  <StudyHeatmap weeks={buildHeatmap(detail.sessions, today)} />
+                </Section>
+
+                {hasSessions && (
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <Section id="stats-kind-title" title={t('stats.byKind')}>
+                      <RankedBars items={kinds} label={t('stats.byKind')} />
+                    </Section>
+                    <Section id="stats-focus-title" title={t('stats.focusTitle')}>
+                      {focus.length === 0 ? (
+                        <EmptyState compact title={t('stats.focusEmptyTitle')}>{t('stats.focusEmptyBody')}</EmptyState>
+                      ) : (
+                        <ol className="flex flex-col gap-3" aria-label={t('stats.focusTitle')}>
+                          {focus.map((row) => {
+                            const subject = subjectById(row.subjectId)
+                            return (
+                              <Ranked
+                                key={row.subjectId ?? 'free'}
+                                title={t('stats.focusDetail', { value: row.average.toLocaleString(locale, { maximumFractionDigits: 1 }), count: row.count })}
+                                name={<><SubjectDot subject={subject} />{subject?.name ?? t('history.freeSession')}</>}
+                                width={Math.max(4, ((row.average - 1) / 2) * 100)}
+                                barClass="bg-info"
+                                value={t(`session.focus.${Math.round(row.average) as 1 | 2 | 3}`)}
+                              />
+                            )
+                          })}
+                        </ol>
+                      )}
+                    </Section>
+                  </div>
+                )}
+
+                {hasSessions && <StudyQuality sessions={detail.sessions} />}
+
+                <Section id="stats-hours-title" title={t('stats.bestHoursTitle')}>
+                  <BestHours grid={hourGrid(detail.sessions)} />
+                </Section>
+
+                {planRows.length > 0 && (
+                  <Section id="stats-plan-title" title={t('stats.planTitle')} meta={t('stats.planWindow')}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead scope="col">{t('planner.subject')}</TableHead>
+                          <TableHead scope="col" className="text-right">{t('stats.planPlanned')}</TableHead>
+                          <TableHead scope="col" className="hidden w-1/3 sm:table-cell"><span className="sr-only">{t('stats.progress')}</span></TableHead>
+                          <TableHead scope="col" className="text-right">{t('stats.planStudied')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {planRows.map((row) => (
+                          <TableRow key={row.subjectId}>
+                            <TableHead scope="row" className="font-normal text-foreground">{row.name}</TableHead>
+                            <TableCell className="text-right font-mono tabular-nums">{row.planned ? `${row.done}/${row.planned}` : '—'}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{row.planned > 0 && <ProgressBar percent={percentOf(row.done, row.planned)} label={t('stats.planProgress', { name: row.name })} />}</TableCell>
+                            <TableCell className="text-right font-mono tabular-nums">{row.minutes ? formatMinutes(row.minutes) : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Section>
+                )}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )
