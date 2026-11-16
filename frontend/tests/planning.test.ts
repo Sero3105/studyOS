@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { examReadiness, todaySuggestions, topicCoverage } from '../src/utils/planning.ts'
+import { examReadiness, examStats, todaySuggestions, topicCoverage } from '../src/utils/planning.ts'
 
 const topic = (id: number, completed = false, mastery: 0 | 1 | 2 | 3 = completed ? 1 : 0) => ({ id, subject_id: 1, title: `T${id}`, completed, notes: null, difficulty: 2 as const, mastery, created_at: '' })
 const subject = { id: 1, user_id: 1, name: 'Analisi', color: null, created_at: '', topics: [topic(1, true), topic(2), topic(3)] }
@@ -55,4 +55,13 @@ test('coverage: solid, untouched, weak with reasons, stale, in progress', () => 
   ])
   assert.equal(coverage[2].minutes, 50)
   assert.equal(coverage[2].lastStudied, '2026-11-12')
+})
+
+test('exam stats: upcoming dated exams with a subject, hours per CFU and topics to catch up', () => {
+  const session = (topic_id: number | null, duration_minutes: number) => ({ subject_id: 1, topic_id, duration_minutes, studied_on: '2026-11-15', focus: null })
+  const rows = examStats(
+    [exam, { ...exam, id: 10, exam_date: '2026-10-01' }, { ...exam, id: 11, subject_id: null }, { ...exam, id: 12, exam_date: null }],
+    [subject], { sessions: [session(1, 120), session(2, 150)], cards: [], mistakes: [] }, '2026-11-01')
+  assert.equal(rows.length, 1)
+  assert.deepEqual({ ...rows[0], exam: rows[0].exam.id }, { exam: 9, days: 9, minutes: 270, hoursPerCfu: 0.5, untouched: 1, toCatchUp: 1, topics: 3 })
 })

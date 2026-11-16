@@ -16,6 +16,10 @@ import StudyHeatmap from '../components/stats/StudyHeatmap'
 import BestHours from '../components/stats/BestHours'
 import StudyTrend from '../components/stats/StudyTrend'
 import StudyQuality from '../components/stats/StudyQuality'
+import ExamStatsTable from '../components/stats/ExamStatsTable'
+import { getCards, getMistakes } from '../services/cardService'
+import type { Card, Mistake } from '../services/cardService'
+import { examStats } from '../utils/planning'
 import SubjectDot from '../components/ui/SubjectDot'
 import { subjectColor } from '../services/subjectService'
 import type { SubjectMinutes } from '../services/statsService'
@@ -68,7 +72,7 @@ function StatisticsPage() {
   const { t, locale } = useLanguage()
   const [stats, setStats] = useState<StatsSummary | null>(null)
   const [error, setError] = useState('')
-  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[] } | null>(null)
+  const [detail, setDetail] = useState<{ sessions: StudySession[]; tasks: Task[]; subjects: Subject[]; exams: Exam[]; cards: Card[]; mistakes: Mistake[] } | null>(null)
 
   const load = useCallback(() => {
     setError('')
@@ -76,12 +80,14 @@ function StatisticsPage() {
       .then(setStats)
       .catch((e) => setError(errorMessage(e, t('stats.loadError'))))
     // Heatmap e piano vs realtà sono di contorno: se falliscono, il resto della pagina resta.
-    Promise.all([getSessions(), getTasks(), getSubjects(), getExams()])
-      .then(([sessions, tasks, subjects, exams]) => setDetail({ sessions, tasks, subjects, exams }))
+    // Carte ed errori servono solo alla copertura degli esami: senza, la tabella conta solo le sessioni.
+    Promise.all([getSessions(), getTasks(), getSubjects(), getExams(), getCards().catch(() => []), getMistakes().catch(() => [])])
+      .then(([sessions, tasks, subjects, exams, cards, mistakes]) => setDetail({ sessions, tasks, subjects, exams, cards, mistakes }))
       .catch(() => setDetail(null))
   }, [t])
   const today = todayIso()
   const planRows = detail ? planVsActual(detail.subjects, detail.tasks, detail.sessions, today) : []
+  const examRows = detail ? examStats(detail.exams, detail.subjects, detail, today) : []
 
   useEffect(() => { queueMicrotask(load) }, [load])
 
@@ -183,6 +189,8 @@ function StatisticsPage() {
           </div>
 
           {detail && detail.sessions.length > 0 && <StudyTrend sessions={detail.sessions} subjects={detail.subjects} tasks={detail.tasks} today={today} />}
+
+          {examRows.length > 0 && <ExamStatsTable rows={examRows} />}
 
           {detail && detail.sessions.length > 0 && (
             <div className="stats-pair">

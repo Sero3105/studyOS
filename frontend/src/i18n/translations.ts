@@ -849,6 +849,14 @@ const it = {
   'stats.band.afternoon': 'Pomeriggio',
   'stats.band.evening': 'Sera',
   'stats.band.night': 'Notte',
+  'stats.examsTitle': 'Esami in arrivo',
+  'stats.examsMeta': 'Tempo dato finora e cosa resta scoperto',
+  'stats.examsExam': 'Esame',
+  'stats.examsDays': 'Giorni',
+  'stats.examsPerCfu': 'Ore per CFU',
+  'stats.examsToCatchUp': 'Da recuperare',
+  'stats.examsTopics': '{count} su {total} argomenti',
+  'stats.examsUntouched': '{count} mai toccati',
 } as const
 
 export type TranslationKey = keyof typeof it
@@ -1533,6 +1541,14 @@ const en: Record<TranslationKey, string> = {
   'stats.band.afternoon': 'Afternoon',
   'stats.band.evening': 'Evening',
   'stats.band.night': 'Night',
+  'stats.examsTitle': 'Upcoming exams',
+  'stats.examsMeta': 'Time put in so far and what is still uncovered',
+  'stats.examsExam': 'Exam',
+  'stats.examsDays': 'Days',
+  'stats.examsPerCfu': 'Hours per credit',
+  'stats.examsToCatchUp': 'To catch up',
+  'stats.examsTopics': '{count} of {total} topics',
+  'stats.examsUntouched': '{count} never studied',
 }
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { it, en }

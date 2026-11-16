@@ -218,6 +218,18 @@
   font-weight: 500;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
+.exam-stats-table {
+  min-width: 560px;
+}
+
+.exam-stats-untouched {
+  color: var(--text-muted);
+}
+
 /* Obiettivi */
 
 .goal-stat-bar {

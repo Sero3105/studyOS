@@ -155,3 +155,40 @@ export function topicCoverage(
     return { topic, status, reasons, minutes: sessions.reduce((sum, s) => sum + s.duration_minutes, 0), lastStudied }
   })
 }
+
+export interface ExamStatsRow {
+  exam: Exam
+  days: number
+  minutes: number
+  /** Ore studiate per CFU; null senza CFU. */
+  hoursPerCfu: number | null
+  untouched: number
+  /** Mai toccati, deboli o da riprendere. */
+  toCatchUp: number
+  topics: number
+}
+
+/** Una riga per esame da sostenere con data e materia: tempo dato finora e quanto resta scoperto. */
+export function examStats(
+  exams: Exam[],
+  subjects: Subject[],
+  data: { sessions: Pick<StudySession, 'subject_id' | 'topic_id' | 'duration_minutes' | 'studied_on' | 'focus'>[]; cards: Pick<Card, 'topic_id' | 'interval'>[]; mistakes: Pick<Mistake, 'topic_id'>[] },
+  today: Day,
+): ExamStatsRow[] {
+  return exams
+    .filter((e) => e.exam_date !== null && e.exam_date >= today && (e.status === 'planned' || e.status === 'in_progress'))
+    .flatMap((exam) => {
+      const subject = subjects.find((s) => s.id === exam.subject_id)
+      if (!subject) return []
+      const minutes = data.sessions.filter((s) => s.subject_id === subject.id).reduce((sum, s) => sum + s.duration_minutes, 0)
+      const coverage = topicCoverage(subject, data, today)
+      return [{
+        exam, days: daysBetween(today, exam.exam_date!), minutes,
+        hoursPerCfu: exam.cfu ? minutes / 60 / exam.cfu : null,
+        untouched: coverage.filter((c) => c.status === 'untouched').length,
+        toCatchUp: coverage.filter((c) => c.status === 'untouched' || c.status === 'weak' || c.status === 'stale').length,
+        topics: coverage.length,
+      }]
+    })
+    .sort((a, b) => a.days - b.days)
+}
