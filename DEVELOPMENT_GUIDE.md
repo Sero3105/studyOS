@@ -41,7 +41,8 @@ StudyOS/
         ├── context/         # auth, timer persistente, annulla dopo l'eliminazione
         ├── services/        # chiamate API, una per risorsa
         ├── utils/           # logica pura: date, voti, pomodoro, piano di oggi, prontezza, CSV, Anki, preferenze
-        └── styles/
+        ├── components/ui/   # shadcn/ui + componenti di casa (PageHeader, Modal, DatePicker, Figures…)
+        └── index.css        # Tailwind + token del tema
 ```
 
 ## 3. Stack tecnologico
@@ -233,14 +234,14 @@ Se vuoi aggiungere una nuova pagina o un endpoint:
 - frontend:
   1. creare componente in `src/components/` o `src/pages/`
   2. configurare la route in `src/main.tsx`
-  3. aggiungere eventuali stili in `src/styles/`
+  3. stilare con classi Tailwind e componenti shadcn (`npx shadcn@latest add <nome>`), niente file CSS nuovi
 
 ## 10. Consigli utili
 
 - Prima di fare modifiche importanti, guarda bene il nome del file e la sua responsabilità.
 - Se un problema riguarda il database, controlla prima `models/` e `database.py`.
 - Se un problema riguarda l'API, controlla `router` + `service` + `schema`.
-- Se un problema riguarda l'interfaccia, controlla `components/`, `pages/` e `styles/`.
+- Se un problema riguarda l'interfaccia, controlla `components/`, `pages/` e i token in `index.css`.
 - Non fare patch “a caso”: cerca sempre la causa logica e la zona corretta.
 
 ## 11. Checklist veloce prima di fare commit
@@ -302,33 +303,47 @@ Test:
 - backend: `source backend/.venv/bin/activate && python -m pytest backend/tests/ -q` (database SQLite temporaneo isolato);
 - frontend: `cd frontend && npx tsc -b && npm run lint && npm test` (logica pura in `src/utils`, con `node --test`).
 
-## 14. Design system (redesign UI/UX)
+## 14. Design system
 
-Direzione (tasteskill): dark-first (con tema chiaro), fondo nero, accento menta unico
-(niente blu né viola, anche nelle materie), font Funnel Display/Sans + DM Mono, stile piatto
-(niente gradienti/glow), transizioni 150-200ms, `prefers-reduced-motion`
-rispettato. Tutti i valori vivono in `frontend/src/styles/base/tokens.css`:
-superfici, testo, accento, colori semantici, tipografia, spaziature, raggi,
-ombre, focus ring, z-index. I componenti usano solo token semantici.
+Stack: **Tailwind CSS v4** (utility, plugin `@tailwindcss/typography` per le note) e
+**shadcn/ui** su Radix (`frontend/components.json`, componenti in `src/components/ui/`).
+Niente CSS scritto a mano: l'unico file è `src/index.css`, con i token del tema
+(`:root` chiaro, `[data-theme="dark"]` scuro, impostato da `utils/theme.ts`).
 
-Convenzioni: target touch minimi 44px, focus visibile su ogni controllo
-interattivo, contrasto testo almeno 4.5:1, stati loading/vuoto/errore per
-ogni pagina dati. Breakpoint principale 700px: sotto, la sidebar parte
-compressa a icone.
+Direzione: scuro futuristico e minimale. Nero neutro senza tinta blu, un solo accento
+**lime elettrico** (`--primary`), segnali accesi: `--info` ciano, `--warning` ambra,
+`--destructive` rosso, `--success` verde. Niente blu scuro né viola. Font Geist Sans,
+numeri in Geist Mono con `tabular-nums`. Colori materia in `--subject-*`
+(classi in `src/lib/subjectColors.ts`).
 
-Form: etichetta su una riga sola (`.field-label`, "opzionale" come `<em>`),
-spiegazioni sotto il controllo in `.field-hint`, controlli alti 44px. Per le
-date si usa `components/ui/DatePicker`, mai `<input type="date">`. Un solo
-pulsante pieno (`.btn-primary`) per vista; il resto è `.btn-secondary` (tonale).
+Regole: token semantici (`bg-primary`, `text-muted-foreground`), mai colori grezzi;
+`gap-*` invece di `space-*`; icone nei Button con `data-icon`; form con
+`Field`/`FieldLabel`; un solo pulsante pieno per vista, il resto `outline`/`ghost`;
+toast con Sonner (`toast.success`), conferme con `AlertDialog`, date con
+`components/ui/DatePicker` (Popover + Calendar). Il grafico voti/media
+(`components/exams/GradeTrendChart.tsx`) resta com'era: solo colori del tema.
 
-## 15. Layout e gerarchia (redesign strutturale)
+## 15. Layout e navigazione
 
-Pattern condiviso: contenitore max 1180px, ritmo unico `--space-5`, header
-allineato al contenitore (nessun padding proprio). Dashboard: pannello
-"Focus di oggi" primario (minuti, obiettivo, ultima sessione, CTA), scadenze
-a destra (esami e task), statistiche compatte sotto, attività a tutta
-larghezza. Planner: form sticky a sinistra (340px) e contenuti a destra; su
-mobile colonna singola. Subjects e Goals: griglie a due colonne. Statistics:
-barre orizzontali proporzionali con valore. History: sessioni raggruppate
-per giorno con totale. Timer: pannello centrato max 680px, countdown come
-elemento dominante.
+Shell: sidebar shadcn riducibile a icone (⌘B), barra in alto con timer in corso
+(play/pausa da ogni pagina) e ricerca ⌘K; su mobile tab bar in basso
+(Oggi, Timer, Planner, Statistiche, Altro → sidebar). Impostazioni ed esci nel menu
+account in fondo alla sidebar. Contenitore max 72rem. Dashboard "Oggi": minuti di oggi,
+obiettivo e CTA in alto, piano di oggi e settimana a sinistra, esami e task a destra.
+Materie ed esami sono una pagina sola (`/exams` porta lì): ogni materia ha il suo
+esame (creare un esame crea o riusa la materia con lo stesso nome; gli esami vecchi
+senza materia la ricevono alla prima lettura), argomenti, prontezza, copertura e
+tempo studiato. Esame superato → materia in "Archiviate", con libretto e grafico
+dei voti; nessun dato cancellato. Eliminare una materia elimina anche i suoi esami.
+Il timer mostra i giorni all'esame accanto a ogni materia; le materie archiviate
+non compaiono nei selettori (timer, planner, obiettivi).
+Piano d'esame: `backend/services/study_plan.py` (algoritmo deterministico: studio in ordine di
+corso, ripasso il giorno dopo, ripassi a intervalli geometrici crescenti, ripasso finale, interleaving,
+capienza giornaliera che tiene conto degli altri esami) adattato alle preferenze dello studente
+(`PlanPrefs`: inizio, giorni senza studio, giorni liberi, limite in attività o ore, intensità dei ripassi,
+durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero); `plan_advice` dà
+inizio ideale e data limite. Stato argomento: da fare → da ripassare →
+ripassato → sicuro; "completato" solo da ripassato in su (migrazione 0011).
+Timer: quadrante a sinistra, checklist e distrazioni a destra. Statistiche e
+Impostazioni divise in schede. Moduli lunghi (nuovo obiettivo, sessione manuale)
+in dialog; durate del timer e dettagli del task a scomparsa.
