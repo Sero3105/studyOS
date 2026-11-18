@@ -37,6 +37,7 @@ function toRequest(prefs: PlanPrefs, rest: number[], start?: string): PlanReques
     study_minutes: prefs.studyMinutes,
     weekday_limits: prefs.limitUnit !== 'auto' && prefs.weekdayLimits.some((v) => v !== null) ? prefs.weekdayLimits : null,
     adapt: prefs.adapt,
+    focus_days: prefs.focusDays,
   }
 }
 
@@ -211,6 +212,15 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
               <NativeSelectOption value={0}>{t('plan.limitAuto')}</NativeSelectOption>
               {[1, 2, 3, 4, 5, 7, 10].map((d) => <NativeSelectOption key={d} value={d}>{t('plan.finalDaysN', { days: d })}</NativeSelectOption>)}
             </NativeSelect>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor={`plan-focus-${exam.id}`}>{t('plan.focusDays')}</FieldLabel>
+            <NativeSelect id={`plan-focus-${exam.id}`} className="w-40" value={prefs.focusDays} onChange={(e) => update({ focusDays: Number(e.target.value) })}>
+              <NativeSelectOption value={0}>{t('plan.focusNone')}</NativeSelectOption>
+              {[1, 2, 3, 4, 5].map((d) => <NativeSelectOption key={d} value={d}>{t(d === 1 ? 'plan.focusOne' : 'plan.finalDaysN', { days: d })}</NativeSelectOption>)}
+            </NativeSelect>
+            <FieldDescription>{t('plan.focusHint')}</FieldDescription>
           </Field>
 
           <Field orientation="horizontal" className="justify-between self-end rounded-lg border p-3">

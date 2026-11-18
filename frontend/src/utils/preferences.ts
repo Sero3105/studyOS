@@ -66,9 +66,10 @@ export interface PlanPrefs {
   studyMinutes: 25 | 50 | 90
   weekdayLimits: (number | null)[] // lunedì..domenica, stessa unità del limite; null = come il limite
   adapt: boolean // adatta durate e date allo storico
+  focusDays: number // giorni prima di ogni esame riservati a quella materia
 }
 const NO_WEEKDAY_LIMITS = [null, null, null, null, null, null, null]
-export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50, weekdayLimits: NO_WEEKDAY_LIMITS, adapt: true }
+export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50, weekdayLimits: NO_WEEKDAY_LIMITS, adapt: true, focusDays: 3 }
 export function planPrefs(): PlanPrefs {
   const daysOff = (read(KEYS.planDaysOff) ?? '').split(',').filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
   const stored = (read(KEYS.planWeekdays) ?? '').split(',').map((v) => Number(v) > 0 ? Number(v) : null)
