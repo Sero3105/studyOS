@@ -21,7 +21,7 @@ interface SubjectExamProps {
   onAdd: () => void
   onEdit: (exam: Exam) => void
   onDelete: (exam: Exam) => Promise<void>
-  onPlan: (exam: Exam, request: PlanRequest) => void
+  onPlan: (exam: Exam, request: PlanRequest) => Promise<void>
   /** Cambia con argomenti, stato e difficoltà: i suggerimenti del piano si ricalcolano. */
   topicsKey: string
   /** Salva una modifica dell'esame (esito, giorni liberi del piano); `failure` è il messaggio se non riesce. */

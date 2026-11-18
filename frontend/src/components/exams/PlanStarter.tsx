@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from '../ui/field'
 import { Input } from '../ui/input'
 import { NativeSelect, NativeSelectOption } from '../ui/native-select'
+import { Spinner } from '../ui/spinner'
 import { Switch } from '../ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import DaysOffPicker from './DaysOffPicker'
@@ -50,7 +51,7 @@ function toRequest(prefs: PlanPrefs, rest: number[], daysOff: string[], start?: 
  * Le preferenze restano salvate per i piani successivi; `topicsKey` cambia con argomenti, stato e difficoltà.
  */
 function PlanStarter({ exam, topicsKey, onPlan, onSave }: {
-  exam: DatedExam; topicsKey: string; onPlan: (exam: DatedExam, request: PlanRequest) => void
+  exam: DatedExam; topicsKey: string; onPlan: (exam: DatedExam, request: PlanRequest) => Promise<void>
   /** Salva una modifica dell'esame (i suoi giorni liberi) e aggiorna la pagina. */
   onSave: (request: () => Promise<Exam>, failure?: TranslationKey) => Promise<void>
 }) {
@@ -61,6 +62,7 @@ function PlanStarter({ exam, topicsKey, onPlan, onSave }: {
   const [start, setStart] = useState('')
   // Giorni liberi di questo esame: stanno nell'esame, non nelle preferenze comuni.
   const [daysOff, setDaysOff] = useState<string[]>(exam.plan_days_off)
+  const [creating, setCreating] = useState(false)
   const today = todayIso()
   const lastDay = addDays(exam.exam_date, -1)
   const request = toRequest(prefs, rest, daysOff)
@@ -126,8 +128,9 @@ function PlanStarter({ exam, topicsKey, onPlan, onSave }: {
           <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
           <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
         </Field>
-        <Button onClick={() => onPlan(exam, toRequest(prefs, rest, daysOff, chosen))}>
-          <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
+        <Button disabled={creating} onClick={() => { setCreating(true); void onPlan(exam, toRequest(prefs, rest, daysOff, chosen)).finally(() => setCreating(false)) }}>
+          {creating ? <Spinner data-icon="inline-start" /> : <CalendarPlus data-icon="inline-start" aria-hidden="true" />}
+          {creating ? t('plan.creating') : t('exams.planTitle')}
         </Button>
       </div>
 

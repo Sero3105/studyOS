@@ -48,6 +48,8 @@ import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
 import { archivedSubjectIds } from '../utils/grades'
 import { useLanguage } from '../i18n/useLanguage'
+import PlanResultModal from '../components/exams/PlanResultModal'
+import type { PlanResult } from '../components/exams/PlanResultModal'
 // marked + KaTeX pesano: si scaricano solo aprendo l'anteprima di una nota.
 const MarkdownPreview = lazy(() => import('../components/MarkdownPreview'))
 
@@ -74,6 +76,7 @@ function SubjectsPage() {
   const [error, setError] = useState('')
   const [topicTitle, setTopicTitle] = useState('')
   const [exams, setExams] = useState<Exam[]>([])
+  const [planResult, setPlanResult] = useState<PlanResult | null>(null)
   // Dati di contorno per prontezza, copertura e numeri della materia (timer, storico, flashcard).
   const [extra, setExtra] = useState<{ sessions: StudySession[]; cards: FlashCard[]; tasks: Task[]; mistakes: Mistake[] }>({ sessions: [], cards: [], tasks: [], mistakes: [] })
   const [examDialog, setExamDialog] = useState<{ mode: 'new' } | { mode: 'add'; subject: Subject } | { mode: 'edit'; exam: Exam } | null>(null)
@@ -153,18 +156,16 @@ function SubjectsPage() {
   const removeExam = (exam: Exam) =>
     run(async () => { await deleteExam(exam.id); setExams((list) => list.filter((x) => x.id !== exam.id)) }, t('exams.deleteError'))
 
-  const planFor = (exam: Exam, request: PlanRequest) =>
-    run(async () => {
-      try {
-        const tasks = await planExam(exam.id, request)
-        const studies = tasks.filter((x) => x.review_interval === null).length
-        toast.success(tasks.length ? t('exams.planDoneDetail', { study: studies, reviews: tasks.length - studies }) : t('exams.planNothing'))
-      } catch (e) {
-        const code = e instanceof ApiError && e.status === 422 ? e.message : ''
-        if (code === 'no_subject' || code === 'too_close') throw new Error(t(`exams.plan.${code}` as TranslationKey, { subject: exam.subject }), { cause: e })
-        throw e
-      }
-    }, t('exams.planError'))
+  // Esito del piano in un pop-up: si vede subito se è stato creato, quante attività e in che periodo.
+  const planFor = async (exam: Exam, request: PlanRequest) => {
+    try {
+      setPlanResult({ subject: exam.subject, tasks: await planExam(exam.id, request) })
+    } catch (e) {
+      const code = e instanceof ApiError && e.status === 422 ? e.message : ''
+      const message = code === 'no_subject' || code === 'too_close' ? t(`exams.plan.${code}` as TranslationKey, { subject: exam.subject }) : errorMessage(e, t('exams.planError'))
+      setPlanResult({ subject: exam.subject, error: message })
+    }
+  }
 
   const addTopic = async (event: FormEvent) => {
     event.preventDefault()
@@ -393,7 +394,7 @@ function SubjectsPage() {
                   onAdd={() => setExamDialog({ mode: 'add', subject: selected })}
                   onEdit={(exam) => setExamDialog({ mode: 'edit', exam })}
                   onDelete={removeExam}
-                  onPlan={(exam, request) => void planFor(exam, request)}
+                  onPlan={planFor}
                   topicsKey={selected.topics.map((x) => `${x.id}:${x.mastery}:${x.difficulty}`).join(',')}
                   onOutcome={recordOutcome}
                 />
@@ -591,6 +592,9 @@ function SubjectsPage() {
             honors: examDialog.exam.honors,
           } : undefined}
         />
+      )}
+      {planResult && (
+        <PlanResultModal result={planResult} onClose={() => setPlanResult(null)} onOpenCalendar={() => { setPlanResult(null); navigate('/calendar') }} />
       )}
     </div>
   )
