@@ -10,7 +10,7 @@ export interface SubjectMinutes extends NameMinutes { id: number; color: Subject
 export interface LastSession { subject: string | null; topic: string | null; duration_minutes: number; studied_on: string }
 export interface StatsSummary {
   total_minutes: number; today_minutes: number; week_minutes: number; month_minutes: number
-  sessions_count: number; tasks_done: number; tasks_total: number
+  sessions_count: number; tasks_done: number; tasks_total: number; today_tasks_done: number; today_tasks_total: number
   topics_done: number; topics_total: number; streak_days: number
   daily: DayMinutes[]; by_subject: SubjectMinutes[]; by_topic: NameMinutes[]
   last_session: LastSession | null; upcoming_tasks: Task[]; upcoming_exams: DatedExam[]; goals: Goal[]

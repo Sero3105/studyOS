@@ -47,6 +47,9 @@ def summary(user_id: int, db: Session) -> dict:
         'sessions_count': len(sessions),
         'tasks_done': sum(1 for t in tasks if t.status == 'done'),
         'tasks_total': len(tasks),
+        # Per la dashboard: i task in scadenza oggi, non tutto il piano fino all'esame.
+        'today_tasks_done': sum(1 for t in tasks if t.due_date == today and t.status == 'done'),
+        'today_tasks_total': sum(1 for t in tasks if t.due_date == today),
         'topics_done': sum(1 for t in topics_all if t.completed),
         'topics_total': len(topics_all),
         'streak_days': _streak(set(by_day), today),
