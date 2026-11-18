@@ -267,7 +267,7 @@ function SubjectsPage() {
     const date = nextDate(id)
     if (date === '9999' || date < today) return null
     const days = daysUntil(date)
-    return <span className={cn('ml-auto font-mono text-xs tabular-nums', urgencyClass(days) || 'text-muted-foreground')}>{days === 0 ? t('common.today') : `${days} g`}</span>
+    return <span className={cn('ml-auto shrink-0 font-mono text-xs whitespace-nowrap tabular-nums', urgencyClass(days) || 'text-muted-foreground')}>{days === 0 ? t('common.today') : `${days} g`}</span>
   }
 
   const reveal = 'md:opacity-0 md:transition-opacity md:group-hover/topic:opacity-100 md:group-focus-within/topic:opacity-100'
@@ -483,7 +483,7 @@ function SubjectsPage() {
                           <span className={reveal}>
                             <ConfirmButton label={t('subjects.deleteTopicLabel', { title: topic.title })} onConfirm={() => removeTopic(selected.id, topic.id)} />
                           </span>
-                          <Badge asChild variant="outline" className="h-7 gap-1.5">
+                          <Badge asChild variant="outline" className="h-7 w-24 justify-start gap-1.5">
                             <button
                               type="button"
                               onClick={() => cycleDifficulty(selected.id, topic)}

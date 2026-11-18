@@ -15,10 +15,13 @@ export const updateExam=(id:number,payload:Partial<CreateExamPayload>)=>apiReque
 export interface PlanRequest {
   rest_days: number[]; start_date?: string; days_off: string[]; limit_unit: 'tasks'|'hours'; limit_value: number|null
   reviews: 'light'|'standard'|'intense'; final_days: number|null; rest_before_exam: boolean; order: 'course'|'hardest'; study_minutes: number
+  weekday_limits: (number|null)[]|null; adapt: boolean
 }
 export const planExam=(id:number, request:PlanRequest)=>apiRequest<Task[]>(`/exams/${id}/plan`,{method:'POST',body:JSON.stringify(request)})
 /** Quando conviene iniziare il piano (metodo completo a ritmo sostenibile) e l'ultimo giorno utile (versione minima). */
-export interface PlanAdvice { ideal_start:string; latest_start:string; ideal_days:number; min_days:number; full_items:number; min_items:number; full_minutes:number; min_minutes:number }
+export interface PlanAdvice { ideal_start:string; latest_start:string; ideal_days:number; min_days:number; full_items:number; min_items:number; full_minutes:number; min_minutes:number
+  /** Dallo storico: quota di task del piano fatti in tempo e tempo reale / previsto; null = pochi dati. */
+  reliability:number|null; pace:number|null }
 export const getPlanAdvice=(id:number, request:PlanRequest)=>apiRequest<PlanAdvice>(`/exams/${id}/plan/advice`,{method:'POST',body:JSON.stringify(request)})
 /** Registra l'appello attuale come non superato: l'esame torna da preparare, senza data. */
 export const recordAttempt=(id:number, outcome:ExamAttempt['outcome'], grade:number|null)=>apiRequest<Exam>(`/exams/${id}/attempts`,{method:'POST',body:JSON.stringify({outcome,grade})})

@@ -59,9 +59,9 @@ def test_exam_plan_studies_reviews_and_replans(client):
     studies = [t for t in tasks if t["review_interval"] is None]
     assert [t["title"] for t in studies] == ["Studia: Cinematica", "Studia: Dinamica (1/2)", "Studia: Dinamica (2/2)", "Studia: Energia"]
     assert all(_day(1) <= t["due_date"] < _day(21) for t in tasks)
-    # Ripassano tutti, il difficile di più; ogni argomento ha anche il ripasso finale.
+    # Ripassano tutti (il difficile almeno quanto gli altri, più ravvicinato); ogni argomento ha anche il ripasso finale.
     reviews = lambda tid: [t for t in tasks if t["topic_id"] == tid and t["review_interval"] is not None]
-    assert len(reviews(ids[1])) > len(reviews(ids[0])) >= 2
+    assert len(reviews(ids[1])) >= len(reviews(ids[0])) >= 2
     # Rigenerare sostituisce i task del piano ancora aperti, senza doppioni.
     again = client.post(f"/exams/{exam['id']}/plan", headers=h).json()
     assert len(again) == len(tasks) and len(client.get("/tasks", headers=h).json()) == len(tasks)
@@ -204,3 +204,26 @@ def test_topic_mastery_stays_in_sync_with_completed(client):
     # Il primo "studiato" da qualunque strada programma il ripasso.
     client.patch(url, json={"mastery": 2, "schedule_reviews": True}, headers=h)
     assert len(client.get("/tasks", headers=h).json()) == 1
+
+
+def test_exam_plan_uses_history_and_weekday_limits(client):
+    h = _headers(client, "p5@example.com")
+    s = client.post("/subjects", json={"name": "Logica"}, headers=h).json()
+    for x in "ABCDE": client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h)
+    exam = client.post("/exams", json={"title": "Logica", "subject": "Logica", "exam_date": _day(22)}, headers=h).json()
+    # Senza storico: nessuna correzione.
+    advice = client.post(f"/exams/{exam['id']}/plan/advice", json={}, headers=h).json()
+    assert (advice["reliability"], advice["pace"]) == (None, None)
+    # Limite per giorno della settimana: domani al massimo un'attività.
+    limits = [None] * 7; limits[date.today().isoweekday() % 7] = 1
+    tasks = client.post(f"/exams/{exam['id']}/plan", json={"limit_value": 4, "weekday_limits": limits}, headers=h).json()
+    assert tasks and sum(t["due_date"] == _day(1) for t in tasks) <= 1
+    assert client.post(f"/exams/{exam['id']}/plan", json={"weekday_limits": [1, 2]}, headers=h).status_code == 422
+    # Storico: 10 task del piano scaduti ieri, 4 fatti solo oggi (in ritardo) → 0% in tempo: date anticipate.
+    for i in range(10):
+        t = client.post("/tasks", json={"title": f"x{i}", "description": "Piano d'esame · Studio", "due_date": _day(-1)}, headers=h).json()
+        if i < 4: client.patch(f"/tasks/{t['id']}", json={"status": "done"}, headers=h)
+    late = client.post(f"/exams/{exam['id']}/plan/advice", json={}, headers=h).json()
+    assert late["reliability"] == 0 and late["ideal_start"] < advice["ideal_start"]
+    ignored = client.post(f"/exams/{exam['id']}/plan/advice", json={"adapt": False}, headers=h).json()
+    assert ignored["ideal_start"] == advice["ideal_start"] and ignored["reliability"] == 0

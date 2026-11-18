@@ -163,7 +163,7 @@ function CalendarPage() {
             {task.scheduled_time && (
               <span className="font-mono text-[0.6875rem] text-primary tabular-nums">{task.scheduled_time.slice(0, 5)}–{endTime(task.scheduled_time, task.planned_minutes ?? 50)}</span>
             )}
-            <span className={cn('leading-snug font-medium break-words', done && 'text-muted-foreground line-through')}>{task.title}</span>
+            <span className={cn('leading-snug font-medium break-words hyphens-auto', done && 'text-muted-foreground line-through')}>{task.title}</span>
             {subject && <span className="truncate text-muted-foreground">{subject.name}</span>}
           </span>
         </label>
@@ -251,7 +251,7 @@ function CalendarPage() {
                 <li
                   key={day}
                   className={cn(
-                    'flex min-h-48 min-w-0 flex-col gap-3 bg-card p-3 transition-colors',
+                    'flex min-w-0 flex-col gap-3 bg-card p-3 transition-colors sm:min-h-48',
                     day < today && 'bg-card/60',
                     isToday && 'bg-primary/5',
                     dropDay === day && 'bg-primary/10 ring-2 ring-primary ring-inset',
@@ -279,7 +279,8 @@ function CalendarPage() {
                     {dayExams.length === 0 && dayTasks.length === 0 && <li className="text-xs text-muted-foreground/70">{t('calendar.free')}</li>}
                   </ul>
 
-                  <form className="mt-auto" onSubmit={(e) => void addTask(e, day)}>
+                  {/* Nei giorni passati non si aggiungono task: resta solo quanto hai studiato. */}
+                  {day >= today && <form className="mt-auto" onSubmit={(e) => void addTask(e, day)}>
                     <Input
                       className="h-8 border-dashed bg-transparent text-xs md:h-8 dark:bg-transparent"
                       value={drafts[day] ?? ''}
@@ -288,9 +289,9 @@ function CalendarPage() {
                       placeholder={t('calendar.addPlaceholder')}
                       aria-label={t('calendar.addFor', { day: formatDay(day, 'full', locale) })}
                     />
-                  </form>
+                  </form>}
 
-                  <p className={cn('flex items-center gap-1.5 font-mono text-[0.6875rem] tabular-nums', minutes ? 'text-foreground' : 'text-muted-foreground/70')}>
+                  <p className={cn('flex items-center gap-1.5 font-mono text-[0.6875rem] tabular-nums', day < today && 'mt-auto', minutes ? 'text-foreground' : 'text-muted-foreground/70')}>
                     <span className={cn('size-2 rounded-sm', HEAT[heatLevel(minutes)] || 'bg-muted')} aria-hidden="true" />
                     {minutes ? t('calendar.studiedValue', { value: formatMinutes(minutes) }) : t('calendar.notStudied')}
                   </p>

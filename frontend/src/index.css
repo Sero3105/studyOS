@@ -164,6 +164,9 @@
   html {
     @apply font-sans antialiased;
     color-scheme: light;
+    /* Tocchi rapidi senza il ritardo del doppio tocco; niente lampo grigio: gli stati attivi li disegnano i componenti. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   html[data-theme="dark"] {
     color-scheme: dark;

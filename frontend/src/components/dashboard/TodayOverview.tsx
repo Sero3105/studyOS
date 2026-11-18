@@ -27,7 +27,7 @@ function TodayOverview({ stats, onStartSession }: TodayOverviewProps) {
   const figures = [
     { label: t('dashboard.thisWeek'), value: formatMinutes(stats.week_minutes) },
     { label: t('dashboard.streakDays'), value: String(stats.streak_days) },
-    { label: t('dashboard.tasksCompleted'), value: <>{stats.tasks_done}<span className="text-muted-foreground">/{stats.tasks_total}</span></> },
+    { label: t('dashboard.tasksToday'), value: <>{stats.today_tasks_done}<span className="text-muted-foreground">/{stats.today_tasks_total}</span></> },
   ]
 
   return (

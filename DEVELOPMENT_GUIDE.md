@@ -274,7 +274,7 @@ Aree implementate end-to-end (frontend, API, persistenza, isolamento per utente)
 | Preferenze | `GET/PATCH /settings` (JSON sull'utente) | `utils/preferences.ts`: server come fonte, localStorage come cache |
 | Materie e topic | `/subjects`, `/subjects/{id}/topics`, `/topics/{id}` (note, difficoltà, stato `mastery` 0-3, ripassi adattivi) | `/subjects` con note Markdown e anteprima |
 | Task | `/tasks` (ricorrenza, ripasso adattivo con `review_rating`, blocco orario `scheduled_time` + `planned_minutes`) | `/planner`, `/calendar` (time blocking) |
-| Esami | `/exams` (CRUD), `POST /exams/{id}/plan` (piano pesato, `rest_days`), `POST /exams/{id}/attempts` | `/exams`: esito, tentativi, prontezza, libretto e simulatore |
+| Esami | `/exams` (CRUD), `POST /exams/{id}/plan` e `/plan/advice` (piano con preferenze e storico), `POST /exams/{id}/attempts` | `/exams`: esito, tentativi, prontezza, libretto e simulatore |
 | Sessioni e sedute | `/sessions` (CRUD, `kind`, `focus`, `sitting_id`, `partial`, `interruptions`), `GET /sittings`, `PUT /sittings/{uid}` (obiettivo, checklist, distrazioni, "riparto da qui"; idempotente) | Timer (`utils/sitting.ts`), `/history` |
 | Flashcard ed errori | `/cards`, `/cards/bulk`, `/cards/{id}/review`, `/mistakes` | `/cards`: ripasso, import/export, quaderno degli errori |
 | Obiettivi | `/goals` (progresso calcolato dai dati) | `/goals` |
@@ -338,10 +338,13 @@ dei voti; nessun dato cancellato. Eliminare una materia elimina anche i suoi esa
 Il timer mostra i giorni all'esame accanto a ogni materia; le materie archiviate
 non compaiono nei selettori (timer, planner, obiettivi).
 Piano d'esame: `backend/services/study_plan.py` (algoritmo deterministico: studio in ordine di
-corso, ripasso il giorno dopo, ripassi a intervalli geometrici crescenti, ripasso finale, interleaving,
-capienza giornaliera che tiene conto degli altri esami) adattato alle preferenze dello studente
-(`PlanPrefs`: inizio, giorni senza studio, giorni liberi, limite in attività o ore, intensità dei ripassi,
-durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero); `plan_advice` dà
+corso; ripassi messi da un modello della memoria in stile FSRS, cioè quando il ricordo previsto scende
+alla soglia scelta, con una coda per data; ripasso finale ai più deboli prima; interleaving; capienza
+giornaliera che tiene conto degli altri esami) adattato alle preferenze dello studente (`PlanPrefs`:
+inizio, giorni senza studio, giorni liberi, limite in attività o ore anche per giorno della settimana,
+soglia dei ripassi, durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero)
+e al suo storico (`exam_service.plan_history`: task del piano fatti in tempo e ritmo reale al timer;
+`_plan_topics`: ultimo passaggio, ripassi riusciti ed errori annotati per argomento); `plan_advice` dà
 inizio ideale e data limite. Stato argomento: da fare → da ripassare →
 ripassato → sicuro; "completato" solo da ripassato in su (migrazione 0011).
 Timer: quadrante a sinistra, checklist e distrazioni a destra. Statistiche e
