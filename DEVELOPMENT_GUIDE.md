@@ -338,10 +338,10 @@ dei voti; nessun dato cancellato. Eliminare una materia elimina anche i suoi esa
 Il timer mostra i giorni all'esame accanto a ogni materia; le materie archiviate
 non compaiono nei selettori (timer, planner, obiettivi).
 Piano d'esame: `backend/services/study_plan.py` (algoritmo deterministico: studio in ordine di
-corso; ripassi messi da un modello della memoria in stile FSRS, cioè quando il ricordo previsto scende
+corso sull'80% del tempo; ripassi messi da un modello della memoria in stile FSRS, nel giorno più scarico intorno a quando il ricordo previsto scende
 alla soglia scelta, con una coda per data; ripasso finale ai più deboli prima; interleaving; capienza
 giornaliera che tiene conto degli altri esami) adattato alle preferenze dello studente (`PlanPrefs`:
-inizio, giorni senza studio, giorni liberi, limite in attività o ore anche per giorno della settimana,
+inizio, giorni senza studio, giorni liberi (per esame, `Exam.plan_days_off`), limite in attività o ore anche per giorno della settimana,
 soglia dei ripassi, durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero);
 con più esami: giorno d'esame libero, `focus_days` giorni prima di ogni esame solo per quella materia
 (`exam_service._other_exams`), fetta giornaliera all'esame più vicino (`study_plan.exam_share`), indipendente dall'ordine
