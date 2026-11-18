@@ -12,6 +12,7 @@ import type { Exam, PlanRequest } from '../../services/examService'
 import type { Readiness } from '../../utils/planning'
 import { daysUntil, formatDay, urgencyClass } from '../../utils/dates'
 import { useLanguage } from '../../i18n/useLanguage'
+import type { TranslationKey } from '../../i18n/translations'
 
 interface SubjectExamProps {
   exams: Exam[]
@@ -23,7 +24,8 @@ interface SubjectExamProps {
   onPlan: (exam: Exam, request: PlanRequest) => void
   /** Cambia con argomenti, stato e difficoltà: i suggerimenti del piano si ricalcolano. */
   topicsKey: string
-  onOutcome: (request: () => Promise<Exam>) => Promise<void>
+  /** Salva una modifica dell'esame (esito, giorni liberi del piano); `failure` è il messaggio se non riesce. */
+  onOutcome: (request: () => Promise<Exam>, failure?: TranslationKey) => Promise<void>
 }
 
 /** L'esame della materia, dentro la sua scheda: conto alla rovescia, prontezza, copertura; superato → archivio. */
@@ -78,7 +80,7 @@ function SubjectExam({ exams, readiness, coverage, onAdd, onEdit, onDelete, onPl
               </ul>
             </div>
           </div>
-          {isDated(active) && daysUntil(active.exam_date) > 1 && <PlanStarter key={active.id} exam={active} topicsKey={topicsKey} onPlan={onPlan} />}
+          {isDated(active) && daysUntil(active.exam_date) > 1 && <PlanStarter key={active.id} exam={active} topicsKey={topicsKey} onPlan={onPlan} onSave={onOutcome} />}
           {readiness && <ReadinessMeter readiness={readiness} />}
           {coverage && <CoverageMap coverage={coverage} />}
         </>

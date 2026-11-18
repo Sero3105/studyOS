@@ -3,7 +3,7 @@ import { CalendarDays } from 'lucide-react'
 import { enUS, it } from 'react-day-picker/locale'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '../../i18n/useLanguage'
-import { parseDay, todayIso } from '../../utils/dates'
+import { isoDay, parseDay, todayIso } from '../../utils/dates'
 import { Button } from './button'
 import { Calendar } from './calendar'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
@@ -21,8 +21,6 @@ interface DatePickerProps {
   'aria-describedby'?: string
   className?: string
 }
-
-const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 /**
  * Campo data con calendario a tema (Popover + Calendar di shadcn) al posto di
@@ -72,7 +70,7 @@ function DatePicker({ value, onChange, id, min, max, required, placeholder, clas
             ...(min ? [{ before: parseDay(min) }] : []),
             ...(max ? [{ after: parseDay(max) }] : []),
           ]}
-          onSelect={(date) => { if (date) pick(toIso(date)) }}
+          onSelect={(date) => { if (date) pick(isoDay(date)) }}
           autoFocus
         />
         <div className="flex gap-1 border-t p-2">

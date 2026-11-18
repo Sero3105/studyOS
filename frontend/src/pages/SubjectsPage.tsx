@@ -142,12 +142,12 @@ function SubjectsPage() {
     else if (dialog?.mode === 'new') setFilter('active')
   }
 
-  const recordOutcome = async (request: () => Promise<Exam>) => {
+  const recordOutcome = async (request: () => Promise<Exam>, failure: TranslationKey = 'exams.outcomeError') => {
     try {
       const updated = await request()
       setExams((list) => list.map((x) => (x.id === updated.id ? updated : x)))
       if (updated.status === 'passed') { setFilter('archived'); toast.success(t('subjects.archivedToast', { name: updated.subject })) }
-    } catch (e) { setError(errorMessage(e, t('exams.outcomeError'))) }
+    } catch (e) { setError(errorMessage(e, t(failure))) }
   }
 
   const removeExam = (exam: Exam) =>

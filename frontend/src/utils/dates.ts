@@ -12,6 +12,9 @@ export function parseDay(isoDate: string): Date {
   return new Date(`${isoDate}T00:00:00`)
 }
 
+/** Data del calendario (ora locale) → "AAAA-MM-GG". */
+export const isoDay = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
 export function todayIso(): string {
   const now = new Date()
   const offset = now.getTimezoneOffset() * 60000
