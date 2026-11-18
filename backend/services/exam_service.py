@@ -9,7 +9,7 @@ from models.subject_models import Subject
 from models.task_models import Task
 from schemas.exam_schemas import ExamCreate
 from dataclasses import replace
-from services.study_plan import PlanAdvice, PlanPrefs, PlanTopic, build_plan, plan_advice
+from services.study_plan import PlanAdvice, PlanPrefs, PlanTopic, build_plan, exam_share, plan_advice
 def link_subject(exam:Exam, db:Session)->None:
     """Collega l'esame per id alla materia con lo stesso nome; se non c'è, la crea: ogni esame ha sempre la sua materia."""
     name=exam.subject.strip()
@@ -70,6 +70,24 @@ def _plan_inputs(data)->tuple[set[int], set[date], PlanPrefs, date|None, bool, b
                     final_days=data.final_days, order=data.order, study_minutes=data.study_minutes)
     return set(data.rest_days), set(data.days_off), prefs, data.start_date, data.rest_before_exam, data.adapt
 
+FOCUS_DAYS = 3  # default: giorni di studio prima di ogni esame riservati a quella materia
+
+def _other_exams(exam:Exam, user_id:int, db:Session, rest_days:set[int], days_off:set[date], focus_days:int)->tuple[set[date], list[date]]:
+    """Altri esami da preparare → giorni da lasciare a loro e loro date.
+    Il giorno di ogni esame resta libero; i `focus_days` giorni di studio prima di un esame più vicino sono solo per quella
+    materia. Se due esami sono vicini, il giorno conteso va all'esame che arriva prima."""
+    others=[d for d in db.scalars(select(Exam.exam_date).where(Exam.user_id==user_id, Exam.id!=exam.id, Exam.exam_date.is_not(None),
+                                                                Exam.exam_date>=date.today(), Exam.status.in_(('planned','in_progress'))))]
+    blocked=set(others)
+    for other in others:
+        if other>=exam.exam_date: continue
+        day, left=other, focus_days
+        while left>0 and day>date.today():
+            day-=timedelta(days=1)
+            if day.isoweekday() in rest_days or day in days_off or day in others: continue
+            blocked.add(day); left-=1
+    return blocked, others
+
 HISTORY_DAYS = 60  # finestra dello storico per la quota di task fatti
 MIN_HISTORY = 10  # sotto, troppo pochi task per fidarsi
 
@@ -113,8 +131,9 @@ def plan_exam_advice(exam_id:int, user_id:int, db:Session, data=None)->dict:
     subject=_plan_subject(exam, user_id, db)
     rest_days, days_off, prefs, _, rest_before, adapt=_plan_inputs(data)
     if rest_before: days_off=days_off|{exam.exam_date-timedelta(days=1)}
+    blocked, others=_other_exams(exam, user_id, db, rest_days, days_off, data.focus_days if data else FOCUS_DAYS)
     prefs, reliability, pace=_personal(prefs, adapt, user_id, db)
-    advice=plan_advice(_plan_topics(subject, user_id, db), exam.exam_date, rest_days, days_off, prefs)
+    advice=plan_advice(_plan_topics(subject, user_id, db), exam.exam_date, rest_days, days_off|blocked, prefs, others)
     return {**advice.__dict__, 'reliability': reliability, 'pace': pace}
 
 def plan_exam(exam_id:int, user_id:int, db:Session, data=None)->list[Task]:
@@ -125,6 +144,9 @@ def plan_exam(exam_id:int, user_id:int, db:Session, data=None)->list[Task]:
     subject=_plan_subject(exam, user_id, db)
     rest_days, days_off, prefs, start, rest_before, adapt=_plan_inputs(data)
     if rest_before: days_off=days_off|{exam.exam_date-timedelta(days=1)}
+    # Altri esami: il loro giorno e i giorni prima di quelli più vicini non sono per questa materia.
+    blocked, others=_other_exams(exam, user_id, db, rest_days, days_off, data.focus_days if data else FOCUS_DAYS)
+    days_off=days_off|blocked
     prefs, _, _=_personal(prefs, adapt, user_id, db)
     # Parte dal giorno scelto (mai nel passato), altrimenti da domani.
     first=max(start or date.today()+timedelta(days=1), date.today())
@@ -135,7 +157,7 @@ def plan_exam(exam_id:int, user_id:int, db:Session, data=None)->list[Task]:
     weight=func.count() if prefs.unit=='tasks' else func.sum(func.coalesce(Task.planned_minutes, 30))
     busy=dict(db.execute(select(Task.due_date, weight).where(Task.user_id==user_id, Task.status!='done', Task.due_date.in_(days)).group_by(Task.due_date)).all())
     by_id={t.id: t for t in subject.topics}
-    plan=build_plan(_plan_topics(subject, user_id, db), days, busy, prefs, exam.exam_date)
+    plan=build_plan(_plan_topics(subject, user_id, db), days, busy, prefs, exam.exam_date, {d: exam_share(d, exam.exam_date, others) for d in days})
     tasks=[]
     for it in plan:
         topic=by_id[it.topic_id]

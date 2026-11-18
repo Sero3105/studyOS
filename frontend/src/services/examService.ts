@@ -15,7 +15,7 @@ export const updateExam=(id:number,payload:Partial<CreateExamPayload>)=>apiReque
 export interface PlanRequest {
   rest_days: number[]; start_date?: string; days_off: string[]; limit_unit: 'tasks'|'hours'; limit_value: number|null
   reviews: 'light'|'standard'|'intense'; final_days: number|null; rest_before_exam: boolean; order: 'course'|'hardest'; study_minutes: number
-  weekday_limits: (number|null)[]|null; adapt: boolean
+  weekday_limits: (number|null)[]|null; adapt: boolean; focus_days: number
 }
 export const planExam=(id:number, request:PlanRequest)=>apiRequest<Task[]>(`/exams/${id}/plan`,{method:'POST',body:JSON.stringify(request)})
 /** Quando conviene iniziare il piano (metodo completo a ritmo sostenibile) e l'ultimo giorno utile (versione minima). */

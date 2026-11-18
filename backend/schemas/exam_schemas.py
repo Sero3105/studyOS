@@ -71,6 +71,7 @@ class PlanRequest(BaseModel):
     # Limite diverso per lunedì..domenica, nella stessa unità di limit_value; vuoto = come limit_value.
     weekday_limits: list[Annotated[float, Field(gt=0, le=24)] | None] | None = Field(default=None, min_length=7, max_length=7)
     adapt: bool = True  # adatta durate e date allo storico (ritmo reale, task fatti in tempo)
+    focus_days: int = Field(default=3, ge=0, le=7)  # giorni di studio prima di ogni esame riservati a quella materia
 class PlanAdviceResponse(BaseModel):
     ideal_start: date; latest_start: date; ideal_days: int; min_days: int; full_items: int; min_items: int; full_minutes: int; min_minutes: int
     reliability: float | None = None  # quota di task del piano fatti in tempo (ultimi 60 giorni); None = pochi dati
