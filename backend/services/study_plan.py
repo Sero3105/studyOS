@@ -31,6 +31,8 @@ FSRS_DIFFICULTY = {1: 3.0, 2: 5.5, 3: 8.0}  # difficoltà su scala FSRS 1-10
 KNOWN_STABILITY = {2: 4.0, 3: 60.0}  # stima per "ripassato" e "sicuro" senza storico
 SAFE_STABILITY = 21  # da qui in su l'argomento regge da solo: basta il ripasso finale
 TARGET = {'light': 0.80, 'standard': 0.85, 'intense': 0.90}  # ricordo minimo prima di ogni ripasso
+STUDY_SPAN = 0.80  # quota del tempo di studio (pesato con la fetta) in cui si studia materiale nuovo
+REVIEW_WINDOW = 0.05  # un ripasso può cadere da soglia+5% a soglia-5% di ricordo: sceglie il giorno più scarico
 
 
 def recall(days: float, stability: float) -> float:
@@ -204,6 +206,12 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
 
     items: list[PlanItem] = []
 
+    def spread(ideal: int, early: int, late: int, topic_id: int) -> int | None:
+        """Giorno con posto in [early, late] meno carico (contando anche gli altri esami); a parità, il più vicino a `ideal`."""
+        cost = p.cost('review')
+        free = [i for i in range(early, late + 1) if i not in buffer and fits(i, cost, kind='review') and topic_id not in on_day[i]]
+        return min(free, key=lambda i: (load[i] / caps[i], abs(i - ideal)), default=None)
+
     def fits(i: int, cost: float, slack: float = 0, kind: str = 'study') -> bool:
         """C'è posto nella giornata e, per lo studio nuovo e il ripasso finale, nella fetta di questo esame.
         I ripassi non guardano la fetta: con altri esami più vicini si rallenta lo studio nuovo, non la memoria di quello
@@ -219,7 +227,7 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
     # dopo la pausa, ad argomento ormai dimenticato.
     before_gap = {i for i in range(learn_n - 1) if ords[i + 1] - ords[i] > 2}
 
-    # 1. Studio: in ordine di corso (i capitoli si appoggiano ai precedenti), sparso sul primo 65% del tempo, così anche
+    # 1. Studio: in ordine di corso (i capitoli si appoggiano ai precedenti), sparso sul primo 80% del tempo, così anche
     #    l'ultimo argomento ha spazio per i suoi ripassi. Il tempo è pesato con la fetta di ogni giorno: dove c'è un
     #    esame più vicino lo studio nuovo si dirada.
     studied_at: dict[int, int] = {}
@@ -228,7 +236,7 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
     if p.order == 'hardest': new.sort(key=lambda t: -t.difficulty)  # stabile: a parità, ordine del corso
     cumulative = [0.0]
     for q in quota[:learn_n]: cumulative.append(cumulative[-1] + q)
-    study_span = 0.65 * cumulative[-1]
+    study_span = STUDY_SPAN * cumulative[-1]
     for t in new:
         parts = STUDY_BLOCKS[t.difficulty]
         for part in range(1, parts + 1):
@@ -262,7 +270,10 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
         if lo > hi or (done and ideal > hi): continue
         # Prima scelta: un giorno libero finché il ricordo resta accettabile (soglia - 5%).
         late = min(hi, max(lo, bisect_right(ords, last + interval(stability, p.target - 0.05)) - 1))
-        i = place(ideal, lo, late, tid, 'review', must=False)
+        # Prima scelta: il giorno più scarico tra "ricordo ancora al 90%" e "ricordo all'80%" (con soglia 85%): ripassare
+        # un giorno prima costa poco e così gli argomenti studiati insieme non scadono tutti lo stesso giorno.
+        early = min(late, max(lo, bisect_right(ords, last + interval(stability, min(0.97, p.target + REVIEW_WINDOW))) - 1))
+        i = spread(ideal, early, late, tid)
         if i is None and p.per_day is None:
             # Limite automatico: meglio un'attività in più in un giorno che un ripasso quando il ricordo è già sbiadito.
             free = [j for j in range(min(ideal, late), late + 1)

@@ -13,7 +13,6 @@ const KEYS = {
   degreeCfu: 'studyos.degreeCfu',
   restDays: 'studyos.restDays',
   planPrefs: 'studyos.planPrefs',
-  planDaysOff: 'studyos.planDaysOff',
   planWeekdays: 'studyos.planWeekdays',
 } as const
 type Name = keyof typeof KEYS | 'theme'
@@ -56,7 +55,6 @@ export const setRestDays = (days: number[]): void => save('restDays', days)
  * Le scelte in una stringa JSON corta, i giorni liberi a parte come lista di date (il server limita le stringhe a 200 caratteri).
  */
 export interface PlanPrefs {
-  daysOff: string[]
   limitUnit: 'auto' | 'tasks' | 'hours'
   limitValue: number
   reviews: 'light' | 'standard' | 'intense'
@@ -69,16 +67,14 @@ export interface PlanPrefs {
   focusDays: number // giorni prima di ogni esame riservati a quella materia
 }
 const NO_WEEKDAY_LIMITS = [null, null, null, null, null, null, null]
-export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50, weekdayLimits: NO_WEEKDAY_LIMITS, adapt: true, focusDays: 3 }
+export const PLAN_DEFAULTS: PlanPrefs = { limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50, weekdayLimits: NO_WEEKDAY_LIMITS, adapt: true, focusDays: 3 }
 export function planPrefs(): PlanPrefs {
-  const daysOff = (read(KEYS.planDaysOff) ?? '').split(',').filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
   const stored = (read(KEYS.planWeekdays) ?? '').split(',').map((v) => Number(v) > 0 ? Number(v) : null)
   const weekdayLimits = stored.length === 7 ? stored : NO_WEEKDAY_LIMITS
-  try { return { ...PLAN_DEFAULTS, ...JSON.parse(read(KEYS.planPrefs) ?? '{}'), daysOff, weekdayLimits } } catch { return { ...PLAN_DEFAULTS, daysOff, weekdayLimits } }
+  try { return { ...PLAN_DEFAULTS, ...JSON.parse(read(KEYS.planPrefs) ?? '{}'), weekdayLimits } } catch { return { ...PLAN_DEFAULTS, weekdayLimits } }
 }
-export function setPlanPrefs({ daysOff, weekdayLimits, ...rest }: PlanPrefs): void {
+export function setPlanPrefs({ weekdayLimits, ...rest }: PlanPrefs): void {
   save('planPrefs', JSON.stringify(rest))
-  save('planDaysOff', daysOff)
   // Stringa "2,,,,,4,": il server accetta liste solo di interi, i limiti in ore possono essere 1,5.
   save('planWeekdays', weekdayLimits.map((v) => v ?? '').join(','))
 }

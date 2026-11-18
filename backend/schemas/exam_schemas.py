@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
 from enum import Enum
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
 
 class ExamStatus(str, Enum):
     PLANNED='planned'; IN_PROGRESS='in_progress'; PASSED='passed'; FAILED='failed'
@@ -16,6 +16,10 @@ class ExamCreate(BaseModel):
     cfu: int | None = Field(default=None, ge=1, le=30)
     grade: int | None = Field(default=None, ge=18, le=30)
     honors: bool = False
+    plan_days_off: list[date] = Field(default=[], max_length=120)  # giorni liberi del piano di questo esame
+    @field_serializer('plan_days_off')
+    def days_as_text(self, days):  # la colonna è JSON: date ISO, ordinate e senza doppioni
+        return None if days is None else sorted({d.isoformat() for d in days})
     @model_validator(mode='after')
     def honors_need_30(self):
         if self.honors and self.grade != 30: raise ValueError('La lode richiede voto 30')
@@ -37,6 +41,10 @@ class ExamUpdate(BaseModel):
     cfu: int | None = Field(default=None, ge=1, le=30)
     grade: int | None = Field(default=None, ge=18, le=30)
     honors: bool | None = None
+    plan_days_off: list[date] | None = Field(default=None, max_length=120)
+    @field_serializer('plan_days_off')
+    def days_as_text(self, days):  # la colonna è JSON: date ISO, ordinate e senza doppioni
+        return None if days is None else sorted({d.isoformat() for d in days})
     @field_validator('title','subject','location','notes', mode='before')
     @classmethod
     def trim(cls, value):
@@ -44,7 +52,7 @@ class ExamUpdate(BaseModel):
         value = str(value).strip()
         return value or None
     # Si possono omettere, non svuotare: le colonne sono NOT NULL.
-    @field_validator('title','subject','status','honors')
+    @field_validator('title','subject','status','honors','plan_days_off')
     @classmethod
     def not_null(cls, value):
         if value is None: raise ValueError('Field cannot be empty')
@@ -77,6 +85,6 @@ class PlanAdviceResponse(BaseModel):
     reliability: float | None = None  # quota di task del piano fatti in tempo (ultimi 60 giorni); None = pochi dati
     pace: float | None = None  # tempo reale / tempo previsto per lo studio; None = pochi dati
 class ExamResponse(BaseModel):
-    id:int; user_id:int; title:str; subject:str; subject_id:int|None=None; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; created_at:datetime; updated_at:datetime
+    id:int; user_id:int; title:str; subject:str; subject_id:int|None=None; exam_date:date|None; exam_time:time|None; location:str|None; notes:str|None; status:ExamStatus; cfu:int|None; grade:int|None; honors:bool; plan_days_off:list[date]=[]; created_at:datetime; updated_at:datetime
     attempts: list[AttemptResponse] = []
     model_config=ConfigDict(from_attributes=True)

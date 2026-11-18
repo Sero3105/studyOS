@@ -245,3 +245,17 @@ def test_exam_days_and_focus_days_belong_to_their_exam(client):
     # Senza giorni riservati restano liberi solo i giorni d'esame.
     far = client.post(f"/exams/{exams['Lontano']['id']}/plan", json={"focus_days": 0}, headers=h).json()
     assert _day(12) not in {t["due_date"] for t in far}
+
+
+def test_days_off_belong_to_each_exam(client):
+    h = _headers(client, "p7@example.com")
+    a = client.post("/exams", json={"title": "A", "subject": "A", "exam_date": _day(20)}, headers=h).json()
+    b = client.post("/exams", json={"title": "B", "subject": "B", "exam_date": _day(30)}, headers=h).json()
+    assert a["plan_days_off"] == []
+    saved = client.patch(f"/exams/{a['id']}", json={"plan_days_off": [_day(5), _day(3), _day(5)]}, headers=h).json()
+    assert saved["plan_days_off"] == [_day(3), _day(5)]  # ordinati, senza doppioni
+    assert next(e for e in client.get("/exams", headers=h).json() if e["id"] == b["id"])["plan_days_off"] == []
+    assert client.patch(f"/exams/{a['id']}", json={"plan_days_off": None}, headers=h).status_code == 422
+    # Il backup li conserva.
+    exported = client.get("/data/export", headers=h).json()
+    assert next(e for e in exported["exams"] if e["title"] == "A")["plan_days_off"] == [_day(3), _day(5)]

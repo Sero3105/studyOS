@@ -11,23 +11,25 @@ import { Input } from '../ui/input'
 import { NativeSelect, NativeSelectOption } from '../ui/native-select'
 import { Switch } from '../ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import { getPlanAdvice } from '../../services/examService'
-import type { DatedExam, PlanAdvice, PlanRequest } from '../../services/examService'
+import DaysOffPicker from './DaysOffPicker'
+import { getPlanAdvice, updateExam } from '../../services/examService'
+import type { DatedExam, Exam, PlanAdvice, PlanRequest } from '../../services/examService'
 import { addDays, formatDay, todayIso, weekdayShort } from '../../utils/dates'
 import { planPrefs, restDays, setPlanPrefs, setRestDays } from '../../utils/preferences'
 import type { PlanPrefs } from '../../utils/preferences'
 import { useLanguage } from '../../i18n/useLanguage'
+import type { TranslationKey } from '../../i18n/translations'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
 const MONDAY = '2026-11-02'
 const hours = (minutes: number) => (minutes / 60).toLocaleString(undefined, { maximumFractionDigits: 1 })
 
 /** Preferenze dello studente → richiesta per il backend. */
-function toRequest(prefs: PlanPrefs, rest: number[], start?: string): PlanRequest {
+function toRequest(prefs: PlanPrefs, rest: number[], daysOff: string[], start?: string): PlanRequest {
   return {
     rest_days: rest,
     start_date: start,
-    days_off: prefs.daysOff,
+    days_off: daysOff,
     limit_unit: prefs.limitUnit === 'hours' ? 'hours' : 'tasks',
     limit_value: prefs.limitUnit === 'auto' ? null : prefs.limitValue,
     reviews: prefs.reviews,
@@ -43,24 +45,30 @@ function toRequest(prefs: PlanPrefs, rest: number[], start?: string): PlanReques
 
 /**
  * Piano d'esame guidato dalle preferenze: lo studente sceglie da quando partire, giorni senza studio,
- * giorni liberi, limite giornaliero (attività o ore, anche diverso per giorno della settimana), intensità dei
+ * giorni liberi (di questo esame), limite giornaliero (attività o ore, anche diverso per giorno della settimana), intensità dei
  * ripassi, giorni di ripasso finale, ordine e durata dello studio; il piano può adattarsi allo storico. Data ideale e data limite si ricalcolano a ogni scelta.
  * Le preferenze restano salvate per i piani successivi; `topicsKey` cambia con argomenti, stato e difficoltà.
  */
-function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: string; onPlan: (exam: DatedExam, request: PlanRequest) => void }) {
+function PlanStarter({ exam, topicsKey, onPlan, onSave }: {
+  exam: DatedExam; topicsKey: string; onPlan: (exam: DatedExam, request: PlanRequest) => void
+  /** Salva una modifica dell'esame (i suoi giorni liberi) e aggiorna la pagina. */
+  onSave: (request: () => Promise<Exam>, failure?: TranslationKey) => Promise<void>
+}) {
   const { t, locale } = useLanguage()
   const [prefs, setPrefsState] = useState<PlanPrefs>(planPrefs)
   const [rest, setRestState] = useState<number[]>(restDays)
   const [advice, setAdvice] = useState<PlanAdvice | null>(null)
   const [start, setStart] = useState('')
-  const [dayOff, setDayOff] = useState('')
+  // Giorni liberi di questo esame: stanno nell'esame, non nelle preferenze comuni.
+  const [daysOff, setDaysOff] = useState<string[]>(exam.plan_days_off)
   const today = todayIso()
   const lastDay = addDays(exam.exam_date, -1)
-  const request = toRequest(prefs, rest)
+  const request = toRequest(prefs, rest, daysOff)
   const requestKey = JSON.stringify(request)
 
   const update = (patch: Partial<PlanPrefs>) => { const next = { ...prefs, ...patch }; setPrefsState(next); setPlanPrefs(next) }
   const updateRest = (days: number[]) => { const next = [...days].sort(); setRestState(next); setRestDays(next) }
+  const saveDaysOff = (days: string[]) => { setDaysOff(days); void onSave(() => updateExam(exam.id, { plan_days_off: days }), 'plan.daysOffError') }
 
   useEffect(() => {
     let active = true
@@ -118,7 +126,7 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
           <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
           <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
         </Field>
-        <Button onClick={() => onPlan(exam, toRequest(prefs, rest, chosen))}>
+        <Button onClick={() => onPlan(exam, toRequest(prefs, rest, daysOff, chosen))}>
           <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
         </Button>
       </div>
@@ -142,14 +150,11 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
             <Field>
               <FieldLabel htmlFor={`plan-dayoff-${exam.id}`}>{t('plan.daysOff')}</FieldLabel>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="w-full sm:w-56">
-                  <DatePicker id={`plan-dayoff-${exam.id}`} min={today} max={lastDay} value={dayOff} placeholder={t('plan.addDayOff')}
-                    onChange={(day) => { if (day && !prefs.daysOff.includes(day)) update({ daysOff: [...prefs.daysOff, day].sort() }); setDayOff('') }} />
-                </div>
-                {prefs.daysOff.filter((d) => d >= today).map((d) => (
+                <DaysOffPicker id={`plan-dayoff-${exam.id}`} min={today} max={lastDay} value={daysOff.filter((d) => d >= today)} onChange={saveDaysOff} />
+                {daysOff.filter((d) => d >= today).map((d) => (
                   <Badge key={d} variant="secondary" className="h-7 gap-1 pr-1">
                     {formatDay(d, 'short', locale)}
-                    <button type="button" className="rounded-sm p-0.5 hover:bg-background/50" onClick={() => update({ daysOff: prefs.daysOff.filter((x) => x !== d) })} aria-label={t('plan.removeDayOff', { day: formatDay(d, 'long', locale) })}>
+                    <button type="button" className="rounded-sm p-0.5 hover:bg-background/50" onClick={() => saveDaysOff(daysOff.filter((x) => x !== d))} aria-label={t('plan.removeDayOff', { day: formatDay(d, 'long', locale) })}>
                       <X className="size-3" aria-hidden="true" />
                     </button>
                   </Badge>
