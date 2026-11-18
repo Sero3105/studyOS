@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarPlus, ChevronRight, CircleAlert, CircleCheck, TriangleAlert, X } from 'lucide-react'
+import { CalendarPlus, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import DatePicker from '../ui/DatePicker'
 import Segmented from '../ui/Segmented'
@@ -88,57 +88,49 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
     `${prefs.studyMinutes} min`,
     prefs.order === 'hardest' ? t('plan.orderHardest') : t('plan.orderCourse'),
   ].join(' · ')
+  const switchRow = 'items-center justify-between gap-4 rounded-lg border bg-background/40 p-3'
   const history = advice && advice.reliability !== null
     ? [t('plan.historyReliability', { pct: Math.round(advice.reliability * 100) }), advice.pace !== null && t('plan.historyPace', { pace: advice.pace.toLocaleString(locale, { maximumFractionDigits: 1 }) })].filter(Boolean).join(' · ')
     : t('plan.historyEmpty')
 
-  const idealPassed = !!advice && advice.ideal_start < today
-  const StatusIcon = status === 'ontime' ? CircleCheck : status === 'late' ? CircleAlert : TriangleAlert
-  const statusText = advice && status && (status === 'behind' && idealPassed
-    ? t('plan.status.behindPast', { ideal: formatDay(advice.ideal_start, 'long', locale), date: formatDay(chosen, 'long', locale) })
-    : t(`plan.status.${status}`, { date: formatDay(chosen, 'long', locale) }))
-  const switchRow = 'items-center justify-between gap-4 rounded-lg border bg-background/40 p-3'
-
   return (
-    <div className="flex flex-col rounded-lg border border-primary/25 bg-primary/5">
-      {/* 1. Quando conviene partire */}
+    <div className="flex flex-col gap-4 rounded-lg border border-primary/25 bg-primary/5 p-3 sm:p-4">
       {advice && (
-        <div className="flex flex-col gap-3 p-3 sm:p-4">
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border">
-            <div className="flex flex-col gap-0.5 bg-card p-3">
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                {t('plan.idealStart')}
-                {idealPassed && <Badge variant="secondary" className="h-5 px-1.5 text-[0.6875rem]">{t('plan.idealPassed')}</Badge>}
-              </dt>
-              <dd className={cn('text-sm font-medium', idealPassed && 'text-muted-foreground line-through decoration-muted-foreground/50')}>{formatDay(advice.ideal_start, 'long', locale)}</dd>
+        <>
+          <dl className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-xs text-muted-foreground">{t('plan.idealStart')}</dt>
+              <dd className="text-sm font-medium first-letter:uppercase">{formatDay(advice.ideal_start, 'long', locale)}</dd>
               <dd className="text-xs text-muted-foreground">{t('plan.idealDetail', { days: advice.ideal_days })} · {workload}</dd>
             </div>
-            <div className="flex flex-col gap-0.5 bg-card p-3">
+            <div className="flex flex-col gap-0.5">
               <dt className="text-xs text-muted-foreground">{t('plan.latestStart')}</dt>
-              <dd className="text-sm font-medium">{formatDay(advice.latest_start, 'long', locale)}</dd>
+              <dd className="text-sm font-medium first-letter:uppercase">{formatDay(advice.latest_start, 'long', locale)}</dd>
               <dd className="text-xs text-muted-foreground">{t('plan.latestDetail', { days: advice.min_days })}</dd>
             </div>
           </dl>
-          {statusText && (
-            <p className={cn('flex items-start gap-2 text-sm', tone[status!])} role="status">
-              <StatusIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{statusText}
-            </p>
-          )}
-        </div>
+          {status && <p className={cn('text-xs font-medium', tone[status])} role="status">{t(`plan.status.${status}`)}</p>}
+        </>
       )}
 
-      {/* 2. Preferenze, in tre gruppi */}
-      <Collapsible className="border-t border-primary/15">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Field className="sm:max-w-56">
+          <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
+          <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
+        </Field>
+        <Button onClick={() => onPlan(exam, toRequest(prefs, rest, chosen))}>
+          <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
+        </Button>
+      </div>
+
+      <Collapsible>
         <CollapsibleTrigger asChild>
-          <button type="button" className="group/prefs flex w-full items-start gap-2 px-3 py-3 text-left text-sm outline-none hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-4">
-            <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
-            <span className="flex min-w-0 flex-col">
-              <span className="font-medium">{t('plan.prefs')}</span>
-              <span className="text-xs text-muted-foreground group-data-[state=open]/prefs:hidden">{summary}</span>
-            </span>
-          </button>
+          <Button variant="ghost" size="sm" className="group/prefs -ml-2 h-auto max-w-full justify-start py-1 text-left whitespace-normal text-muted-foreground">
+            <ChevronRight data-icon="inline-start" className="shrink-0 transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
+            <span><span className="text-foreground">{t('plan.prefs')}</span> <span className="font-normal group-data-[state=open]/prefs:hidden">· {summary}</span></span>
+          </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="flex flex-col gap-6 px-3 pb-4 sm:px-4">
+        <CollapsibleContent className="flex flex-col gap-6 pt-3">
           <PrefGroup title={t('plan.groupWhen')}>
             <FieldSet className="gap-2">
               <FieldLegend variant="label">{t('plan.restDays')}</FieldLegend>
@@ -252,19 +244,7 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
         </CollapsibleContent>
       </Collapsible>
 
-      {/* 3. Azione, dopo le scelte */}
-      <div className="flex flex-col gap-3 border-t border-primary/15 p-3 sm:p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <Field className="sm:max-w-56">
-            <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
-            <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
-          </Field>
-          <Button onClick={() => onPlan(exam, toRequest(prefs, rest, chosen))}>
-            <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
-          </Button>
-        </div>
-        <p className="text-xs text-pretty text-muted-foreground">{t('exams.planExplain')}</p>
-      </div>
+      <p className="text-xs text-muted-foreground">{t('exams.planExplain')}</p>
     </div>
   )
 }
