@@ -49,6 +49,7 @@ const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
 const isoWeekdayName = (day: number, locale: string) => weekdayShort(addDays('2026-11-02', day - 1), locale)
 
 /** Gruppi per scadenza, nell'ordine in cui vanno affrontati. */
+const GROUP_PREVIEW = 10
 const groups: { id: string; titleKey: TranslationKey; test: (d: number | null) => boolean }[] = [
   { id: 'overdue', titleKey: 'planner.group.overdue', test: (d) => d !== null && d < 0 },
   { id: 'today', titleKey: 'planner.group.today', test: (d) => d === 0 },
@@ -80,6 +81,8 @@ function PlannerPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<TaskFilter>('open')
+  const [subjectFilter, setSubjectFilter] = useState(0) // 0 = tutte le materie
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showDetails, setShowDetails] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -150,8 +153,11 @@ function PlannerPage() {
     .filter((e) => (e.status === 'planned' || e.status === 'in_progress') && daysUntil(e.exam_date) >= 0)
     .slice(0, 5)
 
-  const openTasks = sortTasks(tasks.filter((t) => t.status !== 'done'))
-  const doneTasks = sortTasks(tasks.filter((t) => t.status === 'done'))
+  // Con più esami in piano i task si mescolano: il filtro per materia compare solo se ce ne sono almeno due.
+  const taskSubjects = subjects.filter((s) => tasks.some((t) => t.subject_id === s.id))
+  const shown = subjectFilter ? tasks.filter((t) => t.subject_id === subjectFilter) : tasks
+  const openTasks = sortTasks(shown.filter((t) => t.status !== 'done'))
+  const doneTasks = sortTasks(shown.filter((t) => t.status === 'done'))
   const overdueCount = openTasks.filter((t) => t.due_date && daysUntil(t.due_date) < 0).length
 
   const reveal = 'md:opacity-0 md:transition-opacity md:group-hover/task:opacity-100 md:group-focus-within/task:opacity-100'
@@ -171,7 +177,7 @@ function PlannerPage() {
         />
         <span className="flex min-w-0 flex-1 basis-[calc(100%-2.75rem)] flex-col gap-1 sm:basis-0">
           <span className={cn('text-sm font-medium break-words', done && 'text-muted-foreground line-through')}>{task.title}</span>
-          {task.description && <span className="line-clamp-2 text-sm text-muted-foreground">{task.description}</span>}
+          {task.description && <span className="line-clamp-1 text-sm text-muted-foreground" title={task.description}>{task.description}</span>}
           <Meta
             className="text-xs text-muted-foreground [&>*]:inline-flex [&>*]:items-center [&>*]:gap-1.5 [&>*]:align-middle"
             items={[
@@ -220,7 +226,7 @@ function PlannerPage() {
       ? groups
           .map((group) => ({ ...group, items: openTasks.filter((t) => group.test(t.due_date ? daysUntil(t.due_date) : null)) }))
           .filter((group) => group.items.length > 0)
-      : [{ id: filter, titleKey: (filter === 'done' ? 'planner.group.done' : 'planner.group.all') as TranslationKey, items: filter === 'done' ? doneTasks : sortTasks(tasks) }]
+      : [{ id: filter, titleKey: (filter === 'done' ? 'planner.group.done' : 'planner.group.all') as TranslationKey, items: filter === 'done' ? doneTasks : sortTasks(shown) }]
 
   const optional = <span className="font-normal text-muted-foreground">{t('common.optional')}</span>
 
@@ -334,16 +340,24 @@ function PlannerPage() {
             </EmptyState>
           ) : (
             <section className="flex flex-col gap-3" aria-label={t('planner.tasksLabel')}>
-              <Segmented
-                label={t('planner.filter')}
-                value={filter}
-                onChange={setFilter}
-                options={[
-                  { value: 'open', label: t('planner.filterOpen'), count: openTasks.length },
-                  { value: 'done', label: t('planner.filterDone'), count: doneTasks.length },
-                  { value: 'all', label: t('planner.filterAll'), count: tasks.length },
-                ]}
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Segmented
+                  label={t('planner.filter')}
+                  value={filter}
+                  onChange={setFilter}
+                  options={[
+                    { value: 'open', label: t('planner.filterOpen'), count: openTasks.length },
+                    { value: 'done', label: t('planner.filterDone'), count: doneTasks.length },
+                    { value: 'all', label: t('planner.filterAll'), count: shown.length },
+                  ]}
+                />
+                {taskSubjects.length > 1 && (
+                  <NativeSelect className="w-full sm:w-56" value={subjectFilter} onChange={(e) => setSubjectFilter(Number(e.target.value))} aria-label={t('planner.subjectFilter')}>
+                    <NativeSelectOption value={0}>{t('history.allSubjects')}</NativeSelectOption>
+                    {taskSubjects.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+                  </NativeSelect>
+                )}
+              </div>
 
               {visibleGroups.length === 0 || visibleGroups.every((g) => g.items.length === 0) ? (
                 <EmptyState title={filter === 'open' ? t('planner.allDoneTitle') : t('planner.noDoneTitle')}>
@@ -356,7 +370,13 @@ function PlannerPage() {
                       <h2 className={cn('flex items-center gap-2 bg-muted/30 px-4 py-2 font-mono text-[0.6875rem] tracking-wider uppercase md:px-5', group.id === 'overdue' ? 'text-destructive' : 'text-muted-foreground')}>
                         {t(group.titleKey)} <span className="tabular-nums">{group.items.length}</span>
                       </h2>
-                      <ul className="flex flex-col divide-y">{group.items.map(renderTask)}</ul>
+                      {/* Un piano d'esame crea decine di task: i gruppi lunghi mostrano i primi 10, il resto a richiesta. */}
+                      <ul className="flex flex-col divide-y">{(expanded.has(group.id) || group.items.length <= GROUP_PREVIEW + 5 ? group.items : group.items.slice(0, GROUP_PREVIEW)).map(renderTask)}</ul>
+                      {!expanded.has(group.id) && group.items.length > GROUP_PREVIEW + 5 && (
+                        <Button variant="ghost" className="w-full rounded-none border-t text-muted-foreground" onClick={() => setExpanded((set) => new Set(set).add(group.id))}>
+                          {t('planner.showMore', { count: group.items.length - GROUP_PREVIEW })}
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </Card>
