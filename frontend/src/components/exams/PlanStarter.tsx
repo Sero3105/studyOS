@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarPlus, ChevronRight, X } from 'lucide-react'
+import { CalendarPlus, ChevronRight, CircleAlert, CircleCheck, TriangleAlert, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import DatePicker from '../ui/DatePicker'
 import Segmented from '../ui/Segmented'
@@ -92,154 +92,190 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
     ? [t('plan.historyReliability', { pct: Math.round(advice.reliability * 100) }), advice.pace !== null && t('plan.historyPace', { pace: advice.pace.toLocaleString(locale, { maximumFractionDigits: 1 }) })].filter(Boolean).join(' · ')
     : t('plan.historyEmpty')
 
+  const idealPassed = !!advice && advice.ideal_start < today
+  const StatusIcon = status === 'ontime' ? CircleCheck : status === 'late' ? CircleAlert : TriangleAlert
+  const statusText = advice && status && (status === 'behind' && idealPassed
+    ? t('plan.status.behindPast', { ideal: formatDay(advice.ideal_start, 'long', locale), date: formatDay(chosen, 'long', locale) })
+    : t(`plan.status.${status}`, { date: formatDay(chosen, 'long', locale) }))
+  const switchRow = 'items-center justify-between gap-4 rounded-lg border bg-background/40 p-3'
+
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-primary/25 bg-primary/5 p-3 sm:p-4">
+    <div className="flex flex-col rounded-lg border border-primary/25 bg-primary/5">
+      {/* 1. Quando conviene partire */}
       {advice && (
-        <>
-          <dl className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs text-muted-foreground">{t('plan.idealStart')}</dt>
-              <dd className="text-sm font-medium first-letter:uppercase">{formatDay(advice.ideal_start, 'long', locale)}</dd>
+        <div className="flex flex-col gap-3 p-3 sm:p-4">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border">
+            <div className="flex flex-col gap-0.5 bg-card p-3">
+              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
+                {t('plan.idealStart')}
+                {idealPassed && <Badge variant="secondary" className="h-5 px-1.5 text-[0.6875rem]">{t('plan.idealPassed')}</Badge>}
+              </dt>
+              <dd className={cn('text-sm font-medium', idealPassed && 'text-muted-foreground line-through decoration-muted-foreground/50')}>{formatDay(advice.ideal_start, 'long', locale)}</dd>
               <dd className="text-xs text-muted-foreground">{t('plan.idealDetail', { days: advice.ideal_days })} · {workload}</dd>
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5 bg-card p-3">
               <dt className="text-xs text-muted-foreground">{t('plan.latestStart')}</dt>
-              <dd className="text-sm font-medium first-letter:uppercase">{formatDay(advice.latest_start, 'long', locale)}</dd>
+              <dd className="text-sm font-medium">{formatDay(advice.latest_start, 'long', locale)}</dd>
               <dd className="text-xs text-muted-foreground">{t('plan.latestDetail', { days: advice.min_days })}</dd>
             </div>
           </dl>
-          {status && <p className={cn('text-xs font-medium', tone[status])} role="status">{t(`plan.status.${status}`)}</p>}
-        </>
+          {statusText && (
+            <p className={cn('flex items-start gap-2 text-sm', tone[status!])} role="status">
+              <StatusIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{statusText}
+            </p>
+          )}
+        </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <Field className="sm:max-w-56">
-          <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
-          <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
-        </Field>
-        <Button onClick={() => onPlan(exam, toRequest(prefs, rest, chosen))}>
-          <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
-        </Button>
-      </div>
-
-      <Collapsible>
+      {/* 2. Preferenze, in tre gruppi */}
+      <Collapsible className="border-t border-primary/15">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="group/prefs -ml-2 h-auto max-w-full justify-start py-1 text-left whitespace-normal text-muted-foreground">
-            <ChevronRight data-icon="inline-start" className="shrink-0 transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
-            <span><span className="text-foreground">{t('plan.prefs')}</span> <span className="font-normal group-data-[state=open]/prefs:hidden">· {summary}</span></span>
-          </Button>
+          <button type="button" className="group/prefs flex w-full items-start gap-2 px-3 py-3 text-left text-sm outline-none hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-4">
+            <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
+            <span className="flex min-w-0 flex-col">
+              <span className="font-medium">{t('plan.prefs')}</span>
+              <span className="text-xs text-muted-foreground group-data-[state=open]/prefs:hidden">{summary}</span>
+            </span>
+          </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="grid grid-cols-1 gap-5 pt-3 sm:grid-cols-2">
-          <FieldSet className="gap-2 sm:col-span-2">
-            <FieldLegend variant="label">{t('plan.restDays')}</FieldLegend>
-            <ToggleGroup type="multiple" variant="outline" spacing={0} value={rest.map(String)} onValueChange={(v) => updateRest(v.map(Number))} className="w-full max-w-md [&>*]:flex-1">
-              {WEEKDAYS.map((d) => <ToggleGroupItem key={d} value={String(d)} className={cn(choice, 'min-w-0 shrink group-data-[spacing=0]/toggle-group:px-0')}>{weekdayShort(addDays(MONDAY, d - 1), locale)}</ToggleGroupItem>)}
-            </ToggleGroup>
-          </FieldSet>
+        <CollapsibleContent className="flex flex-col gap-6 px-3 pb-4 sm:px-4">
+          <PrefGroup title={t('plan.groupWhen')}>
+            <FieldSet className="gap-2">
+              <FieldLegend variant="label">{t('plan.restDays')}</FieldLegend>
+              <ToggleGroup type="multiple" variant="outline" spacing={0} value={rest.map(String)} onValueChange={(v) => updateRest(v.map(Number))} className="w-full max-w-md [&>*]:flex-1">
+                {WEEKDAYS.map((d) => <ToggleGroupItem key={d} value={String(d)} className={cn(choice, 'min-w-0 shrink group-data-[spacing=0]/toggle-group:px-0')}>{weekdayShort(addDays(MONDAY, d - 1), locale)}</ToggleGroupItem>)}
+              </ToggleGroup>
+            </FieldSet>
 
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`plan-dayoff-${exam.id}`}>{t('plan.daysOff')}</FieldLabel>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="w-48">
-                <DatePicker id={`plan-dayoff-${exam.id}`} min={today} max={lastDay} value={dayOff} placeholder={t('plan.addDayOff')}
-                  onChange={(day) => { if (day && !prefs.daysOff.includes(day)) update({ daysOff: [...prefs.daysOff, day].sort() }); setDayOff('') }} />
-              </div>
-              {prefs.daysOff.filter((d) => d >= today).map((d) => (
-                <Badge key={d} variant="secondary" className="h-7 gap-1 pr-1">
-                  {formatDay(d, 'short', locale)}
-                  <button type="button" className="rounded-sm p-0.5 hover:bg-background/50" onClick={() => update({ daysOff: prefs.daysOff.filter((x) => x !== d) })} aria-label={t('plan.removeDayOff', { day: formatDay(d, 'long', locale) })}>
-                    <X className="size-3" aria-hidden="true" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </Field>
-
-          <Field>
-            <FieldLabel>{t('plan.limit')}</FieldLabel>
-            <div className="flex flex-wrap items-center gap-2">
-              <Segmented label={t('plan.limit')} value={prefs.limitUnit} onChange={(limitUnit) => update({ limitUnit, limitValue: limitUnit === 'hours' ? 2 : limitUnit === 'tasks' ? 4 : prefs.limitValue })}
-                options={[{ value: 'auto', label: t('plan.limitAuto') }, { value: 'tasks', label: t('plan.limitTasks') }, { value: 'hours', label: t('plan.limitHours') }]} />
-              {prefs.limitUnit !== 'auto' && (
-                <Input className="w-20 font-mono" type="number" inputMode="decimal" min={prefs.limitUnit === 'hours' ? 0.5 : 1} max={prefs.limitUnit === 'hours' ? 12 : 20} step={prefs.limitUnit === 'hours' ? 0.5 : 1}
-                  value={prefs.limitValue} onChange={(e) => { const v = Number(e.target.value); if (v > 0) update({ limitValue: v }) }}
-                  aria-label={prefs.limitUnit === 'hours' ? t('plan.limitHoursLabel') : t('plan.limitTasksLabel')} />
-              )}
-            </div>
-            <FieldDescription>{prefs.limitUnit === 'auto' ? t('plan.limitAutoHint') : t('plan.limitHint')}</FieldDescription>
-          </Field>
-
-          {prefs.limitUnit !== 'auto' && (
-            <FieldSet className="gap-2 sm:col-span-2">
-              <FieldLegend variant="label">{t('plan.weekdayLimits')}</FieldLegend>
-              <div className="grid w-full max-w-md grid-cols-7 gap-1.5">
-                {WEEKDAYS.map((d) => (
-                  <label key={d} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                    {weekdayShort(addDays(MONDAY, d - 1), locale)}
-                    <Input className="h-9 [appearance:textfield] px-1 text-center font-mono placeholder:text-muted-foreground/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" inputMode="decimal" min={prefs.limitUnit === 'hours' ? 0.5 : 1} max={prefs.limitUnit === 'hours' ? 12 : 20} step={prefs.limitUnit === 'hours' ? 0.5 : 1}
-                      placeholder={String(prefs.limitValue)} value={prefs.weekdayLimits[d - 1] ?? ''} disabled={rest.includes(d)}
-                      onChange={(e) => { const v = Number(e.target.value); setWeekdayLimit(d - 1, e.target.value && v > 0 ? v : null) }}
-                      aria-label={t('plan.weekdayLimitLabel', { day: weekdayShort(addDays(MONDAY, d - 1), locale) })} />
-                  </label>
+            <Field>
+              <FieldLabel htmlFor={`plan-dayoff-${exam.id}`}>{t('plan.daysOff')}</FieldLabel>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="w-full sm:w-56">
+                  <DatePicker id={`plan-dayoff-${exam.id}`} min={today} max={lastDay} value={dayOff} placeholder={t('plan.addDayOff')}
+                    onChange={(day) => { if (day && !prefs.daysOff.includes(day)) update({ daysOff: [...prefs.daysOff, day].sort() }); setDayOff('') }} />
+                </div>
+                {prefs.daysOff.filter((d) => d >= today).map((d) => (
+                  <Badge key={d} variant="secondary" className="h-7 gap-1 pr-1">
+                    {formatDay(d, 'short', locale)}
+                    <button type="button" className="rounded-sm p-0.5 hover:bg-background/50" onClick={() => update({ daysOff: prefs.daysOff.filter((x) => x !== d) })} aria-label={t('plan.removeDayOff', { day: formatDay(d, 'long', locale) })}>
+                      <X className="size-3" aria-hidden="true" />
+                    </button>
+                  </Badge>
                 ))}
               </div>
-              <FieldDescription>{t('plan.weekdayLimitsHint')}</FieldDescription>
-            </FieldSet>
-          )}
+            </Field>
 
-          <Field>
-            <FieldLabel>{t('plan.reviews')}</FieldLabel>
-            <Segmented label={t('plan.reviews')} value={prefs.reviews} onChange={(reviews) => update({ reviews })}
-              options={[{ value: 'light', label: t('plan.reviewsLight') }, { value: 'standard', label: t('plan.reviewsStandard') }, { value: 'intense', label: t('plan.reviewsIntense') }]} />
-            <FieldDescription>{t('plan.reviewsHint')}</FieldDescription>
-          </Field>
+            <Field>
+              <FieldLabel>{t('plan.limit')}</FieldLabel>
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented label={t('plan.limit')} value={prefs.limitUnit} onChange={(limitUnit) => update({ limitUnit, limitValue: limitUnit === 'hours' ? 2 : limitUnit === 'tasks' ? 4 : prefs.limitValue })}
+                  options={[{ value: 'auto', label: t('plan.limitAuto') }, { value: 'tasks', label: t('plan.limitTasks') }, { value: 'hours', label: t('plan.limitHours') }]} />
+                {prefs.limitUnit !== 'auto' && (
+                  <Input className="w-20 font-mono" type="number" inputMode="decimal" min={prefs.limitUnit === 'hours' ? 0.5 : 1} max={prefs.limitUnit === 'hours' ? 12 : 20} step={prefs.limitUnit === 'hours' ? 0.5 : 1}
+                    value={prefs.limitValue} onChange={(e) => { const v = Number(e.target.value); if (v > 0) update({ limitValue: v }) }}
+                    aria-label={prefs.limitUnit === 'hours' ? t('plan.limitHoursLabel') : t('plan.limitTasksLabel')} />
+                )}
+              </div>
+              <FieldDescription>{prefs.limitUnit === 'auto' ? t('plan.limitAutoHint') : t('plan.limitHint')}</FieldDescription>
+            </Field>
 
-          <Field>
-            <FieldLabel>{t('plan.studyMinutes')}</FieldLabel>
-            <Segmented label={t('plan.studyMinutes')} value={String(prefs.studyMinutes) as '25' | '50' | '90'} onChange={(v) => update({ studyMinutes: Number(v) as 25 | 50 | 90 })}
-              options={[{ value: '25', label: '25 min' }, { value: '50', label: '50 min' }, { value: '90', label: '90 min' }]} />
-          </Field>
+            {prefs.limitUnit !== 'auto' && (
+              <FieldSet className="gap-2">
+                <FieldLegend variant="label">{t('plan.weekdayLimits')}</FieldLegend>
+                <div className="grid w-full max-w-md grid-cols-7 gap-1.5">
+                  {WEEKDAYS.map((d) => (
+                    <label key={d} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                      {weekdayShort(addDays(MONDAY, d - 1), locale)}
+                      <Input className="h-9 [appearance:textfield] px-1 text-center font-mono placeholder:text-muted-foreground/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" inputMode="decimal" min={prefs.limitUnit === 'hours' ? 0.5 : 1} max={prefs.limitUnit === 'hours' ? 12 : 20} step={prefs.limitUnit === 'hours' ? 0.5 : 1}
+                        placeholder={String(prefs.limitValue)} value={prefs.weekdayLimits[d - 1] ?? ''} disabled={rest.includes(d)}
+                        onChange={(e) => { const v = Number(e.target.value); setWeekdayLimit(d - 1, e.target.value && v > 0 ? v : null) }}
+                        aria-label={t('plan.weekdayLimitLabel', { day: weekdayShort(addDays(MONDAY, d - 1), locale) })} />
+                    </label>
+                  ))}
+                </div>
+                <FieldDescription>{t('plan.weekdayLimitsHint')}</FieldDescription>
+              </FieldSet>
+            )}
+          </PrefGroup>
 
-          <Field>
-            <FieldLabel>{t('plan.order')}</FieldLabel>
-            <Segmented label={t('plan.order')} value={prefs.order} onChange={(order) => update({ order })}
-              options={[{ value: 'course', label: t('plan.orderCourse') }, { value: 'hardest', label: t('plan.orderHardest') }]} />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor={`plan-final-${exam.id}`}>{t('plan.finalDays')}</FieldLabel>
-            <NativeSelect id={`plan-final-${exam.id}`} className="w-40" value={prefs.finalDays} onChange={(e) => update({ finalDays: Number(e.target.value) })}>
-              <NativeSelectOption value={0}>{t('plan.limitAuto')}</NativeSelectOption>
-              {[1, 2, 3, 4, 5, 7, 10].map((d) => <NativeSelectOption key={d} value={d}>{t('plan.finalDaysN', { days: d })}</NativeSelectOption>)}
-            </NativeSelect>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor={`plan-focus-${exam.id}`}>{t('plan.focusDays')}</FieldLabel>
-            <NativeSelect id={`plan-focus-${exam.id}`} className="w-40" value={prefs.focusDays} onChange={(e) => update({ focusDays: Number(e.target.value) })}>
-              <NativeSelectOption value={0}>{t('plan.focusNone')}</NativeSelectOption>
-              {[1, 2, 3, 4, 5].map((d) => <NativeSelectOption key={d} value={d}>{t(d === 1 ? 'plan.focusOne' : 'plan.finalDaysN', { days: d })}</NativeSelectOption>)}
-            </NativeSelect>
-            <FieldDescription>{t('plan.focusHint')}</FieldDescription>
-          </Field>
-
-          <Field orientation="horizontal" className="justify-between self-end rounded-lg border p-3">
-            <FieldLabel htmlFor={`plan-rest-before-${exam.id}`} className="font-normal">{t('plan.restBeforeExam')}</FieldLabel>
-            <Switch className="shrink-0" id={`plan-rest-before-${exam.id}`} checked={prefs.restBeforeExam} onCheckedChange={(restBeforeExam) => update({ restBeforeExam })} />
-          </Field>
-
-          <Field orientation="horizontal" className="justify-between rounded-lg border p-3 sm:col-span-2">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <FieldLabel htmlFor={`plan-adapt-${exam.id}`} className="font-normal">{t('plan.adapt')}</FieldLabel>
-              <FieldDescription>{history}</FieldDescription>
+          <PrefGroup title={t('plan.groupHow')}>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <Field>
+                <FieldLabel>{t('plan.studyMinutes')}</FieldLabel>
+                <Segmented label={t('plan.studyMinutes')} value={String(prefs.studyMinutes) as '25' | '50' | '90'} onChange={(v) => update({ studyMinutes: Number(v) as 25 | 50 | 90 })}
+                  options={[{ value: '25', label: '25 min' }, { value: '50', label: '50 min' }, { value: '90', label: '90 min' }]} />
+              </Field>
+              <Field>
+                <FieldLabel>{t('plan.order')}</FieldLabel>
+                <Segmented label={t('plan.order')} value={prefs.order} onChange={(order) => update({ order })}
+                  options={[{ value: 'course', label: t('plan.orderCourse') }, { value: 'hardest', label: t('plan.orderHardest') }]} />
+              </Field>
             </div>
-            <Switch className="shrink-0" id={`plan-adapt-${exam.id}`} checked={prefs.adapt} onCheckedChange={(adapt) => update({ adapt })} />
-          </Field>
+            <Field>
+              <FieldLabel>{t('plan.reviews')}</FieldLabel>
+              <Segmented label={t('plan.reviews')} value={prefs.reviews} onChange={(reviews) => update({ reviews })}
+                options={[{ value: 'light', label: t('plan.reviewsLight') }, { value: 'standard', label: t('plan.reviewsStandard') }, { value: 'intense', label: t('plan.reviewsIntense') }]} />
+              <FieldDescription>{t('plan.reviewsHint')}</FieldDescription>
+            </Field>
+            <Field orientation="horizontal" className={switchRow}>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <FieldLabel htmlFor={`plan-adapt-${exam.id}`} className="font-normal">{t('plan.adapt')}</FieldLabel>
+                <FieldDescription>{history}</FieldDescription>
+              </div>
+              <Switch className="shrink-0" id={`plan-adapt-${exam.id}`} checked={prefs.adapt} onCheckedChange={(adapt) => update({ adapt })} />
+            </Field>
+          </PrefGroup>
+
+          <PrefGroup title={t('plan.groupExam')}>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor={`plan-final-${exam.id}`}>{t('plan.finalDays')}</FieldLabel>
+                <NativeSelect id={`plan-final-${exam.id}`} value={prefs.finalDays} onChange={(e) => update({ finalDays: Number(e.target.value) })}>
+                  <NativeSelectOption value={0}>{t('plan.limitAuto')}</NativeSelectOption>
+                  {[1, 2, 3, 4, 5, 7, 10].map((d) => <NativeSelectOption key={d} value={d}>{t('plan.finalDaysN', { days: d })}</NativeSelectOption>)}
+                </NativeSelect>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`plan-focus-${exam.id}`}>{t('plan.focusDays')}</FieldLabel>
+                <NativeSelect id={`plan-focus-${exam.id}`} value={prefs.focusDays} onChange={(e) => update({ focusDays: Number(e.target.value) })}>
+                  <NativeSelectOption value={0}>{t('plan.focusNone')}</NativeSelectOption>
+                  {[1, 2, 3, 4, 5].map((d) => <NativeSelectOption key={d} value={d}>{t(d === 1 ? 'plan.focusOne' : 'plan.finalDaysN', { days: d })}</NativeSelectOption>)}
+                </NativeSelect>
+              </Field>
+            </div>
+            <FieldDescription>{t('plan.focusHint')}</FieldDescription>
+            <Field orientation="horizontal" className={switchRow}>
+              <FieldLabel htmlFor={`plan-rest-before-${exam.id}`} className="font-normal">{t('plan.restBeforeExam')}</FieldLabel>
+              <Switch className="shrink-0" id={`plan-rest-before-${exam.id}`} checked={prefs.restBeforeExam} onCheckedChange={(restBeforeExam) => update({ restBeforeExam })} />
+            </Field>
+          </PrefGroup>
         </CollapsibleContent>
       </Collapsible>
 
-      <p className="text-xs text-muted-foreground">{t('exams.planExplain')}</p>
+      {/* 3. Azione, dopo le scelte */}
+      <div className="flex flex-col gap-3 border-t border-primary/15 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field className="sm:max-w-56">
+            <FieldLabel htmlFor={`plan-start-${exam.id}`}>{t('plan.startFrom')}</FieldLabel>
+            <DatePicker id={`plan-start-${exam.id}`} required min={today} max={lastDay} value={start} onChange={setStart} aria-label={t('plan.startFrom')} />
+          </Field>
+          <Button onClick={() => onPlan(exam, toRequest(prefs, rest, chosen))}>
+            <CalendarPlus data-icon="inline-start" aria-hidden="true" />{t('exams.planTitle')}
+          </Button>
+        </div>
+        <p className="text-xs text-pretty text-muted-foreground">{t('exams.planExplain')}</p>
+      </div>
     </div>
+  )
+}
+
+/** Gruppo di preferenze con un titolo piccolo: separa "quando", "come" e "vicino all'esame". */
+function PrefGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-4 border-t border-primary/10 pt-4 first:border-t-0 first:pt-0">
+      <h4 className="font-mono text-[0.6875rem] tracking-wider text-muted-foreground uppercase">{title}</h4>
+      {children}
+    </section>
   )
 }
 
