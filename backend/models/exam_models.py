@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, false
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, false
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -19,6 +19,8 @@ class Exam(Base):
     cfu = Column(Integer, nullable=True)
     grade = Column(Integer, nullable=True)
     honors = Column(Boolean, nullable=False, default=False, server_default=false())
+    # Giorni liberi del piano di questo esame (date ISO): valgono solo per lui, non per gli altri esami.
+    plan_days_off = Column(JSON, nullable=False, default=list, server_default='[]')
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     user = relationship('User', back_populates='exams')
