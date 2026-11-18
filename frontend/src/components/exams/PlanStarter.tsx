@@ -66,8 +66,8 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
     getPlanAdvice(exam.id, JSON.parse(requestKey) as PlanRequest).then((a) => {
       if (!active) return
       setAdvice(a)
-      // Proposta: la data ideale se è ancora davanti, altrimenti domani (finché lo studente non sceglie).
-      setStart((current) => current || (a.ideal_start > today ? a.ideal_start : addDays(today, 1) <= lastDay ? addDays(today, 1) : today))
+      // Proposta: la data ideale se non è passata, altrimenti domani (finché lo studente non sceglie).
+      setStart((current) => current || (a.ideal_start >= today ? a.ideal_start : addDays(today, 1) <= lastDay ? addDays(today, 1) : today))
     }).catch(() => { if (active) setAdvice(null) })
     return () => { active = false }
   }, [exam.id, exam.exam_date, topicsKey, requestKey, today, lastDay])
@@ -92,7 +92,7 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
     : t('plan.historyEmpty')
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-primary/25 bg-primary/5 p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-primary/25 bg-primary/5 p-3 sm:p-4">
       {advice && (
         <>
           <dl className="grid grid-cols-2 gap-3">
