@@ -342,8 +342,10 @@ corso; ripassi messi da un modello della memoria in stile FSRS, cioè quando il 
 alla soglia scelta, con una coda per data; ripasso finale ai più deboli prima; interleaving; capienza
 giornaliera che tiene conto degli altri esami) adattato alle preferenze dello studente (`PlanPrefs`:
 inizio, giorni senza studio, giorni liberi, limite in attività o ore anche per giorno della settimana,
-soglia dei ripassi, durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero)
-e al suo storico (`exam_service.plan_history`: task del piano fatti in tempo e ritmo reale al timer;
+soglia dei ripassi, durata dello studio, ordine, giorni di ripasso finale, giorno prima dell'esame libero);
+con più esami: giorno d'esame libero, `focus_days` giorni prima di ogni esame solo per quella materia
+(`exam_service._other_exams`), fetta giornaliera all'esame più vicino (`study_plan.exam_share`), indipendente dall'ordine
+dei piani; e al suo storico (`exam_service.plan_history`: task del piano fatti in tempo e ritmo reale al timer;
 `_plan_topics`: ultimo passaggio, ripassi riusciti ed errori annotati per argomento); `plan_advice` dà
 inizio ideale e data limite. Stato argomento: da fare → da ripassare →
 ripassato → sicuro; "completato" solo da ripassato in su (migrazione 0011).
