@@ -2,10 +2,13 @@ from datetime import date, timedelta
 from sqlalchemy import case, delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from models.card_models import Mistake
 from models.exam_models import Exam, ExamAttempt
+from models.session_models import StudySession
 from models.subject_models import Subject
 from models.task_models import Task
 from schemas.exam_schemas import ExamCreate
+from dataclasses import replace
 from services.study_plan import PlanAdvice, PlanPrefs, PlanTopic, build_plan, plan_advice
 def link_subject(exam:Exam, db:Session)->None:
     """Collega l'esame per id alla materia con lo stesso nome; se non c'è, la crea: ogni esame ha sempre la sua materia."""
@@ -57,30 +60,72 @@ def _plan_subject(exam:Exam, user_id:int, db:Session)->Subject:
     if subject is None or not subject.topics: raise ValueError('no_subject')
     return subject
 
-def _plan_inputs(data)->tuple[set[int], set[date], PlanPrefs, date|None, bool]:
-    """Preferenze della richiesta (o default) → giorni di riposo, giorni liberi, preferenze, inizio, giorno prima libero."""
-    if data is None: return set(), set(), PlanPrefs(), None, False
-    per_day=None if data.limit_value is None else data.limit_value*60 if data.limit_unit=='hours' else data.limit_value
-    prefs=PlanPrefs(unit='minutes' if data.limit_unit=='hours' else 'tasks', per_day=per_day, reviews=data.reviews,
+def _plan_inputs(data)->tuple[set[int], set[date], PlanPrefs, date|None, bool, bool]:
+    """Preferenze della richiesta (o default) → giorni di riposo, giorni liberi, preferenze, inizio, giorno prima libero, storico sì/no."""
+    if data is None: return set(), set(), PlanPrefs(), None, False, True
+    scale=60 if data.limit_unit=='hours' else 1
+    per_day=None if data.limit_value is None else data.limit_value*scale
+    per_weekday=tuple(None if v is None else v*scale for v in data.weekday_limits) if data.weekday_limits and per_day else None
+    prefs=PlanPrefs(unit='minutes' if data.limit_unit=='hours' else 'tasks', per_day=per_day, per_weekday=per_weekday, reviews=data.reviews,
                     final_days=data.final_days, order=data.order, study_minutes=data.study_minutes)
-    return set(data.rest_days), set(data.days_off), prefs, data.start_date, data.rest_before_exam
+    return set(data.rest_days), set(data.days_off), prefs, data.start_date, data.rest_before_exam, data.adapt
 
-def plan_exam_advice(exam_id:int, user_id:int, db:Session, data=None)->PlanAdvice:
-    """Data ideale e data limite per iniziare il piano, con le preferenze dello studente (vedi study_plan.plan_advice)."""
+HISTORY_DAYS = 60  # finestra dello storico per la quota di task fatti
+MIN_HISTORY = 10  # sotto, troppo pochi task per fidarsi
+
+def plan_history(user_id:int, db:Session)->tuple[float|None, float|None]:
+    """Dallo storico dello studente: quota di task del piano fatti negli ultimi 60 giorni (affidabilità) e tempo reale
+    al timer sugli argomenti studiati col piano rispetto a quello previsto (ritmo). None = dati insufficienti."""
+    today=date.today()
+    past=db.execute(select(Task.status, Task.due_date, Task.updated_at).where(Task.user_id==user_id, Task.description.startswith(PLAN_TAG),
+                                                                       Task.due_date>=today-timedelta(days=HISTORY_DAYS), Task.due_date<today)).all()
+    # Fatto in tempo = segnato fatto entro il giorno previsto. Rigenerare il piano cancella i task saltati: il ritardo resta visibile.
+    on_time=sum(1 for status, due, at in past if status=='done' and at.date()<=due)
+    reliability=on_time/len(past) if len(past)>=MIN_HISTORY else None
+    planned=dict(db.execute(select(Task.topic_id, func.sum(func.coalesce(Task.planned_minutes, 50))).where(
+        Task.user_id==user_id, Task.status=='done', Task.review_interval.is_(None), Task.topic_id.is_not(None),
+        Task.description.startswith(PLAN_TAG)).group_by(Task.topic_id)).all())
+    actual=dict(db.execute(select(StudySession.topic_id, func.sum(StudySession.duration_minutes)).where(
+        StudySession.user_id==user_id, StudySession.topic_id.in_(planned), StudySession.kind.in_(('study','exercises'))).group_by(StudySession.topic_id)).all())
+    # Solo argomenti con sessioni al timer: chi non usa il timer non risulta "veloce" per errore.
+    pace=min(1.5, max(0.75, sum(actual.values())/sum(planned[t] for t in actual))) if len(actual)>=3 else None
+    return reliability, pace
+
+def _personal(prefs:PlanPrefs, adapt:bool, user_id:int, db:Session)->tuple[PlanPrefs, float|None, float|None]:
+    reliability, pace=plan_history(user_id, db)
+    if not adapt: return prefs, reliability, pace
+    return replace(prefs, reliability=1.0 if reliability is None else reliability, pace=pace or 1.0), reliability, pace
+
+def _plan_topics(subject:Subject, user_id:int, db:Session)->list[PlanTopic]:
+    """Argomenti con la loro memoria: errori annotati, ultimo studio o ripasso fatto, ripasso riuscito più distanziato."""
+    topics=sorted(subject.topics, key=lambda t: t.id)
+    ids=[t.id for t in topics]
+    mistakes=dict(db.execute(select(Mistake.topic_id, func.count()).where(Mistake.topic_id.in_(ids)).group_by(Mistake.topic_id)).all())
+    last_seen:dict[int,date]={}; longest:dict[int,int]={}
+    for tid, at, gap in db.execute(select(Task.topic_id, Task.updated_at, Task.review_interval).where(Task.user_id==user_id, Task.status=='done', Task.topic_id.in_(ids))):
+        last_seen[tid]=max(last_seen.get(tid, at.date()), at.date())
+        if gap: longest[tid]=max(longest.get(tid, 0), gap)
+    return [PlanTopic(t.id, t.title, t.difficulty, t.mastery, mistakes.get(t.id, 0), longest.get(t.id) if t.mastery>=2 else None, last_seen.get(t.id)) for t in topics]
+
+def plan_exam_advice(exam_id:int, user_id:int, db:Session, data=None)->dict:
+    """Data ideale e data limite per iniziare il piano, con preferenze e storico dello studente (vedi study_plan.plan_advice)."""
     exam=_owned_exam(exam_id,user_id,db)
     subject=_plan_subject(exam, user_id, db)
-    rest_days, days_off, prefs, _, rest_before=_plan_inputs(data)
+    rest_days, days_off, prefs, _, rest_before, adapt=_plan_inputs(data)
     if rest_before: days_off=days_off|{exam.exam_date-timedelta(days=1)}
-    return plan_advice([PlanTopic(t.id, t.title, t.difficulty, t.mastery) for t in subject.topics], exam.exam_date, rest_days, days_off, prefs)
+    prefs, reliability, pace=_personal(prefs, adapt, user_id, db)
+    advice=plan_advice(_plan_topics(subject, user_id, db), exam.exam_date, rest_days, days_off, prefs)
+    return {**advice.__dict__, 'reliability': reliability, 'pace': pace}
 
 def plan_exam(exam_id:int, user_id:int, db:Session, data=None)->list[Task]:
     """Piano di studio fino all'esame (vedi services/study_plan.py): studio, ripassi distanziati e ripasso finale,
-    adattato alle preferenze dello studente (`data`: PlanRequest). Rigenerarlo sostituisce i task del piano non ancora
+    adattato alle preferenze (`data`: PlanRequest) e allo storico dello studente. Rigenerarlo sostituisce i task del piano non ancora
     fatti; quelli fatti e i task scritti a mano restano."""
     exam=_owned_exam(exam_id,user_id,db)
     subject=_plan_subject(exam, user_id, db)
-    rest_days, days_off, prefs, start, rest_before=_plan_inputs(data)
+    rest_days, days_off, prefs, start, rest_before, adapt=_plan_inputs(data)
     if rest_before: days_off=days_off|{exam.exam_date-timedelta(days=1)}
+    prefs, _, _=_personal(prefs, adapt, user_id, db)
     # Parte dal giorno scelto (mai nel passato), altrimenti da domani.
     first=max(start or date.today()+timedelta(days=1), date.today())
     days=[d for d in (first+timedelta(days=i) for i in range(0,(exam.exam_date-first).days)) if d.isoweekday() not in rest_days and d not in days_off]
@@ -89,9 +134,8 @@ def plan_exam(exam_id:int, user_id:int, db:Session, data=None)->list[Task]:
     # Carico già in calendario (altri esami, task a mano), nell'unità del limite: il piano riempie prima i giorni liberi.
     weight=func.count() if prefs.unit=='tasks' else func.sum(func.coalesce(Task.planned_minutes, 30))
     busy=dict(db.execute(select(Task.due_date, weight).where(Task.user_id==user_id, Task.status!='done', Task.due_date.in_(days)).group_by(Task.due_date)).all())
-    topics=sorted(subject.topics, key=lambda t: t.id)
-    by_id={t.id: t for t in topics}
-    plan=build_plan([PlanTopic(t.id, t.title, t.difficulty, t.mastery) for t in topics], days, busy, prefs)
+    by_id={t.id: t for t in subject.topics}
+    plan=build_plan(_plan_topics(subject, user_id, db), days, busy, prefs, exam.exam_date)
     tasks=[]
     for it in plan:
         topic=by_id[it.topic_id]

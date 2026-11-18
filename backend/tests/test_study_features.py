@@ -204,3 +204,26 @@ def test_topic_mastery_stays_in_sync_with_completed(client):
     # Il primo "studiato" da qualunque strada programma il ripasso.
     client.patch(url, json={"mastery": 2, "schedule_reviews": True}, headers=h)
     assert len(client.get("/tasks", headers=h).json()) == 1
+
+
+def test_exam_plan_uses_history_and_weekday_limits(client):
+    h = _headers(client, "p5@example.com")
+    s = client.post("/subjects", json={"name": "Logica"}, headers=h).json()
+    for x in "ABCDE": client.post(f"/subjects/{s['id']}/topics", json={"title": x}, headers=h)
+    exam = client.post("/exams", json={"title": "Logica", "subject": "Logica", "exam_date": _day(22)}, headers=h).json()
+    # Senza storico: nessuna correzione.
+    advice = client.post(f"/exams/{exam['id']}/plan/advice", json={}, headers=h).json()
+    assert (advice["reliability"], advice["pace"]) == (None, None)
+    # Limite per giorno della settimana: domani al massimo un'attività.
+    limits = [None] * 7; limits[date.today().isoweekday() % 7] = 1
+    tasks = client.post(f"/exams/{exam['id']}/plan", json={"limit_value": 4, "weekday_limits": limits}, headers=h).json()
+    assert tasks and sum(t["due_date"] == _day(1) for t in tasks) <= 1
+    assert client.post(f"/exams/{exam['id']}/plan", json={"weekday_limits": [1, 2]}, headers=h).status_code == 422
+    # Storico: 10 task del piano scaduti ieri, 4 fatti solo oggi (in ritardo) → 0% in tempo: date anticipate.
+    for i in range(10):
+        t = client.post("/tasks", json={"title": f"x{i}", "description": "Piano d'esame · Studio", "due_date": _day(-1)}, headers=h).json()
+        if i < 4: client.patch(f"/tasks/{t['id']}", json={"status": "done"}, headers=h)
+    late = client.post(f"/exams/{exam['id']}/plan/advice", json={}, headers=h).json()
+    assert late["reliability"] == 0 and late["ideal_start"] < advice["ideal_start"]
+    ignored = client.post(f"/exams/{exam['id']}/plan/advice", json={"adapt": False}, headers=h).json()
+    assert ignored["ideal_start"] == advice["ideal_start"] and ignored["reliability"] == 0
