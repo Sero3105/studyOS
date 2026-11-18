@@ -227,3 +227,21 @@ def test_exam_plan_uses_history_and_weekday_limits(client):
     assert late["reliability"] == 0 and late["ideal_start"] < advice["ideal_start"]
     ignored = client.post(f"/exams/{exam['id']}/plan/advice", json={"adapt": False}, headers=h).json()
     assert ignored["ideal_start"] == advice["ideal_start"] and ignored["reliability"] == 0
+
+
+def test_exam_days_and_focus_days_belong_to_their_exam(client):
+    h = _headers(client, "p6@example.com")
+    for name, n, day in (("Vicino", 4, 12), ("Lontano", 6, 30)):
+        s = client.post("/subjects", json={"name": name}, headers=h).json()
+        for x in range(n): client.post(f"/subjects/{s['id']}/topics", json={"title": f"{name} {x}"}, headers=h)
+        client.post("/exams", json={"title": name, "subject": name, "exam_date": _day(day)}, headers=h)
+    exams = {e["title"]: e for e in client.get("/exams", headers=h).json()}
+    far = client.post(f"/exams/{exams['Lontano']['id']}/plan", json={"focus_days": 3}, headers=h).json()
+    days = {t["due_date"] for t in far}
+    # Il giorno dell'esame vicino è libero e i 3 giorni prima sono solo per quella materia.
+    assert not days & {_day(9), _day(10), _day(11), _day(12)}
+    near = client.post(f"/exams/{exams['Vicino']['id']}/plan", json={"focus_days": 3}, headers=h).json()
+    assert {t["due_date"] for t in near} & {_day(9), _day(10), _day(11)}
+    # Senza giorni riservati restano liberi solo i giorni d'esame.
+    far = client.post(f"/exams/{exams['Lontano']['id']}/plan", json={"focus_days": 0}, headers=h).json()
+    assert _day(12) not in {t["due_date"] for t in far}
