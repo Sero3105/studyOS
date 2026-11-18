@@ -1,7 +1,7 @@
 """Algoritmo del piano d'esame (funzione pura, senza database)."""
 from datetime import date, timedelta
 
-from services.study_plan import PlanPrefs, PlanTopic, build_plan, grow, interval, plan_advice, recall, reviews_needed
+from services.study_plan import PlanPrefs, PlanTopic, build_plan, exam_share, grow, interval, plan_advice, recall, reviews_needed
 
 START = date(2026, 12, 1)
 
@@ -147,3 +147,33 @@ def test_plan_adapts_to_the_student():
     shaky = plan_advice(topics, exam, set(), prefs=PlanPrefs(reliability=0.7))
     assert slow.ideal_start < base.ideal_start and slow.full_minutes > base.full_minutes
     assert shaky.ideal_start < plan_advice(topics, exam, set()).ideal_start
+
+
+def test_nearest_exam_gets_the_largest_share():
+    a, b, c, d = date(2026, 12, 10), date(2026, 12, 20), date(2027, 1, 10), date(2027, 1, 20)
+    day = date(2026, 12, 1)
+    # Da solo: tutta la giornata. Con altri esami: 1, 1/2, 1/3, 1/4 normalizzati, dal più vicino al più lontano.
+    assert exam_share(day, a, []) == 1
+    assert abs(exam_share(day, a, [b]) - 2 / 3) < 1e-9 and abs(exam_share(day, b, [a]) - 1 / 3) < 1e-9
+    shares = [exam_share(day, e, [x for x in (a, b, c, d) if x != e]) for e in (a, b, c, d)]
+    assert abs(sum(shares) - 1) < 1e-9 and shares == sorted(shares, reverse=True)
+    # Passato l'esame vicino, la fetta torna tutta all'altro.
+    assert exam_share(date(2026, 12, 12), b, [a]) == 1
+
+
+def test_far_exam_studies_mostly_after_the_near_one():
+    topics = [PlanTopic(i, str(i), 2, 0) for i in range(12)]
+    days = _days(40)
+    near = START + timedelta(days=20)
+    share = {d: exam_share(d, START + timedelta(days=41), [near]) for d in days}
+    plan = build_plan(topics, days, exam=START + timedelta(days=41), share=share)
+    before = [it for it in plan if it.day < near]
+    after = [it for it in plan if it.day > near]
+    # Prima dell'esame vicino un terzo della giornata, dopo tutta: il carico si sposta dopo.
+    assert len(before) / 20 < len(after) / 19
+    # Lo stesso piano senza altri esami è uniforme.
+    alone = build_plan(topics, days, exam=START + timedelta(days=41))
+    assert sum(1 for it in alone if it.day < near) > len(before)
+    # Con un'altra prova vicina la data ideale anticipa: quei giorni valgono solo una fetta.
+    exam, many = START + timedelta(days=41), [PlanTopic(i, str(i), 2, 0) for i in range(30)]  # ~40 giorni: oltre l'esame vicino
+    assert plan_advice(many, exam, set(), others=[near]).ideal_start < plan_advice(many, exam, set()).ideal_start

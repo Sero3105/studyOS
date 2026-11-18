@@ -141,11 +141,22 @@ def _counts(topics: list[PlanTopic], prefs: PlanPrefs) -> tuple[int, int, int, i
     return blocks, reviews, finals, sum(1 for t in topics if t.mastery <= 1)
 
 
+def exam_share(day: date, exam: date, others: list[date]) -> float:
+    """Fetta della giornata per questo esame quando se ne preparano altri. Gli esami ancora da sostenere ricevono pesi
+    1, 1/2, 1/3... dal più vicino al più lontano e le fette sommano a 1: con due esami 2/3 e 1/3, con quattro circa 48%,
+    24%, 16% e 12%. Ci si concentra sull'esame più vicino senza fermare gli altri, e ogni piano prende solo la sua fetta:
+    l'ordine in cui si creano i piani non conta."""
+    pending = sorted([d for d in others if d > day] + [exam])
+    weight = lambda d: 1 / (1 + sum(1 for x in pending if x < d))  # esami nello stesso giorno hanno lo stesso peso
+    return weight(exam) / sum(weight(d) for d in pending)
+
+
 def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float] | None = None,
-               prefs: PlanPrefs | None = None, exam: date | None = None) -> list[PlanItem]:
+               prefs: PlanPrefs | None = None, exam: date | None = None, share: dict[date, float] | None = None) -> list[PlanItem]:
     """Distribuisce studio, ripassi e ripasso finale sui giorni disponibili (in ordine, esame escluso).
     `busy`: carico già in calendario per giorno (altri esami, task a mano), nell'unità del limite.
-    `prefs`: preferenze e storico dello studente. `exam`: giorno dell'esame (default: il giorno dopo l'ultimo)."""
+    `prefs`: preferenze e storico dello studente. `exam`: giorno dell'esame (default: il giorno dopo l'ultimo).
+    `share`: quota di ogni giorno per questo esame (vedi `exam_share`); di default 1."""
     if not days or not topics: return []
     p = prefs or PlanPrefs()
     n = len(days)
@@ -155,48 +166,73 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
     taken = [float((busy or {}).get(d, 0)) for d in days]
     every = p.buffer_every()
     buffer = {i for i in range(every - 1, n, every)} if every and n > every else set()
-    work = blocks * p.cost('study') + reviews * p.cost('review') + finals * p.cost('final') + sum(taken)
-    auto = max(2 * p.cost('review'), work / max(1, n - len(buffer)) + p.cost('study'))
-    caps = [p.cap(d) or auto for d in days]
-    mean_cap = sum(caps) / n
+    quota = [min(1.0, max(0.05, (share or {}).get(d, 1.0))) for d in days]
+    own_work = blocks * p.cost('study') + reviews * p.cost('review') + finals * p.cost('final')
+    open_quota = [q for i, q in enumerate(quota) if i not in buffer] or [1.0]
+    # Tetto automatico: il carico di questo esame spalmato secondo la quota di ogni giorno, più una sessione.
+    auto_own = max(2 * p.cost('review'), own_work / sum(open_quota) + p.cost('study'))
+    auto = max(auto_own, (own_work + sum(taken)) / max(1, n - len(buffer)) + p.cost('study'))
+    caps = [p.cap(d) or auto for d in days]  # tetto della giornata, contando anche gli altri esami
+    own_caps = [q * (p.cap(d) or auto_own) for q, d in zip(quota, days)]  # la parte di giornata di questo esame
+    mean_cap = sum(own_caps) / n
     # Fase finale: ~15% dei giorni, di più se i ripassi finali non ci stanno; mai oltre metà del tempo.
     final_n = 1 if n <= 4 else min(n // 2, max(2, round(n * 0.15), ceil(finals * p.cost('final') / mean_cap)))
     if p.final_days: final_n = max(1, min(p.final_days, n - 1)) if n > 1 else 1
     learn_n = max(1, n - final_n) if n > 1 else 1
     buffer = {i for i in buffer if i < learn_n - 1}  # i giorni cuscinetto servono a recuperare prima del finale
     load = taken[:]
+    own = [0.0] * n
     on_day: list[set[int]] = [set() for _ in range(n)]
 
     def place(ideal: int, lo: int, hi: int, topic_id: int, kind: str, must: bool = True) -> int | None:
         """Giorno più vicino a `ideal` in [lo, hi] con posto libero, non cuscinetto e senza lo stesso argomento
-        (interleaving). Se è tutto pieno: con `must` il giorno meno carico, altrimenti nessuno."""
+        (interleaving). Se è tutto pieno: con `must` lo studio va nel giorno meno carico e il ripasso nel più vicino, altrimenti nessuno."""
         ideal = min(max(ideal, lo), hi)
         cost = p.cost(kind)
+        avoid = buffer | (before_gap if kind == 'study' else set())
         for step in range(0, hi - lo + 1):
             for i in (ideal + step, ideal - step) if step else (ideal,):
-                if lo <= i <= hi and i not in buffer and load[i] + cost <= caps[i] and topic_id not in on_day[i]:
+                if lo <= i <= hi and i not in avoid and fits(i, cost, kind=kind) and topic_id not in on_day[i]:
                     return i
         if not must: return None
-        for i in sorted(range(lo, hi + 1), key=lambda i: (i in buffer, load[i] / caps[i], abs(i - ideal))):
+        # Tutto pieno. Lo studio va nel giorno più scarico; un ripasso nel giorno più vicino, perché in ritardo il ricordo sbiadisce.
+        by_load = lambda i: (i in avoid, own[i] / own_caps[i], abs(i - ideal))
+        by_time = lambda i: (i in avoid, abs(i - ideal), own[i] / own_caps[i])
+        for i in sorted(range(lo, hi + 1), key=by_load if kind == 'study' else by_time):
             if topic_id not in on_day[i]: return i
         return None
 
     items: list[PlanItem] = []
 
-    def add(i: int, item: PlanItem) -> None:
-        load[i] += p.cost(item.kind); on_day[i].add(item.topic_id); items.append(item)
+    def fits(i: int, cost: float, slack: float = 0, kind: str = 'study') -> bool:
+        """C'è posto nella giornata e, per lo studio nuovo e il ripasso finale, nella fetta di questo esame.
+        I ripassi non guardano la fetta: con altri esami più vicini si rallenta lo studio nuovo, non la memoria di quello
+        già studiato (che altrimenti sbiadirebbe)."""
+        mine = own_caps[i] if kind != 'review' else (p.cap(days[i]) or auto_own)
+        return load[i] + cost <= caps[i] + slack and own[i] + cost <= mine + slack
 
-    # 1. Studio: in ordine di corso (i capitoli si appoggiano ai precedenti), sparso uniforme sul primo 65% del
-    #    tempo, così anche l'ultimo argomento ha spazio per i suoi ripassi.
-    study_n = max(1, min(learn_n, round(learn_n * 0.65)))
+    def add(i: int, item: PlanItem) -> None:
+        cost = p.cost(item.kind)
+        load[i] += cost; own[i] += cost; on_day[i].add(item.topic_id); items.append(item)
+
+    # Prima di una pausa lunga (es. giorni riservati a un altro esame) niente studio nuovo: il primo ripasso cadrebbe
+    # dopo la pausa, ad argomento ormai dimenticato.
+    before_gap = {i for i in range(learn_n - 1) if ords[i + 1] - ords[i] > 2}
+
+    # 1. Studio: in ordine di corso (i capitoli si appoggiano ai precedenti), sparso sul primo 65% del tempo, così anche
+    #    l'ultimo argomento ha spazio per i suoi ripassi. Il tempo è pesato con la fetta di ogni giorno: dove c'è un
+    #    esame più vicino lo studio nuovo si dirada.
     studied_at: dict[int, int] = {}
     k = 0
     new = [t for t in topics if t.mastery == 0]
     if p.order == 'hardest': new.sort(key=lambda t: -t.difficulty)  # stabile: a parità, ordine del corso
+    cumulative = [0.0]
+    for q in quota[:learn_n]: cumulative.append(cumulative[-1] + q)
+    study_span = 0.65 * cumulative[-1]
     for t in new:
         parts = STUDY_BLOCKS[t.difficulty]
         for part in range(1, parts + 1):
-            ideal = (k * study_n) // max(1, blocks)
+            ideal = max(0, bisect_left(cumulative, k * study_span / max(1, blocks)) - 1)
             lo = studied_at.get(t.id, -1) + 1 if part > 1 else 0
             i = place(ideal, min(lo, learn_n - 1), learn_n - 1, t.id, 'study')
             if i is None: i = min(lo, n - 1)
@@ -221,18 +257,25 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
         stability, last, done = memory[tid]
         lo = bisect_left(ords, last + 1)
         ideal = max(lo, bisect_right(ords, due) - 1)  # se la scadenza cade in un giorno di riposo, il giorno prima
-        # Oltre la fase di studio ci pensa il ripasso finale; il primo ripasso però non si salta mai.
-        if lo > learn_n - 1 or (done and ideal > learn_n - 1): continue
+        # Il primo ripasso può cadere anche nella fase finale (argomenti studiati per ultimi), gli altri no.
+        hi = n - 1 if not done else learn_n - 1
+        if lo > hi or (done and ideal > hi): continue
         # Prima scelta: un giorno libero finché il ricordo resta accettabile (soglia - 5%).
-        late = min(learn_n - 1, max(lo, bisect_right(ords, last + interval(stability, p.target - 0.05)) - 1))
+        late = min(hi, max(lo, bisect_right(ords, last + interval(stability, p.target - 0.05)) - 1))
         i = place(ideal, lo, late, tid, 'review', must=False)
         if i is None and p.per_day is None:
             # Limite automatico: meglio un'attività in più in un giorno che un ripasso quando il ricordo è già sbiadito.
             free = [j for j in range(min(ideal, late), late + 1)
-                    if j not in buffer and tid not in on_day[j] and load[j] <= caps[j]]  # al massimo un'attività oltre il tetto
+                    if j not in buffer and tid not in on_day[j] and fits(j, p.cost('review'), p.cost('review'), 'review')]  # al massimo un'attività oltre il tetto
             i = min(free, key=lambda j: (load[j], abs(j - ideal)), default=None)
-        if i is None: i = place(ideal, lo, learn_n - 1, tid, 'review', must=not done)
-        if i is None: continue  # giorni pieni: un ripasso intermedio in meno, lo copre il ripasso finale
+        # Il primo ripasso cerca posto finché il ricordo resta intorno al 70%, poi resta vicino al giorno ideale anche oltre
+        # il tetto: settimane dopo l'argomento sarebbe dimenticato.
+        # Un ripasso intermedio senza posto va al primo giorno libero: meglio in ritardo che lasciarlo al ripasso finale.
+        if i is None and not done:
+            later = min(hi, max(late, bisect_right(ords, last + interval(stability, p.target - 0.15)) - 1))
+            i = place(ideal, lo, later, tid, 'review', must=False) or place(ideal, lo, late, tid, 'review', must=True)
+        if i is None: i = place(ideal, lo, hi, tid, 'review', must=False)
+        if i is None: continue  # nessun posto fino al ripasso finale: lo copre il finale
         stability = grow(stability, recall(ords[i] - last, stability), by_id[tid].hardness)
         add(i, PlanItem(days[i], tid, 'review', number=done + 1, gap=max(1, ords[i] - last)))
         memory[tid] = (stability, ords[i], done + 1)
@@ -249,7 +292,7 @@ def build_plan(topics: list[PlanTopic], days: list[date], busy: dict[date, float
         if t.mastery == 3 and at_exam[t.id] >= 0.9: continue
         window = range(final_start, n)
         candidates = [i for i in window if t.id not in on_day[i]] or list(window)
-        i = min(candidates, key=lambda i: (load[i] / caps[i], -i))
+        i = min(candidates, key=lambda i: (own[i] / own_caps[i], load[i] / caps[i], -i))
         add(i, PlanItem(days[i], t.id, 'final', gap=max(1, ords[i] - memory[t.id][1])))
 
     return sorted(items, key=lambda it: (it.day, {'study': 0, 'review': 1, 'final': 2}[it.kind], it.topic_id))
@@ -284,9 +327,11 @@ def count_back(exam_day: date, need: float, per_day, at_least: int, rest_days: s
     return day, count
 
 
-def plan_advice(topics: list[PlanTopic], exam_day: date, rest_days: set[int], days_off: set[date] = frozenset(), prefs: PlanPrefs | None = None) -> PlanAdvice:
+def plan_advice(topics: list[PlanTopic], exam_day: date, rest_days: set[int], days_off: set[date] = frozenset(), prefs: PlanPrefs | None = None,
+                others: list[date] = ()) -> PlanAdvice:
     """Quando conviene iniziare (metodo completo a ritmo sostenibile) e l'ultimo momento utile (versione minima
-    al ritmo massimo). Il ritmo non supera mai il limite dello studente, giorno per giorno; con lo storico,
+    al ritmo massimo). Il ritmo non supera mai il limite dello studente, giorno per giorno, né la quota di questo
+    esame quando ce ne sono di più vicini (`others`: date degli altri esami); con lo storico,
     il tempo reale delle sessioni allunga le stime e una quota di task fatti sotto il 100% anticipa le date."""
     p = prefs or PlanPrefs()
     blocks, reviews, finals, to_review = _counts(topics, p)
@@ -295,8 +340,9 @@ def plan_advice(topics: list[PlanTopic], exam_day: date, rest_days: set[int], da
     full_minutes, min_minutes = minutes(reviews), minutes(to_review)
     full, minimum = (full_items, min_items) if p.unit == 'tasks' else (full_minutes, min_minutes)
     slack = max(0.5, min(1.0, p.reliability))
-    comfort = lambda d: min(COMFORT[p.unit], p.cap(d) or COMFORT[p.unit])
-    fastest = lambda d: p.cap(d) or MAXIMUM[p.unit]
+    # Con altri esami più vicini, quei giorni valgono solo la quota di questo esame: si parte prima.
+    comfort = lambda d: min(COMFORT[p.unit], p.cap(d) or COMFORT[p.unit]) * exam_share(d, exam_day, others)
+    fastest = lambda d: (p.cap(d) or MAXIMUM[p.unit]) * exam_share(d, exam_day, others)
     ideal_start, ideal_days = count_back(exam_day, full / slack, comfort, MIN_IDEAL_DAYS, rest_days, days_off)
     latest_start, min_days = count_back(exam_day, minimum / slack, fastest, 3, rest_days, days_off)
     return PlanAdvice(ideal_start, latest_start, ideal_days, min_days, full_items, min_items, full_minutes, min_minutes)
