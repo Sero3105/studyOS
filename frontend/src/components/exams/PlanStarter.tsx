@@ -35,13 +35,15 @@ function toRequest(prefs: PlanPrefs, rest: number[], start?: string): PlanReques
     rest_before_exam: prefs.restBeforeExam,
     order: prefs.order,
     study_minutes: prefs.studyMinutes,
+    weekday_limits: prefs.limitUnit !== 'auto' && prefs.weekdayLimits.some((v) => v !== null) ? prefs.weekdayLimits : null,
+    adapt: prefs.adapt,
   }
 }
 
 /**
  * Piano d'esame guidato dalle preferenze: lo studente sceglie da quando partire, giorni senza studio,
- * giorni liberi, limite giornaliero (attività o ore), intensità dei ripassi, giorni di ripasso finale,
- * ordine e durata dello studio. Data ideale e data limite si ricalcolano a ogni scelta.
+ * giorni liberi, limite giornaliero (attività o ore, anche diverso per giorno della settimana), intensità dei
+ * ripassi, giorni di ripasso finale, ordine e durata dello studio; il piano può adattarsi allo storico. Data ideale e data limite si ricalcolano a ogni scelta.
  * Le preferenze restano salvate per i piani successivi; `topicsKey` cambia con argomenti, stato e difficoltà.
  */
 function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: string; onPlan: (exam: DatedExam, request: PlanRequest) => void }) {
@@ -77,6 +79,17 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
     ? t('plan.workloadHours', { hours: hours(advice.full_minutes) })
     : t('plan.workloadItems', { items: advice.full_items }))
   const choice = 'data-[state=on]:bg-primary/10 data-[state=on]:text-primary'
+  const setWeekdayLimit = (index: number, value: number | null) => update({ weekdayLimits: prefs.weekdayLimits.map((v, i) => (i === index ? value : v)) })
+  // Riepilogo delle scelte a preferenze chiuse: si vede cosa userà il piano senza aprire tutto.
+  const summary = [
+    prefs.limitUnit === 'auto' ? t('plan.limitAuto') : prefs.limitUnit === 'hours' ? t('plan.summaryHours', { value: prefs.limitValue }) : t('plan.summaryTasks', { value: prefs.limitValue }),
+    t(`plan.reviews${prefs.reviews === 'light' ? 'Light' : prefs.reviews === 'intense' ? 'Intense' : 'Standard'}`),
+    `${prefs.studyMinutes} min`,
+    prefs.order === 'hardest' ? t('plan.orderHardest') : t('plan.orderCourse'),
+  ].join(' · ')
+  const history = advice && advice.reliability !== null
+    ? [t('plan.historyReliability', { pct: Math.round(advice.reliability * 100) }), advice.pace !== null && t('plan.historyPace', { pace: advice.pace.toLocaleString(locale, { maximumFractionDigits: 1 }) })].filter(Boolean).join(' · ')
+    : t('plan.historyEmpty')
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-primary/25 bg-primary/5 p-4">
@@ -108,18 +121,18 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
         </Button>
       </div>
 
-      <Collapsible defaultOpen>
+      <Collapsible>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="group/prefs -ml-2 text-muted-foreground">
-            <ChevronRight data-icon="inline-start" className="transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
-            {t('plan.prefs')}
+          <Button variant="ghost" size="sm" className="group/prefs -ml-2 h-auto max-w-full justify-start py-1 text-left whitespace-normal text-muted-foreground">
+            <ChevronRight data-icon="inline-start" className="shrink-0 transition-transform group-data-[state=open]/prefs:rotate-90" aria-hidden="true" />
+            <span><span className="text-foreground">{t('plan.prefs')}</span> <span className="font-normal group-data-[state=open]/prefs:hidden">· {summary}</span></span>
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="grid gap-5 pt-3 sm:grid-cols-2">
+        <CollapsibleContent className="grid grid-cols-1 gap-5 pt-3 sm:grid-cols-2">
           <FieldSet className="gap-2 sm:col-span-2">
             <FieldLegend variant="label">{t('plan.restDays')}</FieldLegend>
-            <ToggleGroup type="multiple" variant="outline" spacing={0} value={rest.map(String)} onValueChange={(v) => updateRest(v.map(Number))} className="w-full max-w-md [&>*]:flex-1 [&>*]:px-0">
-              {WEEKDAYS.map((d) => <ToggleGroupItem key={d} value={String(d)} className={choice}>{weekdayShort(addDays(MONDAY, d - 1), locale)}</ToggleGroupItem>)}
+            <ToggleGroup type="multiple" variant="outline" spacing={0} value={rest.map(String)} onValueChange={(v) => updateRest(v.map(Number))} className="w-full max-w-md [&>*]:flex-1">
+              {WEEKDAYS.map((d) => <ToggleGroupItem key={d} value={String(d)} className={cn(choice, 'min-w-0 shrink group-data-[spacing=0]/toggle-group:px-0')}>{weekdayShort(addDays(MONDAY, d - 1), locale)}</ToggleGroupItem>)}
             </ToggleGroup>
           </FieldSet>
 
@@ -155,6 +168,24 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
             <FieldDescription>{prefs.limitUnit === 'auto' ? t('plan.limitAutoHint') : t('plan.limitHint')}</FieldDescription>
           </Field>
 
+          {prefs.limitUnit !== 'auto' && (
+            <FieldSet className="gap-2 sm:col-span-2">
+              <FieldLegend variant="label">{t('plan.weekdayLimits')}</FieldLegend>
+              <div className="grid w-full max-w-md grid-cols-7 gap-1.5">
+                {WEEKDAYS.map((d) => (
+                  <label key={d} className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                    {weekdayShort(addDays(MONDAY, d - 1), locale)}
+                    <Input className="h-9 [appearance:textfield] px-1 text-center font-mono placeholder:text-muted-foreground/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" inputMode="decimal" min={prefs.limitUnit === 'hours' ? 0.5 : 1} max={prefs.limitUnit === 'hours' ? 12 : 20} step={prefs.limitUnit === 'hours' ? 0.5 : 1}
+                      placeholder={String(prefs.limitValue)} value={prefs.weekdayLimits[d - 1] ?? ''} disabled={rest.includes(d)}
+                      onChange={(e) => { const v = Number(e.target.value); setWeekdayLimit(d - 1, e.target.value && v > 0 ? v : null) }}
+                      aria-label={t('plan.weekdayLimitLabel', { day: weekdayShort(addDays(MONDAY, d - 1), locale) })} />
+                  </label>
+                ))}
+              </div>
+              <FieldDescription>{t('plan.weekdayLimitsHint')}</FieldDescription>
+            </FieldSet>
+          )}
+
           <Field>
             <FieldLabel>{t('plan.reviews')}</FieldLabel>
             <Segmented label={t('plan.reviews')} value={prefs.reviews} onChange={(reviews) => update({ reviews })}
@@ -184,7 +215,15 @@ function PlanStarter({ exam, topicsKey, onPlan }: { exam: DatedExam; topicsKey: 
 
           <Field orientation="horizontal" className="justify-between self-end rounded-lg border p-3">
             <FieldLabel htmlFor={`plan-rest-before-${exam.id}`} className="font-normal">{t('plan.restBeforeExam')}</FieldLabel>
-            <Switch id={`plan-rest-before-${exam.id}`} checked={prefs.restBeforeExam} onCheckedChange={(restBeforeExam) => update({ restBeforeExam })} />
+            <Switch className="shrink-0" id={`plan-rest-before-${exam.id}`} checked={prefs.restBeforeExam} onCheckedChange={(restBeforeExam) => update({ restBeforeExam })} />
+          </Field>
+
+          <Field orientation="horizontal" className="justify-between rounded-lg border p-3 sm:col-span-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <FieldLabel htmlFor={`plan-adapt-${exam.id}`} className="font-normal">{t('plan.adapt')}</FieldLabel>
+              <FieldDescription>{history}</FieldDescription>
+            </div>
+            <Switch className="shrink-0" id={`plan-adapt-${exam.id}`} checked={prefs.adapt} onCheckedChange={(adapt) => update({ adapt })} />
           </Field>
         </CollapsibleContent>
       </Collapsible>

@@ -14,6 +14,7 @@ const KEYS = {
   restDays: 'studyos.restDays',
   planPrefs: 'studyos.planPrefs',
   planDaysOff: 'studyos.planDaysOff',
+  planWeekdays: 'studyos.planWeekdays',
 } as const
 type Name = keyof typeof KEYS | 'theme'
 
@@ -63,15 +64,22 @@ export interface PlanPrefs {
   restBeforeExam: boolean
   order: 'course' | 'hardest'
   studyMinutes: 25 | 50 | 90
+  weekdayLimits: (number | null)[] // lunedì..domenica, stessa unità del limite; null = come il limite
+  adapt: boolean // adatta durate e date allo storico
 }
-export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50 }
+const NO_WEEKDAY_LIMITS = [null, null, null, null, null, null, null]
+export const PLAN_DEFAULTS: PlanPrefs = { daysOff: [], limitUnit: 'auto', limitValue: 4, reviews: 'standard', finalDays: 0, restBeforeExam: false, order: 'course', studyMinutes: 50, weekdayLimits: NO_WEEKDAY_LIMITS, adapt: true }
 export function planPrefs(): PlanPrefs {
   const daysOff = (read(KEYS.planDaysOff) ?? '').split(',').filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
-  try { return { ...PLAN_DEFAULTS, ...JSON.parse(read(KEYS.planPrefs) ?? '{}'), daysOff } } catch { return { ...PLAN_DEFAULTS, daysOff } }
+  const stored = (read(KEYS.planWeekdays) ?? '').split(',').map((v) => Number(v) > 0 ? Number(v) : null)
+  const weekdayLimits = stored.length === 7 ? stored : NO_WEEKDAY_LIMITS
+  try { return { ...PLAN_DEFAULTS, ...JSON.parse(read(KEYS.planPrefs) ?? '{}'), daysOff, weekdayLimits } } catch { return { ...PLAN_DEFAULTS, daysOff, weekdayLimits } }
 }
-export function setPlanPrefs({ daysOff, ...rest }: PlanPrefs): void {
+export function setPlanPrefs({ daysOff, weekdayLimits, ...rest }: PlanPrefs): void {
   save('planPrefs', JSON.stringify(rest))
   save('planDaysOff', daysOff)
+  // Stringa "2,,,,,4,": il server accetta liste solo di interi, i limiti in ore possono essere 1,5.
+  save('planWeekdays', weekdayLimits.map((v) => v ?? '').join(','))
 }
 
 /** Tema: lo applica `utils/theme`, qui solo il salvataggio sul server. */
