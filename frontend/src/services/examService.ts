@@ -3,8 +3,8 @@ import type { Task } from './taskService'
 export type ExamStatus='planned'|'in_progress'|'passed'|'failed'
 /** Appello già sostenuto senza superare l'esame: bocciato o voto rifiutato. */
 export interface ExamAttempt { id:number; exam_date:string; outcome:'failed'|'rejected'; grade:number|null }
-export interface Exam { id:number; user_id:number; title:string; subject:string; subject_id:number|null; exam_date:string|null; exam_time:string|null; location:string|null; notes:string|null; status:ExamStatus; cfu:number|null; grade:number|null; honors:boolean; plan_days_off:string[]; created_at:string; updated_at:string; attempts:ExamAttempt[] }
-export interface CreateExamPayload { title:string; subject:string; exam_date?:string|null; exam_time?:string; location?:string; notes?:string; status:ExamStatus; cfu?:number|null; grade?:number|null; honors?:boolean; plan_days_off?:string[] }
+export interface Exam { id:number; user_id:number; title:string; subject:string; subject_id:number|null; exam_date:string|null; exam_time:string|null; location:string|null; notes:string|null; status:ExamStatus; cfu:number|null; grade:number|null; honors:boolean; graded:boolean; plan_days_off:string[]; created_at:string; updated_at:string; attempts:ExamAttempt[] }
+export interface CreateExamPayload { title:string; subject:string; exam_date?:string|null; exam_time?:string; location?:string; notes?:string; status:ExamStatus; cfu?:number|null; grade?:number|null; honors?:boolean; graded?:boolean; plan_days_off?:string[] }
 /** Esame con appello fissato: gli unici con conto alla rovescia, calendario e piano di studio. */
 export type DatedExam = Exam & { exam_date: string }
 export const isDated = (exam: Exam): exam is DatedExam => exam.exam_date !== null

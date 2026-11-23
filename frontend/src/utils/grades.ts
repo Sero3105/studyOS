@@ -32,7 +32,6 @@ export function gradeTrend(exams: Pick<Exam, 'id' | 'title' | 'status' | 'grade'
 /**
  * Media ponderata da tenere nei CFU che mancano per arrivare a `targetBase` (in 110) su `totalCfu`.
  * null se non mancano CFU. Sopra 30 il traguardo è irraggiungibile, sotto 18 è già al sicuro.
- * shortcut: tutti i CFU mancanti contano come esami con voto (tesi, tirocinio e idoneità no); va bene come stima.
  */
 export function requiredAverage(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[], totalCfu: number, targetBase: number): number | null {
   const graded = exams.filter((e) => e.status === 'passed' && e.grade && e.cfu)
@@ -42,6 +41,9 @@ export function requiredAverage(exams: Pick<Exam, 'status' | 'grade' | 'cfu'>[],
   if (remaining <= 0) return null
   return ((targetBase * 30) / 110 * totalCfu - points) / remaining
 }
+
+/** CFU di tutti gli esami del libretto, superati e da sostenere: il totale dei CFU acquisibili. */
+export const examsCfu = (exams: Pick<Exam, 'cfu'>[]): number => exams.reduce((sum, e) => sum + (e.cfu ?? 0), 0)
 
 /** Materie archiviate: quelle con un esame superato. Restano nel database (note, flashcard, statistiche), spariscono dai selettori. */
 export function archivedSubjectIds(exams: Pick<Exam, 'status' | 'subject_id'>[]): Set<number> {

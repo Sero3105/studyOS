@@ -5,8 +5,7 @@ import { Button } from '../ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
 import { NativeSelect, NativeSelectOption } from '../ui/native-select'
 import type { Exam } from '../../services/examService'
-import { gradeSummary, requiredAverage } from '../../utils/grades'
-import { degreeCfu } from '../../utils/preferences'
+import { examsCfu, gradeSummary, requiredAverage } from '../../utils/grades'
 import { useLanguage } from '../../i18n/useLanguage'
 
 const TARGETS = [100, 105, 110]
@@ -19,8 +18,9 @@ const GRADES = Array.from({ length: 13 }, (_, i) => String(18 + i)).concat('30L'
 function GradeSimulator({ exams }: { exams: Exam[] }) {
   const { t, locale } = useLanguage()
   const [guesses, setGuesses] = useState<Record<number, string>>({})
-  const total = degreeCfu()
-  const toTake = exams.filter((e) => (e.status === 'planned' || e.status === 'in_progress') && e.cfu)
+  // Medie solo sugli esami con voto: idoneità, tirocinio e prova finale restano fuori.
+  const total = examsCfu(exams.filter((e) => e.graded))
+  const toTake = exams.filter((e) => (e.status === 'planned' || e.status === 'in_progress') && e.cfu && e.graded)
   const simulated = [
     ...exams,
     ...toTake.filter((e) => guesses[e.id]).map((e) => ({ ...e, status: 'passed' as const, grade: parseInt(guesses[e.id], 10) })),

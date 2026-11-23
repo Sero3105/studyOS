@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, false
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, false, true
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -19,6 +19,8 @@ class Exam(Base):
     cfu = Column(Integer, nullable=True)
     grade = Column(Integer, nullable=True)
     honors = Column(Boolean, nullable=False, default=False, server_default=false())
+    # False = attività senza voto (idoneità, tirocinio, prova finale): conta nei CFU, non nelle medie.
+    graded = Column(Boolean, nullable=False, default=True, server_default=true())
     # Giorni liberi del piano di questo esame (date ISO): valgono solo per lui, non per gli altri esami.
     plan_days_off = Column(JSON, nullable=False, default=list, server_default='[]')
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)

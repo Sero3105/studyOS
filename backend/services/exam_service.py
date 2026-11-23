@@ -32,6 +32,7 @@ def update_exam(exam_id:int, data, user_id:int, db:Session)->Exam:
     for field,value in values.items(): setattr(exam,field,value)
     if 'subject' in values: link_subject(exam, db)
     if exam.honors and exam.grade != 30: raise ValueError('La lode richiede voto 30')
+    if not exam.graded and exam.grade is not None: raise ValueError('Senza voto: niente voto')
     try: db.commit(); db.refresh(exam); return exam
     except SQLAlchemyError: db.rollback(); raise
 def record_attempt(exam_id:int, data, user_id:int, db:Session)->Exam:

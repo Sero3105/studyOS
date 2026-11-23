@@ -55,3 +55,15 @@ def test_exam_attempts_keep_history(client):
     other = _headers(client, "att2@example.com")
     assert client.post(f"/exams/{exam['id']}/attempts", json={"outcome": "failed"}, headers=other).status_code == 404
     assert client.delete(f"/exams/{exam['id']}", headers=h).status_code == 204
+
+
+def test_exam_without_grade(client):
+    headers = _headers(client, "x5@example.com")
+    internship = client.post("/exams", json={"title": "Tirocinio", "subject": "Tirocinio", "cfu": 5, "graded": False}, headers=headers)
+    assert internship.status_code == 201 and internship.json()["graded"] is False
+    assert client.post("/exams", json={"title": "Analisi", "subject": "Analisi"}, headers=headers).json()["graded"] is True
+    # Senza voto resta senza voto: superata sì, voto no.
+    exam_id = internship.json()["id"]
+    assert client.patch(f"/exams/{exam_id}", json={"status": "passed", "grade": 28}, headers=headers).status_code == 422
+    assert client.patch(f"/exams/{exam_id}", json={"status": "passed"}, headers=headers).json()["status"] == "passed"
+    assert client.post("/exams", json={"title": "B", "subject": "B", "graded": False, "grade": 25}, headers=headers).status_code == 422

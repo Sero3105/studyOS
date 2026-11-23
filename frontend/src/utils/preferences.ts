@@ -10,7 +10,6 @@ type Value = boolean | number | number[] | string | string[]
 const KEYS = {
   reviews: 'studyos.reviews',
   timerAlerts: 'studyos.timerAlerts',
-  degreeCfu: 'studyos.degreeCfu',
   restDays: 'studyos.restDays',
   planPrefs: 'studyos.planPrefs',
   planWeekdays: 'studyos.planWeekdays',
@@ -40,11 +39,6 @@ export const setReviewsEnabled = (enabled: boolean): void => save('reviews', ena
 /** Suono (e notifica, se permessa) a fine blocco e a fine pausa: attivi salvo scelta contraria. */
 export const timerAlertsEnabled = (): boolean => read(KEYS.timerAlerts) !== '0'
 export const setTimerAlertsEnabled = (enabled: boolean): void => save('timerAlerts', enabled)
-
-/** CFU totali del corso: triennale, magistrale, ciclo unico da 5 o 6 anni. */
-export const DEGREE_CFU_OPTIONS = [180, 120, 300, 360] as const
-export const degreeCfu = (): number => Number(read(KEYS.degreeCfu)) || DEGREE_CFU_OPTIONS[0]
-export const setDegreeCfu = (cfu: number): void => save('degreeCfu', cfu)
 
 /** Giorni della settimana senza studio nel piano d'esame (1 = lunedì ... 7 = domenica). */
 export const restDays = (): number[] => (read(KEYS.restDays) ?? '').split(',').map(Number).filter((d) => d >= 1 && d <= 7)
@@ -93,7 +87,7 @@ export function chooseTheme(theme: Theme): void {
 export async function syncPreferences(): Promise<void> {
   const server = await apiRequest<Partial<Record<Name, Value>>>('/settings')
   if (Object.keys(server).length === 0) {
-    const local: Partial<Record<Name, Value>> = { reviews: reviewsEnabled(), timerAlerts: timerAlertsEnabled(), degreeCfu: degreeCfu(), restDays: restDays(), theme: getTheme() }
+    const local: Partial<Record<Name, Value>> = { reviews: reviewsEnabled(), timerAlerts: timerAlertsEnabled(), restDays: restDays(), theme: getTheme() }
     await apiRequest('/settings', { method: 'PATCH', body: JSON.stringify(local) })
     return
   }

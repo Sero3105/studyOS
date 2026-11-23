@@ -8,7 +8,6 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../components/ui/field'
 import { Input } from '../components/ui/input'
-import { NativeSelect, NativeSelectOption } from '../components/ui/native-select'
 import { Switch } from '../components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
@@ -23,7 +22,7 @@ import type { LinkKind } from '../services/shareService'
 import { changePassword, deleteAccount } from '../services/accountService'
 import { ApiError } from '../services/apiClient'
 import { notificationsSupported, remindersEnabled, runDeadlineReminders, setRemindersEnabled } from '../utils/reminders'
-import { chooseTheme as saveTheme, DEGREE_CFU_OPTIONS, degreeCfu, restDays, reviewsEnabled, setDegreeCfu, setRestDays, setReviewsEnabled, setTimerAlertsEnabled, timerAlertsEnabled } from '../utils/preferences'
+import { chooseTheme as saveTheme, restDays, reviewsEnabled, setRestDays, setReviewsEnabled, setTimerAlertsEnabled, timerAlertsEnabled } from '../utils/preferences'
 import { getTheme } from '../utils/theme'
 import type { Theme } from '../utils/theme'
 import { validatePassword } from '../utils/password'
@@ -192,7 +191,6 @@ function SettingsPage() {
   const [reminders, setReminders] = useState(remindersEnabled)
   const [reviews, setReviews] = useState(reviewsEnabled)
   const [timerAlerts, setTimerAlerts] = useState(timerAlertsEnabled)
-  const [cfu, setCfu] = useState(degreeCfu)
   const [rest, setRest] = useState(restDays)
   // 1-7 gennaio 2024 = lunedì-domenica: nomi dei giorni nella lingua scelta.
   const weekdayName = (day: number) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, day))
@@ -244,7 +242,6 @@ function SettingsPage() {
     if (enabled && notificationsSupported() && Notification.permission === 'default') void Notification.requestPermission()
     setTimerAlertsEnabled(enabled); setTimerAlerts(enabled)
   }
-  const chooseCfu = (value: number) => { setDegreeCfu(value); setCfu(value) }
   const chooseTheme = (value: Theme) => { saveTheme(value); setThemeState(value) }
 
   return (
@@ -282,14 +279,6 @@ function SettingsPage() {
               <Toggle id="toggle-timer-alerts" label={t('settings.timerAlertsToggle')} checked={timerAlerts} onChange={toggleTimerAlerts} />
             </Section>
 
-            <Section id="settings-degree-title" title={t('settings.degreeTitle')} description={t('settings.degreeDescription')}>
-              <Field className="max-w-xs">
-                <FieldLabel htmlFor="degree-cfu">{t('settings.degreeCfu')}</FieldLabel>
-                <NativeSelect id="degree-cfu" className="w-full" value={cfu} onChange={(e) => chooseCfu(Number(e.target.value))}>
-                  {DEGREE_CFU_OPTIONS.map((option) => <NativeSelectOption key={option} value={option}>{t(`settings.degreeCfu${option}`)}</NativeSelectOption>)}
-                </NativeSelect>
-              </Field>
-            </Section>
 
             <Section id="settings-plan-title" title={t('settings.planTitle')} description={t('settings.planDescription')}>
               <FieldSet className="gap-2">

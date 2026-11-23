@@ -1,7 +1,6 @@
 import { Suspense, lazy } from 'react'
 import type { Exam } from '../../services/examService'
-import { gradeSummary, gradeTrend } from '../../utils/grades'
-import { degreeCfu } from '../../utils/preferences'
+import { examsCfu, gradeSummary, gradeTrend } from '../../utils/grades'
 import GradeSimulator from './GradeSimulator'
 import Figures from '../ui/Figures'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
@@ -33,7 +32,7 @@ function RecordBook({ exams, detailed = false }: { exams: Exam[]; detailed?: boo
           { label: t('exams.weightedAverage'), value: grades.cfu ? grades.weightedAverage.toFixed(2) : '—' },
           { label: t('exams.average'), value: grades.average.toFixed(2) },
           { label: t('exams.graduationBase'), value: grades.cfu ? `${grades.graduationBase.toFixed(1)}/110` : '—' },
-          { label: t('exams.cfuTotal'), value: <>{grades.cfu}<span className="text-base text-muted-foreground">/{degreeCfu()}</span></> },
+          { label: t('exams.cfuTotal'), value: <>{examsCfu(passed)}<span className="text-base text-muted-foreground">/{examsCfu(exams)}</span></> },
           ...(detailed ? [
             { label: t('exams.passedCount'), value: passed.length },
             { label: t('exams.honorsCount'), value: passed.filter((e) => e.honors).length },

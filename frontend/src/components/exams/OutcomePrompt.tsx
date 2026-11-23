@@ -25,18 +25,18 @@ export default function OutcomePrompt({ exam, onSave }: { exam: DatedExam; onSav
       <CardContent className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-sm font-medium">{t('exams.outcomeQuestion', { title: exam.title, when: relativeDay(exam.exam_date, locale).toLowerCase() })}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect className="w-32" value={grade} onChange={(e) => setGrade(e.target.value)} aria-label={t('exams.outcomeGrade', { title: exam.title })}>
+          {exam.graded && <NativeSelect className="w-32" value={grade} onChange={(e) => setGrade(e.target.value)} aria-label={t('exams.outcomeGrade', { title: exam.title })}>
             <NativeSelectOption value="">{t('exams.outcomeNoGrade')}</NativeSelectOption>
             {GRADES.map((g) => <NativeSelectOption key={g} value={g}>{g}</NativeSelectOption>)}
-          </NativeSelect>
+          </NativeSelect>}
           <Button disabled={busy}
             onClick={() => save(() => updateExam(exam.id, { status: 'passed', grade: value, honors: grade === '30L' }))}>
             {t('exams.status.passed')}
           </Button>
-          <Button variant="outline" disabled={busy || value === null} title={value === null ? t('exams.rejectedNeedsGrade') : undefined}
+          {exam.graded && <Button variant="outline" disabled={busy || value === null} title={value === null ? t('exams.rejectedNeedsGrade') : undefined}
             onClick={() => save(() => recordAttempt(exam.id, 'rejected', value))}>
             {t('exams.attempt.rejected')}
-          </Button>
+          </Button>}
           <Button variant="ghost" disabled={busy} onClick={() => save(() => recordAttempt(exam.id, 'failed', null))}>
             {t('exams.attempt.failed')}
           </Button>

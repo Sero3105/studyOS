@@ -60,7 +60,7 @@ function ExamForm({ onSave, onCancel, initial, lockedSubject, subjectFromTitle =
     setError('')
 
     const passed = data.status === 'passed'
-    const grade = passed && data.grade ? Number(data.grade) : null
+    const grade = passed && data.graded !== false && data.grade ? Number(data.grade) : null
     try {
       await onSave({ ...data, subject: lockedSubject ?? (subjectFromTitle ? data.title : data.subject), exam_date: data.exam_date || null, cfu: data.cfu ? Number(data.cfu) : null, grade, honors: grade === 30 && Boolean(data.honors) })
     } catch (saveError) {
@@ -137,13 +137,17 @@ function ExamForm({ onSave, onCancel, initial, lockedSubject, subjectFromTitle =
               <FieldLabel htmlFor="exam-cfu">{t('exams.formCfu')} {optional}</FieldLabel>
               <Input id="exam-cfu" className="font-mono" name="cfu" type="number" min={1} max={30} inputMode="numeric" placeholder="6" value={data.cfu ?? ''} onChange={handleChange} />
             </Field>
-            {data.status === 'passed' && (
+            {data.status === 'passed' && data.graded !== false && (
               <Field>
                 <FieldLabel htmlFor="exam-grade">{t('exams.formGrade')}</FieldLabel>
                 <Input id="exam-grade" className="font-mono" name="grade" type="number" min={18} max={30} inputMode="numeric" placeholder="18–30" value={data.grade ?? ''} onChange={handleChange} />
               </Field>
             )}
-            {data.status === 'passed' && (
+            <Field orientation="horizontal" className="sm:col-span-3">
+              <Checkbox id="exam-ungraded" checked={data.graded === false} onCheckedChange={(checked) => setData((d) => ({ ...d, graded: checked !== true }))} />
+              <FieldLabel htmlFor="exam-ungraded" className="font-normal">{t('exams.formUngraded')}</FieldLabel>
+            </Field>
+            {data.status === 'passed' && data.graded !== false && (
               <Field orientation="horizontal" className="sm:col-span-3" data-disabled={Number(data.grade) !== 30 || undefined}>
                 <Checkbox
                   id="exam-honors"

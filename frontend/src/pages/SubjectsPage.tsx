@@ -113,11 +113,11 @@ function SubjectsPage() {
   const [filter, setFilter] = useState<'active' | 'archived'>('active')
   const archived = archivedSubjectIds(exams)
   const examsOf = (id: number) => exams.filter((e) => e.subject_id === id)
-  // Prima le materie con l'esame più vicino, poi quelle senza data, in ordine alfabetico.
-  const nextDate = (id: number) => examsOf(id).filter((e) => e.status === 'planned' || e.status === 'in_progress').map((e) => e.exam_date ?? '9999').sort()[0] ?? '9999'
+  // In ordine di data: attive per esame più vicino, archiviate per data di superamento; senza data in fondo, alfabetiche.
+  const examDate = (id: number) => examsOf(id).filter((e) => filter === 'archived' ? e.status === 'passed' : e.status === 'planned' || e.status === 'in_progress').map((e) => e.exam_date ?? '9999').sort()[0] ?? '9999'
   const shown = subjects
     .filter((s) => archived.has(s.id) === (filter === 'archived'))
-    .sort((a, b) => nextDate(a.id).localeCompare(nextDate(b.id)) || a.name.localeCompare(b.name))
+    .sort((a, b) => examDate(a.id).localeCompare(examDate(b.id)) || a.name.localeCompare(b.name))
   const selected = shown.find((subject) => subject.id === selectedId) ?? shown[0] ?? null
   const today = todayIso()
   const selectedExams = selected ? examsOf(selected.id) : []
@@ -265,7 +265,7 @@ function SubjectsPage() {
   const listTag = (id: number) => {
     const passed = examsOf(id).find((e) => e.status === 'passed')
     if (passed) return passed.grade ? <span className="ml-auto font-mono text-xs text-success tabular-nums">{passed.grade}{passed.honors ? 'L' : ''}</span> : null
-    const date = nextDate(id)
+    const date = examDate(id)
     if (date === '9999' || date < today) return null
     const days = daysUntil(date)
     return <span className={cn('ml-auto shrink-0 font-mono text-xs whitespace-nowrap tabular-nums', urgencyClass(days) || 'text-muted-foreground')}>{days === 0 ? t('common.today') : `${days} g`}</span>
@@ -590,6 +590,7 @@ function SubjectsPage() {
             cfu: examDialog.exam.cfu,
             grade: examDialog.exam.grade,
             honors: examDialog.exam.honors,
+            graded: examDialog.exam.graded,
           } : undefined}
         />
       )}
