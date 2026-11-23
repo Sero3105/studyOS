@@ -1,4 +1,4 @@
-import { Area, Bar, CartesianGrid, Cell, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, Bar, CartesianGrid, Cell, ComposedChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { TrendingDown, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GradePoint } from '../../utils/grades'
@@ -7,9 +7,10 @@ import { useLanguage } from '../../i18n/useLanguage'
 
 const SYNC = 'grade-trend'
 const axisTick = { fill: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'var(--font-mono)' }
-// Colori: media in lime (accento), salita in ciano, discesa in rosso, lode in lime.
+// Colori: media in lime (accento), salita in ciano, discesa in rosso, lode in oro (non in lime, o si confonde con la media).
 const UP = 'var(--info)'
 const DOWN = 'var(--destructive)'
+const HONORS = 'var(--warning)'
 
 /** Nome breve per l'asse: prime parole, al massimo ~12 caratteri. */
 function shortName(title: string): string {
@@ -17,7 +18,7 @@ function shortName(title: string): string {
   return clean.length > 13 ? `${clean.slice(0, 12).trimEnd()}…` : clean
 }
 
-type Row = GradePoint & { label: string }
+type Row = GradePoint & { label: string; gradeLabel: string }
 
 // Recharts clona l'elemento passato a `content` aggiungendo active/payload.
 function TrendTooltip({ active, payload }: { active?: boolean; payload?: ReadonlyArray<{ payload?: unknown }> }) {
@@ -54,7 +55,7 @@ function TrendTooltip({ active, payload }: { active?: boolean; payload?: Readonl
  */
 function GradeTrendChart({ points }: { points: GradePoint[] }) {
   const { t, locale } = useLanguage()
-  const data: Row[] = points.map((p) => ({ ...p, label: shortName(p.title) }))
+  const data: Row[] = points.map((p) => ({ ...p, label: shortName(p.title), gradeLabel: `${p.grade}${p.honors ? 'L' : ''}` }))
   const averages = points.flatMap((p) => (p.average === null ? [] : [p.average]))
   // Scala stretta sulla media (interi), così si vede ogni salita e discesa.
   const low = Math.floor(Math.min(...averages) - 0.25)
@@ -65,7 +66,7 @@ function GradeTrendChart({ points }: { points: GradePoint[] }) {
   const dot = ({ cx, cy, payload }: { cx?: number; cy?: number; payload?: Row }) => {
     if (cx === undefined || cy === undefined || !payload || payload.average === null) return <g key={`d-${payload?.id}`} />
     const tone = payload.delta === null ? 'flat' : payload.delta > 0.005 ? 'up' : payload.delta < -0.005 ? 'down' : 'flat'
-    return <circle key={`d-${payload.id}`} cx={cx} cy={cy} r={4.5} stroke="var(--card)" strokeWidth={2} fill={tone === 'up' ? UP : tone === 'down' ? DOWN : 'var(--muted-foreground)'} />
+    return <circle key={`d-${payload.id}`} cx={cx} cy={cy} r={4.5} stroke="var(--card)" strokeWidth={2} fill={tone === 'up' ? UP : tone === 'down' ? DOWN : 'var(--primary)'} />
   }
 
   return (
@@ -73,9 +74,10 @@ function GradeTrendChart({ points }: { points: GradePoint[] }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <figcaption className="text-sm font-semibold">{t('exams.trendTitle')}</figcaption>
         <ul className="flex flex-wrap gap-4 text-xs text-muted-foreground [&>li]:inline-flex [&>li]:items-center [&>li]:gap-2">
+          <li><span className="h-0.5 w-3.5 rounded-full bg-primary" aria-hidden="true" />{t('exams.weightedAverage')}</li>
           <li><span className="size-2.5 rounded-full bg-info" aria-hidden="true" />{t('exams.trendUp')}</li>
           <li><span className="size-2.5 rounded-full bg-destructive" aria-hidden="true" />{t('exams.trendDown')}</li>
-          <li><span className="size-2.5 rounded-xs bg-primary" aria-hidden="true" />{t('exams.formHonors')}</li>
+          <li><span className="size-2.5 rounded-xs bg-warning" aria-hidden="true" />{t('exams.formHonors')}</li>
         </ul>
       </div>
 
@@ -90,7 +92,8 @@ function GradeTrendChart({ points }: { points: GradePoint[] }) {
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="label" hide />
+            {/* Scala a bande come nel grafico dei voti: ogni punto cade sopra la sua barra. */}
+            <XAxis dataKey="label" scale="band" hide />
             <YAxis domain={[low, high]} tick={axisTick} tickLine={false} axisLine={false} width={36} ticks={ticks} interval={0} />
             <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'var(--border)', strokeWidth: 1 }} />
             <Area type="monotone" dataKey="average" stroke="var(--primary)" strokeWidth={2.5} fill="url(#grade-trend-fill)" dot={dot} activeDot={{ r: 6, fill: 'var(--primary)', stroke: 'var(--card)', strokeWidth: 2 }} connectNulls isAnimationActive />
@@ -99,14 +102,16 @@ function GradeTrendChart({ points }: { points: GradePoint[] }) {
 
         <p className="mt-2 text-xs text-muted-foreground">{t('exams.trendGrade')}</p>
         <ResponsiveContainer width="100%" height={150}>
-          <ComposedChart data={data} syncId={SYNC} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+          <ComposedChart data={data} syncId={SYNC} margin={{ top: 18, right: 12, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--border)' }} interval="preserveStartEnd" minTickGap={8} />
-            <YAxis domain={[18, 30]} ticks={[18, 24, 30]} tick={axisTick} tickLine={false} axisLine={false} width={36} />
+            <XAxis dataKey="label" tick={{ ...axisTick, textAnchor: 'end' }} angle={-35} height={64} tickLine={false} axisLine={{ stroke: 'var(--border)' }} interval="preserveStartEnd" minTickGap={2} />
+            {/* Parte da 16: anche un 18 ha la sua barra. */}
+            <YAxis domain={[16, 30]} ticks={[18, 24, 30]} tick={axisTick} tickLine={false} axisLine={false} width={36} />
             {/* Il tooltip è uno solo (sopra): qui resta solo l'evidenziazione sincronizzata. */}
             <Tooltip content={() => null} cursor={{ fill: 'var(--muted)', fillOpacity: 0.5 }} />
             <Bar dataKey="grade" maxBarSize={22} radius={[4, 4, 0, 0]} isAnimationActive>
-              {data.map((row) => <Cell key={row.id} fill={row.honors ? 'var(--primary)' : 'var(--muted-foreground)'} fillOpacity={row.honors ? 1 : 0.55} />)}
+              {data.map((row) => <Cell key={row.id} fill={row.honors ? HONORS : 'var(--muted-foreground)'} fillOpacity={row.honors ? 1 : 0.55} />)}
+              <LabelList dataKey="gradeLabel" position="top" offset={4} className="fill-muted-foreground font-mono text-[10px] tabular-nums" />
             </Bar>
           </ComposedChart>
         </ResponsiveContainer>
