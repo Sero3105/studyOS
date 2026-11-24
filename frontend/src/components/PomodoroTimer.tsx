@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
@@ -28,6 +28,14 @@ function PomodoroTimer() {
   const cycle = config ? Math.min(longBreak(config).blocksBeforeLongBreak, 8) : 0
   const inCycle = cycle ? completedBlocks % cycle : 0
   const filled = mode === 'Break' && completedBlocks > 0 && inCycle === 0 ? cycle : inCycle
+  // Un blocco appena finito (non quelli già fatti quando si apre la pagina): l'anello pulsa una volta.
+  // Stato "precedente" aggiornato durante il render, come suggerisce React, invece di un effetto.
+  const [seenBlocks, setSeenBlocks] = useState(completedBlocks)
+  const [pulse, setPulse] = useState(0)
+  if (completedBlocks !== seenBlocks) {
+    setSeenBlocks(completedBlocks)
+    if (completedBlocks > seenBlocks) setPulse((n) => n + 1)
+  }
 
   const minutes = Math.floor(remainingSeconds / 60)
   const remainingSecondsPart = remainingSeconds % 60
@@ -51,7 +59,7 @@ function PomodoroTimer() {
 
   return (
     <section className="flex flex-col items-center gap-8" aria-label={t('timer.pomodoroLabel')}>
-      <div className="relative grid aspect-square w-full max-w-[22rem] place-items-center">
+      <div key={pulse} className={cn('relative grid aspect-square w-full max-w-[22rem] place-items-center', pulse > 0 && 'animate-[block-done_700ms_ease-out]')}>
         <div aria-hidden="true" className={cn('absolute inset-[12%] rounded-full blur-3xl transition-colors', isBreak ? 'bg-info/10' : 'bg-primary/10', !isRunning && 'opacity-40')} />
         <svg className="absolute inset-0 size-full" viewBox="0 0 240 240" aria-hidden="true">
           <circle className="stroke-muted" cx="120" cy="120" r={radius} fill="none" strokeWidth="4" />
@@ -85,7 +93,7 @@ function PomodoroTimer() {
           </span>
           {cycle > 1 && (
             <span className="mt-1 flex gap-1.5" role="img" aria-label={t('timer.blocksLabel', { done: filled, total: cycle })}>
-              {Array.from({ length: cycle }, (_, i) => <span key={i} className={cn('h-1 w-4 rounded-full', i < filled ? 'bg-primary' : 'bg-muted')} />)}
+              {Array.from({ length: cycle }, (_, i) => <span key={i} className={cn('h-1 w-4 rounded-full', i < filled ? 'bg-primary' : 'bg-muted', pulse > 0 && i === filled - 1 && 'animate-in zoom-in-50 fade-in-0 duration-300')} />)}
             </span>
           )}
         </div>

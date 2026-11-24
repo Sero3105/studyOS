@@ -26,7 +26,7 @@ function BlockPrompt() {
   }
 
   return (
-    <form className="flex flex-col gap-4 rounded-lg border bg-muted/30 p-4" onSubmit={save}>
+    <form className="flex flex-col gap-4 rounded-lg border bg-muted/30 p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out" onSubmit={save}>
       <p className="text-sm font-medium">{t('timer.focusQuestion')}</p>
       <ToggleGroup
         type="single"
