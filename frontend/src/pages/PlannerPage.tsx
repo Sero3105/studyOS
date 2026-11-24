@@ -23,6 +23,7 @@ import { useUndo } from '../context/undoContext'
 import Meta from '../components/ui/Meta'
 import { EmptyState, ErrorNotice, LoadingRows } from '../components/ui/Feedback'
 import { createTask, deleteTask, getTasks, updateTask } from '../services/taskService'
+import { useListMotion } from '../hooks/useListMotion'
 import type { ReviewRating as ReviewRatingValue, Task, TaskPriority, TaskStatus } from '../services/taskService'
 import ReviewRating from '../components/ReviewRating'
 import { sessionFor } from '../utils/pomodoro'
@@ -76,6 +77,9 @@ function PlannerPage() {
   const { undoable } = useUndo()
   const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>([])
+  const rows = useListMotion<number>()
+  // Spuntati in attesa del salvataggio: la spunta si vede subito.
+  const [ticked, setTicked] = useState<ReadonlySet<number>>(() => new Set())
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(true)
@@ -124,23 +128,34 @@ function PlannerPage() {
         recurrence: repeat === 'daily' ? 'daily' : repeat === 'weekly' && weekdays.length ? `weekly:${[...weekdays].sort().join(',')}` : undefined,
       })
       setTasks((t) => [...t, created])
+      rows.added(created.id)
       setTitle(''); setDescription(''); setDueDate(''); setTopicId(''); setRepeat(''); setWeekdays([])
     } catch (e) { setError(errorMessage(e, t('planner.saveError'))) }
     finally { setSaving(false) }
   }
 
   const changeStatus = async (task: Task, status: TaskStatus, rating?: ReviewRatingValue) => {
+    if (status === 'done') setTicked((current) => new Set(current).add(task.id))
+    // Se col nuovo stato la riga esce dal filtro attivo, si chiude invece di sparire (dopo che la spunta si è disegnata).
+    const leavesView = (filter === 'open' && status === 'done') || (filter === 'done' && status !== 'done')
+    const leaving = leavesView ? rows.leave(task.id, status === 'done' ? 180 : 0) : null
     try {
-      const updated = await updateTask(task.id, { status, review_rating: rating })
+      const [updated] = await Promise.all([updateTask(task.id, { status, review_rating: rating }), leaving?.done])
       // Un task ricorrente o un ripasso completato crea il successivo sul backend: si ricarica la lista.
       if (status === 'done' && (task.recurrence || task.review_interval)) setTasks(await getTasks())
       else setTasks((t) => t.map((x) => x.id === task.id ? updated : x))
-    } catch (e) { setError(errorMessage(e, t('planner.updateError'))) }
+    } catch (e) {
+      leaving?.cancel()
+      setError(errorMessage(e, t('planner.updateError')))
+    } finally {
+      setTicked((current) => { const next = new Set(current); next.delete(task.id); return next })
+    }
   }
 
-  const removeTask = (task: Task) => {
+  const removeTask = async (task: Task) => {
+    await rows.leave(task.id).done
     setTasks((list) => list.filter((x) => x.id !== task.id))
-    undoable(t('common.deleted', { title: task.title }), () => deleteTask(task.id), () => setTasks((list) => [...list, task]))
+    undoable(t('common.deleted', { title: task.title }), () => deleteTask(task.id), () => { setTasks((list) => [...list, task]); rows.added(task.id) })
   }
 
   const subjectOf = (id: number | null) => subjects.find((s) => s.id === id)
@@ -168,15 +183,15 @@ function PlannerPage() {
     const subject = subjectOf(task.subject_id)
     const topic = topicName(task)
     return (
-      <li className="group/task flex flex-wrap items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-nowrap md:px-5" key={task.id}>
+      <li ref={rows.ref(task.id)} className={cn('group/task flex flex-wrap items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-nowrap md:px-5', rows.enter(task.id))} key={task.id}>
         <Checkbox
           className="mt-0.5 size-5"
-          checked={done}
-          onCheckedChange={(checked) => void changeStatus(task, checked === true ? 'done' : 'todo')}
+          checked={done || ticked.has(task.id)}
+          onCheckedChange={(checked) => { if (!ticked.has(task.id)) void changeStatus(task, checked === true ? 'done' : 'todo') }}
           aria-label={done ? t('planner.reopen', { title: task.title }) : t('planner.markDone', { title: task.title })}
         />
         <span className="flex min-w-0 flex-1 basis-[calc(100%-2.75rem)] flex-col gap-1 sm:basis-0">
-          <span className={cn('text-sm font-medium break-words', done && 'text-muted-foreground line-through')}>{task.title}</span>
+          <span className={cn('text-sm font-medium break-words transition-colors', done && 'text-muted-foreground line-through')}>{task.title}</span>
           {task.description && <span className="line-clamp-1 text-sm text-muted-foreground" title={task.description}>{task.description}</span>}
           <Meta
             className="text-xs text-muted-foreground [&>*]:inline-flex [&>*]:items-center [&>*]:gap-1.5 [&>*]:align-middle"
@@ -214,7 +229,7 @@ function PlannerPage() {
                 <Play aria-hidden="true" />
               </Button>
             )}
-            <DeleteButton label={t('planner.deleteLabel', { title: task.title })} onDelete={() => removeTask(task)} />
+            <DeleteButton label={t('planner.deleteLabel', { title: task.title })} onDelete={() => void removeTask(task)} />
           </span>
         </span>
       </li>

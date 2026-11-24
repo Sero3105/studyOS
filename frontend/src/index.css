@@ -188,3 +188,15 @@
     }
   }
 }
+
+/* La spunta si disegna: il tratto (lungo ~23 unità) parte nascosto e si scopre. */
+@keyframes check-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+/* Fine di un blocco del timer: l'anello pulsa una volta. */
+@keyframes block-done {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}

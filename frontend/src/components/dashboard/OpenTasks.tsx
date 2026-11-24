@@ -10,6 +10,7 @@ import { updateTask } from '../../services/taskService'
 import type { ReviewRating as Rating, Task } from '../../services/taskService'
 import { daysUntil, relativeDay } from '../../utils/dates'
 import { errorMessage } from '../../utils/errors'
+import { useListMotion } from '../../hooks/useListMotion'
 import { useLanguage } from '../../i18n/useLanguage'
 
 /**
@@ -21,14 +22,22 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
   const { t, locale } = useLanguage()
   const [tasks, setTasks] = useState(initialTasks)
   const [error, setError] = useState('')
+  // Spuntati in attesa del salvataggio: la spunta si vede subito, poi la riga si chiude.
+  const [ticked, setTicked] = useState<ReadonlySet<number>>(() => new Set())
+  const rows = useListMotion<number>()
 
   const complete = async (task: Task, rating?: Rating) => {
     setError('')
+    setTicked((current) => new Set(current).add(task.id))
+    const leaving = rows.leave(task.id, 180)
     try {
-      await updateTask(task.id, { status: 'done', review_rating: rating })
+      await Promise.all([updateTask(task.id, { status: 'done', review_rating: rating }), leaving.done])
       setTasks((current) => current.filter((item) => item.id !== task.id))
     } catch (e) {
+      leaving.cancel()
       setError(errorMessage(e, t('dashboard.updateTaskError')))
+    } finally {
+      setTicked((current) => { const next = new Set(current); next.delete(task.id); return next })
     }
   }
 
@@ -54,11 +63,11 @@ function OpenTasks({ tasks: initialTasks }: { tasks: Task[] }) {
             {tasks.map((task) => {
               const overdue = task.due_date !== null && daysUntil(task.due_date) < 0
               return (
-                <li className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0" key={task.id}>
+                <li ref={rows.ref(task.id)} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0" key={task.id}>
                   <Checkbox
                     className="size-5"
-                    checked={false}
-                    onCheckedChange={() => void complete(task)}
+                    checked={ticked.has(task.id)}
+                    onCheckedChange={() => { if (!ticked.has(task.id)) void complete(task) }}
                     aria-label={t('dashboard.markDone', { title: task.title })}
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">

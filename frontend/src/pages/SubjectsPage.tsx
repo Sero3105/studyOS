@@ -46,6 +46,7 @@ import { saveBlob } from '../utils/download'
 import { reviewsEnabled } from '../utils/preferences'
 import { formatMinutes } from '../utils/dates'
 import { errorMessage } from '../utils/errors'
+import { useListMotion } from '../hooks/useListMotion'
 import { archivedSubjectIds } from '../utils/grades'
 import { useLanguage } from '../i18n/useLanguage'
 import PlanResultModal from '../components/exams/PlanResultModal'
@@ -70,6 +71,9 @@ function SubjectsPage() {
   const { t, language, locale } = useLanguage()
   const navigate = useNavigate()
   const [subjects, setSubjects] = useState<Subject[]>([])
+  const topicRows = useListMotion<number>()
+  // Ultimo argomento di cui si è cambiato il livello: solo il suo badge fa il piccolo "pop".
+  const [bumped, setBumped] = useState<number | null>(null)
   const [minutesBySubject, setMinutesBySubject] = useState<Record<number, number>>({})
   const [selectedId, setSelectedId] = useState<number | null>((useLocation().state as { subjectId?: number } | null)?.subjectId ?? null)
   const [loading, setLoading] = useState(true)
@@ -174,6 +178,7 @@ function SubjectsPage() {
     await run(async () => {
       const topic = await createTopic(selected.id, title)
       setSubjects((s) => s.map((x) => x.id === selected.id ? { ...x, topics: [...x.topics, topic] } : x))
+      topicRows.added(topic.id)
       setTopicTitle('')
     }, t('subjects.addTopicError'))
   }
@@ -202,13 +207,18 @@ function SubjectsPage() {
 
   // Metodo di studio: da fare → da ripassare → ripassato (completato) → sicuro → da fare.
   // Studiato la prima volta, il primo ripasso arriva domani; i ripassi poi aggiornano lo stato da soli.
-  const cycleMastery = (subjectId: number, topic: Topic) =>
+  const cycleMastery = (subjectId: number, topic: Topic) => {
+    const next = ((topic.mastery + 1) % 4) as Mastery
+    const scheduleReviews = topic.mastery === 0 && reviewsEnabled()
+    // Il badge cambia subito, con una transizione di colore; se il salvataggio fallisce torna com'era.
+    replaceTopic(subjectId, { ...topic, mastery: next, completed: next >= 2 })
+    setBumped(topic.id)
     void run(async () => {
-      const next = ((topic.mastery + 1) % 4) as Mastery
-      const scheduleReviews = topic.mastery === 0 && reviewsEnabled()
-      replaceTopic(subjectId, await updateTopic(topic.id, { mastery: next, schedule_reviews: scheduleReviews }))
+      try { replaceTopic(subjectId, await updateTopic(topic.id, { mastery: next, schedule_reviews: scheduleReviews })) }
+      catch (e) { replaceTopic(subjectId, topic); throw e }
       if (scheduleReviews) toast.success(t('subjects.reviewsScheduled'))
     }, t('subjects.updateTopicError'))
+  }
 
   // Facile → media → difficile → facile: pesa nel piano d'esame.
   const cycleDifficulty = (subjectId: number, topic: Topic) =>
@@ -230,7 +240,9 @@ function SubjectsPage() {
 
   const removeTopic = (subjectId: number, topicId: number) =>
     run(async () => {
-      await deleteTopic(topicId)
+      const leaving = topicRows.leave(topicId)
+      try { await Promise.all([deleteTopic(topicId), leaving.done]) }
+      catch (e) { leaving.cancel(); throw e }
       setSubjects((s) => s.map((x) => x.id === subjectId ? { ...x, topics: x.topics.filter((t) => t.id !== topicId) } : x))
     }, t('subjects.deleteTopicError'))
 
@@ -433,18 +445,18 @@ function SubjectsPage() {
                 ) : (
                   <ul className="-mx-2 flex flex-col">
                     {selected.topics.map((topic) => (
-                      <li className="group/topic flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40" key={topic.id}>
-                        <Badge asChild variant={MASTERY_TONE[topic.mastery]} className="h-7 w-28 shrink-0 justify-center">
+                      <li ref={topicRows.ref(topic.id)} className={cn('group/topic flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40', topicRows.enter(topic.id))} key={topic.id}>
+                        <Badge asChild variant={MASTERY_TONE[topic.mastery]} className="h-7 w-28 shrink-0 justify-center duration-300">
                           <button
                             type="button"
                             onClick={() => cycleMastery(selected.id, topic)}
                             aria-label={t('subjects.masteryLabel', { title: topic.title, level: t(`topic.mastery.${topic.mastery}`) })}
                             title={t('subjects.masteryHint')}
                           >
-                            {t(`topic.mastery.${topic.mastery}`)}
+                            <span key={topic.mastery} className={cn(bumped === topic.id && 'animate-in fade-in-0 zoom-in-90 duration-200 ease-out')}>{t(`topic.mastery.${topic.mastery}`)}</span>
                           </button>
                         </Badge>
-                        {renamingTopic?.id !== topic.id && <span className={cn('min-w-0 flex-1 py-1 text-sm break-words', topic.completed && 'text-muted-foreground')}>{topic.title}</span>}
+                        {renamingTopic?.id !== topic.id && <span className={cn('min-w-0 flex-1 py-1 text-sm break-words transition-colors duration-300', topic.completed && 'text-muted-foreground')}>{topic.title}</span>}
                         {renamingTopic?.id === topic.id && (
                           <Input
                             className="min-w-40 flex-1"
