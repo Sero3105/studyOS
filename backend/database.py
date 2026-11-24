@@ -13,6 +13,7 @@ per generare le migrazioni (`alembic revision --autogenerate`).
 """
 
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import DeclarativeBase
 
 import config
@@ -27,9 +28,12 @@ class Base(DeclarativeBase):
 # e gestisce il pool di connessioni.
 engine = create_engine(
     config.DATABASE_URL,
-    # `check_same_thread` è spesso richiesto solo in ambienti SQLite per evitare
-    # errori con thread multipli. È un dettaglio di compatibilità del backend.
-    connect_args={"check_same_thread": False},
+    # SQLite: `check_same_thread` per i thread di FastAPI, e niente connessioni tenute aperte: se iCloud
+    # sostituisce il file (STUDYOS_DATA_DIR), la richiesta successiva apre quello nuovo invece di scrivere
+    # su quello vecchio, già cancellato.
+    # PostgreSQL (Neon): pool normale; pre_ping perché Neon chiude le connessioni quando va in pausa.
+    **({"connect_args": {"check_same_thread": False}, "poolclass": NullPool}
+       if config.DATABASE_URL.startswith("sqlite") else {"pool_pre_ping": True, "pool_recycle": 300}),
 )
 
 # IMPORT NECESSARIO: senza questi import i modelli non sarebbero in

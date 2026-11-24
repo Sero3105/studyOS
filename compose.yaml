@@ -14,6 +14,8 @@
 # I dati stanno nel volume `studyos-data` (montato su /data). Sopravvive a
 # stop, ricreazione dei container e rebuild delle immagini; lo cancella solo
 # `docker compose down -v` o `docker volume rm` — non usarli per routine.
+# Con STUDYOS_DATA_DIR nel .env i dati stanno invece in quella cartella (es.
+# iCloud, per usarli da più PC: mai con l'app aperta su due PC insieme).
 #
 # Le variabili ${...} arrivano dal file .env nella root (vedi .env.example).
 # Il file .env NON entra nelle immagini: Compose ne legge i valori e li passa
@@ -38,8 +40,9 @@ services:
     build: ./backend
     image: studyos-api:local
     environment:
-      # Percorso assoluto nel volume: mai il database locale del repository.
-      DATABASE_URL: sqlite:////data/studyos.db
+      # Database online (es. Neon) se STUDYOS_DATABASE_URL è nel .env, altrimenti SQLite nel volume
+      # (percorso assoluto: mai il database locale del repository).
+      DATABASE_URL: "${STUDYOS_DATABASE_URL:-sqlite:////data/studyos.db}"
       SECRET_KEY: "${SECRET_KEY:?SECRET_KEY mancante - copia .env.example in .env e imposta un valore casuale di almeno 32 caratteri}"
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
@@ -53,7 +56,7 @@ services:
       # Il browser vede un'unica origine (nginx); serve comunque alla validazione.
       FRONTEND_ORIGINS: "${STUDYOS_ORIGIN:-http://localhost:${STUDYOS_PORT:-8080}}"
     volumes:
-      - studyos-data:/data
+      - ${STUDYOS_DATA_DIR:-studyos-data}:/data
     tmpfs:
       - /tmp:size=16m
     expose:
@@ -81,8 +84,10 @@ services:
         condition: service_healthy
     environment:
       TZ: ${TZ:-Europe/Rome}
+      # "1" con il database online: niente copia del vecchio file SQLite (i backup li tiene Neon).
+      ONLINE_DB: "${STUDYOS_DATABASE_URL:+1}"
     volumes:
-      - studyos-data:/data:ro
+      - ${STUDYOS_DATA_DIR:-studyos-data}:/data:ro
       # Cartella sull'host: sopravvive anche alla perdita del volume. Su Linux
       # deve essere scrivibile dall'utente del container: `mkdir backups && sudo chown 10001 backups`.
       - ${STUDYOS_BACKUP_DIR:-./backups}:/backups
@@ -92,8 +97,11 @@ services:
       - python
       - -c
       - |
-        import datetime, pathlib, sqlite3, time
+        import datetime, os, pathlib, sqlite3, time
         src, out = pathlib.Path('/data/studyos.db'), pathlib.Path('/backups')
+        if os.environ.get('ONLINE_DB'):
+            print('database online: nessun backup locale', flush=True)
+            while True: time.sleep(86400)
         while True:
             try:
                 target = out / f'studyos-{datetime.date.today()}.db'

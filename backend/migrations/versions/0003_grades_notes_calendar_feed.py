@@ -29,7 +29,7 @@ def upgrade() -> None:
     with op.batch_alter_table('exams', schema=None) as batch_op:
         batch_op.add_column(sa.Column('cfu', sa.Integer(), nullable=True))
         batch_op.add_column(sa.Column('grade', sa.Integer(), nullable=True))
-        batch_op.add_column(sa.Column('honors', sa.Boolean(), server_default=sa.text('0'), nullable=False))
+        batch_op.add_column(sa.Column('honors', sa.Boolean(), server_default=sa.false(), nullable=False))
 
     with op.batch_alter_table('topics', schema=None) as batch_op:
         batch_op.add_column(sa.Column('notes', sa.Text(), nullable=True))

@@ -17,7 +17,7 @@ def upgrade() -> None:
     with op.batch_alter_table('topics', schema=None) as batch_op:
         batch_op.add_column(sa.Column('mastery', sa.Integer(), nullable=False, server_default='0'))
     # Un argomento già completato è almeno "studiato".
-    op.execute('UPDATE topics SET mastery = 1 WHERE completed = 1')
+    op.execute('UPDATE topics SET mastery = 1 WHERE completed')
 
 
 def downgrade() -> None:

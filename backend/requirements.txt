@@ -12,3 +12,5 @@ PyJWT==2.15.1
 uvicorn==0.53.0
 # Migrazioni dello schema (eseguite all'avvio, vedi database.run_migrations).
 alembic==1.20.1
+# Driver PostgreSQL (database online, es. Neon); con SQLite non serve ma resta installato.
+psycopg[binary]==3.3.9

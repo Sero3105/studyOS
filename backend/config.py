@@ -25,6 +25,9 @@ load_dotenv()
 
 # URL di connessione al database. Esempio: SQLite, PostgreSQL, MySQL, ecc.
 DATABASE_URL = os.getenv("DATABASE_URL")
+# Neon e gli altri servizi danno "postgresql://...": SQLAlchemy userebbe psycopg2, qui c'è psycopg 3.
+if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL.removeprefix("postgresql://")
 
 # Valori usati per la sicurezza e per la generazione dei token JWT.
 SECRET_KEY = os.getenv("SECRET_KEY")

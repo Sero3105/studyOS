@@ -7,7 +7,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _tmp.close()
-os.environ["DATABASE_URL"] = f"sqlite:///{_tmp.name}"
+# TEST_DATABASE_URL: per far girare i test su PostgreSQL (database vuoto, lo riempiono i test).
+os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL") or f"sqlite:///{_tmp.name}"
 os.environ["SECRET_KEY"] = "test-secret-key-with-at-least-32-chars"
 os.environ["ALGORITHM"] = "HS256"
 

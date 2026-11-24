@@ -141,6 +141,7 @@ There is no database container: SQLite is a file in the `studyos-data` volume (`
 ### Data and backups
 
 - **Docker:** volume `studyos_studyos-data`, mounted at `/data/studyos.db` in `api`. It survives `down`, restarts, and rebuilds.
+- **Online database (several PCs):** with `STUDYOS_DATABASE_URL` in `.env` (PostgreSQL, e.g. Neon, direct connection) the app uses it instead of SQLite: same data from every PC, internet required. The local daily backup turns off: the provider keeps backups. Tests can run on PostgreSQL with `TEST_DATABASE_URL`.
 - **Local development:** `database/studyos.db` in the repository. Docker never touches it.
 
 The `backup` service copies the database once a day to `./backups` (on disk, outside the volume) and keeps the last 7 files; change the folder with `STUDYOS_BACKUP_DIR`. On Linux, make it writable by the container: `mkdir backups && sudo chown 10001 backups`. To restore one (replaces the current data):
