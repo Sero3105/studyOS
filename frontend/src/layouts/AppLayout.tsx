@@ -106,7 +106,10 @@ function AppLayout() {
 
           <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
             <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 md:px-8 md:pt-10 md:pb-16">
-              <Outlet />
+              {/* Cambio pagina: il contenuto entra con una dissolvenza invece di comparire di scatto. */}
+              <div key={location.pathname} className="animate-in fade-in-0 slide-in-from-bottom-1 duration-150 ease-out">
+                <Outlet />
+              </div>
             </div>
           </main>
         </SidebarInset>
